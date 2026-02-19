@@ -1,0 +1,96 @@
+/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+    /* TAURI APP SCOPED STYLES */
+    /* These only apply when running in Tauri (or globally if you prefer) */
+    body {
+        @apply antialiased text-slate-200 bg-slate-950 overflow-hidden select-none;
+        /* Default cursor, disable text selection */
+        cursor: default;
+    }
+
+    /* Custom Scrollbar for WebKit */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-slate-700/50 rounded-full hover:bg-slate-600 transition-colors;
+    }
+
+    /* Selection Color */
+    ::selection {
+        @apply bg-cyan-500/30 text-cyan-200;
+    }
+}
+
+@layer utilities {
+
+    /* Window Drag Region */
+    .drag-region {
+        -webkit-app-region: drag;
+    }
+
+    .no-drag {
+        -webkit-app-region: no-drag;
+        cursor: default;
+    }
+
+    .clickable {
+        cursor: pointer;
+    }
+
+    /* Hide Scrollbar but keep functionality */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(200%);
+    }
+}
