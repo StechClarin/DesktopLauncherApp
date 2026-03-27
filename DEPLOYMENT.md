@@ -56,7 +56,27 @@ Les scripts `hub-package.sh` et `app-package.sh` chargent automatiquement les fi
 ### Sur GitHub Actions
 Les variables sensibles (comme les clés API privées) doivent être ajoutées dans les **GitHub Secrets** de votre dépôt. Le workflow `.github/workflows/build.yml` doit être édité pour mapper ces secrets aux variables d'environnement lors du build.
 
----
+## 5. Configuration du Serveur de Distribution (Nginx)
 
-## 4. Maintenance
-Si vous déplacez le projet, pensez à supprimer le dossier `src-tauri/target` pour éviter les erreurs de chemins absolus (comme vu précédemment).
+Pour que vos utilisateurs reçoivent les mises à jour, vous devez exposer le dossier `releases/` sur le web.
+
+### Installation de Nginx sur le VPS
+```bash
+sudo apt install nginx
+```
+
+### Configuration SSL & Sous-domaine (Recommandé)
+Le fichier `vps/nginx.conf` est configuré pour utiliser un sous-domaine dédié (`updates.ethernanos.space`) et forcer le HTTPS.
+
+1.  **DNS** : Créez un enregistrement de type **A** :
+    *   **Nom** : `updates`
+    *   **Valeur** : `72.60.2.96` (ou l'IP de votre VPS)
+2.  **Config Nginx** : Copiez le fichier et créez le lien symbolique.
+3.  **Certificat SSL** :
+    ```bash
+    sudo certbot --nginx -d updates.ethernanos.space
+    ```
+
+### URLs de Distribution
+Vos fichiers seront alors accessibles de manière sécurisée :
+- **Hub metadata** : `https://updates.ethernanos.space/releases/1.0.0/metadata.json`
