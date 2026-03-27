@@ -50,13 +50,13 @@ for file in "$RELEASE_DIR"/*; do
         if [ "$OS" == "unknown" ] || [ "$OS" == "null" ]; then
             EXTENSION="${FILENAME##*.}"
             case "$EXTENSION" in
-                exe|msi) OS="windows" ;;
-                dmg|pkg) OS="macos" ;;
+                exe|msi) OS="win" ;;
+                dmg|pkg) OS="mac" ;;
                 deb|AppImage|rpm) OS="linux" ;;
                 gz|zip) 
                     if [[ "$FILENAME" == *"linux"* ]]; then OS="linux"; 
-                    elif [[ "$FILENAME" == *"win"* ]]; then OS="windows";
-                    elif [[ "$FILENAME" == *"mac"* || "$FILENAME" == *"darwin"* ]]; then OS="macos";
+                    elif [[ "$FILENAME" == *"win"* ]]; then OS="win";
+                    elif [[ "$FILENAME" == *"mac"* || "$FILENAME" == *"darwin"* ]]; then OS="mac";
                     fi
                     ;;
             esac

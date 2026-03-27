@@ -74,8 +74,8 @@ jobs:
           # Map matrix platform to friendly OS name
           PLATFORM="${{ matrix.platform }}"
           OS_NAME="unknown"
-          if [[ "$PLATFORM" == *"windows"* ]]; then OS_NAME="windows";
-          elif [[ "$PLATFORM" == *"macos"* ]]; then OS_NAME="macos";
+          if [[ "$PLATFORM" == *"windows"* ]]; then OS_NAME="win";
+          elif [[ "$PLATFORM" == *"macos"* ]]; then OS_NAME="mac";
           elif [[ "$PLATFORM" == *"ubuntu"* ]]; then OS_NAME="linux"; fi
           
           # Create a temporary json file for this platform's artifacts
