@@ -36,13 +36,28 @@ for file in "$RELEASE_DIR"/*; do
     if [ "$FILENAME" != "metadata.json" ]; then
         HASH=$(sha256sum "$file" | awk '{ print $1 }')
         
+        # Detect OS based on extension
+        EXTENSION="${FILENAME##*.}"
+        OS="unknown"
+        case "$EXTENSION" in
+            exe|msi) OS="windows" ;;
+            dmg|pkg) OS="macos" ;;
+            deb|AppImage|rpm) OS="linux" ;;
+            gz|zip) 
+                if [[ "$FILENAME" == *"linux"* ]]; then OS="linux"; 
+                elif [[ "$FILENAME" == *"win"* ]]; then OS="windows";
+                elif [[ "$FILENAME" == *"mac"* || "$FILENAME" == *"darwin"* ]]; then OS="macos";
+                fi
+                ;;
+        esac
+
         if [ "$FIRST" = true ]; then
             FIRST=false
         else
             echo "," >> "$METADATA_FILE"
         fi
         
-        echo "    { \"name\": \"$FILENAME\", \"hash\": \"$HASH\" }" >> "$METADATA_FILE"
+        echo "    { \"name\": \"$FILENAME\", \"os\": \"$OS\", \"hash\": \"$HASH\" }" >> "$METADATA_FILE"
     fi
 done
 
