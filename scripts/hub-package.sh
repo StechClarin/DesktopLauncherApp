@@ -39,6 +39,13 @@ fi
 
 # 2. Build Tauri App
 echo "🏗️ Building Tauri Production App..."
+
+# Ensure dependencies are installed
+echo "📦 Installing root dependencies..."
+npm install
+echo "📦 Installing UI dependencies..."
+cd ui && npm install && cd ..
+
 # This command automatically builds the frontend then the native code
 npm run build
 
