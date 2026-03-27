@@ -1,0 +1,77 @@
+<div class="h-screen w-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden">
+    <!-- Background Ambient -->
+    <div class="absolute inset-0 opacity-10 pointer-events-none bg-grid-slate-700/[0.2] bg-[size:30px_30px]"></div>
+    <div class="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <div class="w-full max-w-md relative z-10 animate-[fadeIn_0.5s_ease-out]">
+        <!-- Logo Area -->
+        <div class="flex flex-col items-center mb-10">
+            <div class="relative w-20 h-20 flex items-center justify-center mb-6">
+                <svg viewBox="0 0 100 100" class="w-full h-full text-blue-600 drop-shadow-[0_0_20px_rgba(37,99,235,0.6)]">
+                    <path d="M50 5 L95 27 V73 L50 95 L5 73 V27 Z" fill="none" stroke="currentColor" stroke-width="5"/>
+                    <path d="M50 20 L80 35 V65 L50 80 L20 65 V35 Z" fill="currentColor" opacity="0.5"/>
+                </svg>
+                <span class="absolute text-xl font-bold text-white uppercase tracking-tighter">EN</span>
+            </div>
+            <h1 class="text-3xl font-black text-white tracking-widest leading-none">ETHERNANOS</h1>
+            <span class="text-[10px] text-blue-400 tracking-[0.3em] font-medium mt-2">CONTROL CENTER</span>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl relative group overflow-hidden">
+            <!-- Glow effect on hover -->
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+            <form (submit)="onLogin(); $event.preventDefault()" class="relative z-10 space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email</label>
+                    <input 
+                        type="email" 
+                        [(ngModel)]="email" 
+                        name="email"
+                        class="w-full bg-slate-950/50 border border-white/5 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                        placeholder="nom@exemple.com">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Mot de passe</label>
+                    <input 
+                        type="password" 
+                        [(ngModel)]="password" 
+                        name="password"
+                        class="w-full bg-slate-950/50 border border-white/5 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                        placeholder="••••••••">
+                </div>
+
+                <!-- Error Message -->
+                <div *ngIf="error()" class="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-center gap-3 text-red-400 text-sm animate-[shake_0.4s_ease-in-out]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ error() }}</span>
+                </div>
+
+                <button 
+                    type="submit" 
+                    [disabled]="isLoading()"
+                    class="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                    <span *ngIf="!isLoading()">SE CONNECTER</span>
+                    <span *ngIf="isLoading()" class="flex items-center gap-2">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        CONNEXION...
+                    </span>
+                </button>
+            </form>
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-slate-500 text-sm">
+                Problème de connexion ? <a href="#" class="text-blue-400 hover:text-blue-300 font-medium transition-colors">Contactez le support</a>
+            </p>
+        </div>
+    </div>
+</div>

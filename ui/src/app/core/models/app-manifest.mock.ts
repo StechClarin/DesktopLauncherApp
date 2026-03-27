@@ -12,7 +12,10 @@ export interface AppModule {
     id: string;
     name: string;
     description: string;
-    icon: string; // Keep as string (emoji or simple) for internal modules for now, or upgrade later
+    icon: string;
+    is_premium?: boolean;
+    price?: number;
+    is_unlocked?: boolean;
 }
 
 export interface AppManifest {
@@ -83,8 +86,8 @@ export const MOCK_APPS: AppManifest[] = [
         releaseDate: new Date('2026-01-10'),
         status: 'available', // Not installed, so role/usage won't matter for the installed lists
         modules: [
-            { id: 'lending', name: 'Prêts & Retours', description: 'Gestion des emprunts', icon: '📖' },
-            { id: 'catalog', name: 'Catalogue', description: 'Base de données', icon: '🔍' }
+            { id: 'lending', name: 'Prêts & Retours', description: 'Gestion des emprunts', icon: '📖', is_premium: true, price: 19.99 },
+            { id: 'catalog', name: 'Catalogue', description: 'Base de données', icon: '🔍', is_premium: true, price: 29.99 }
         ]
     },
     {
@@ -97,7 +100,10 @@ export const MOCK_APPS: AppManifest[] = [
         installCount: 1500,
         releaseDate: new Date('2026-02-01'),
         status: 'available',
-        modules: []
+        modules: [
+            { id: 'gps-live', name: 'Live Tracking', description: 'Temps réel GPS', icon: '📡', is_premium: true, price: 9.99 },
+            { id: 'routes', name: 'Optimisation Itinéraires', description: 'IA Routes', icon: '🛣️', is_premium: true, price: 49.99 }
+        ]
     },
     {
         id: 'mypos',

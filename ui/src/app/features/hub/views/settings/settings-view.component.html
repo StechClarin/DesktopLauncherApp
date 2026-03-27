@@ -1,0 +1,247 @@
+<div class="h-full flex gap-6 p-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+    <!-- Settings Sidebar -->
+    <div class="w-64 flex flex-col gap-2 no-drag">
+        <h2 class="px-4 text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Paramètres Hub</h2>
+        
+        <button (click)="setSection('db')" 
+            class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group overflow-hidden relative"
+            [ngClass]="activeSection() === 'db' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">database</span>
+            <span class="text-sm font-bold">Base de Données</span>
+            <div *ngIf="activeSection() === 'db'" class="absolute left-0 w-1 h-6 bg-emerald-500 rounded-r-full shadow-[0_0_12px_#10b981]"></div>
+        </button>
+
+        <button (click)="setSection('update')" 
+            class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative"
+            [ngClass]="activeSection() === 'update' ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400' : 'text-slate-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">system_update</span>
+            <span class="text-sm font-bold">Mise à jour</span>
+            <div *ngIf="activeSection() === 'update'" class="absolute left-0 w-1 h-6 bg-blue-500 rounded-r-full shadow-[0_0_12px_#3b82f6]"></div>
+            <!-- Notification dot if update ready -->
+            <div *ngIf="hubService.hasUpdate()" class="absolute right-4 w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+        </button>
+
+        <button (click)="setSection('about')" 
+            class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative"
+            [ngClass]="activeSection() === 'about' ? 'bg-slate-700/30 border border-white/10 text-white' : 'text-slate-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">info</span>
+            <span class="text-sm font-bold">À propos</span>
+            <div *ngIf="activeSection() === 'about'" class="absolute left-0 w-1 h-6 bg-white rounded-r-full"></div>
+        </button>
+    </div>
+
+    <!-- Settings Content Area -->
+    <div class="flex-1 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-10 overflow-y-auto no-scrollbar shadow-2xl">
+        
+        <!-- SECTION: DATABASE -->
+        @if (activeSection() === 'db') {
+            <div class="animate-in fade-in slide-in-from-right-4 duration-500">
+                <div class="mb-10">
+                    <h2 class="text-2xl font-black text-white mb-2 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-emerald-400">database</span>
+                        Base de Données
+                    </h2>
+                    <p class="text-slate-400 text-sm">Configurez l'orchestrateur PostgreSQL local (BYODB).</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-8 mb-10">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Hôte (Docker/Local)</label>
+                        <div class="relative group">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">dns</span>
+                            <input type="text" [ngModel]="dbHost()" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-slate-500 font-medium cursor-not-allowed" readonly>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Port</label>
+                        <div class="relative group">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">tag</span>
+                            <input type="number" [ngModel]="dbPort()" (ngModelChange)="dbPort.set($event)" class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-medium focus:outline-none focus:border-emerald-500/30 transition-all placeholder:text-slate-700">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Utilisateur SuperAdmin</label>
+                        <div class="relative group">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">admin_panel_settings</span>
+                            <input type="text" [ngModel]="dbUser()" (ngModelChange)="dbUser.set($event)" class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-medium focus:outline-none focus:border-emerald-500/30 transition-all placeholder:text-slate-700">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Mot de Passe</label>
+                        <div class="relative group">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">lock</span>
+                            <input type="password" [ngModel]="dbPass()" (ngModelChange)="dbPass.set($event)" class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-medium focus:outline-none focus:border-emerald-500/30 transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 pt-6">
+                    <button (click)="testDbConnection()" class="flex-1 bg-slate-800/50 hover:bg-slate-700/50 text-white font-bold py-4 px-6 rounded-2xl transition-all border border-white/5 active:scale-95 disabled:opacity-50" [disabled]="hubService.dbConfigStatus() === 'checking'">
+                        Test Connexion
+                    </button>
+                    <button (click)="saveDbConfig()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95">
+                        Sauvegarder Configuration
+                    </button>
+                </div>
+
+                <!-- Status Feedback -->
+                <div *ngIf="hubService.dbConfigStatus() === 'connected'" class="mt-8 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4 animate-in zoom-in-95 duration-300">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                        <span class="material-symbols-outlined">check_circle</span>
+                    </div>
+                    <div>
+                        <p class="text-white text-sm font-bold">Connexion Opérationnelle</p>
+                        <p class="text-emerald-400/70 text-xs">Le Hub peut désormais orchestrer les bases de données applicatives.</p>
+                    </div>
+                </div>
+
+                <div class="mt-12 p-6 bg-white/5 border border-white/10 rounded-3xl">
+                    <h4 class="text-slate-300 font-bold mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-400 text-[20px]">verified_user</span>
+                        Isolation Zero-Leak
+                    </h4>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Le Hub utilise ces identifiants pour créer automatiquement des sous-bases de données isolées. Chaque application possède son propre utilisateur cryptographique unique. Vos données restent étanches.
+                    </p>
+                </div>
+            </div>
+        }
+
+        <!-- SECTION: UPDATE -->
+        @if (activeSection() === 'update') {
+            <div class="animate-in fade-in slide-in-from-right-4 duration-500 h-full flex flex-col">
+                <div class="mb-10">
+                    <h2 class="text-2xl font-black text-white mb-2 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-blue-400">system_update</span>
+                        Mise à jour du Système
+                    </h2>
+                    <p class="text-slate-400 text-sm">Gérez les versions et les mises à jour du Hub EtherNanos.</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Version Card -->
+                    <div class="p-8 bg-slate-950/40 border border-white/5 rounded-3xl flex items-center justify-between">
+                        <div class="flex items-center gap-6">
+                            <div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500 border border-blue-500/20">
+                                <span class="material-symbols-outlined text-[32px]">deployed_code</span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Version Actuelle</p>
+                                <h3 class="text-2xl font-black text-white tracking-tight">{{ hubService.currentHubVersion() }}</h3>
+                            </div>
+                        </div>
+                        
+                        @if (hubService.hasUpdate()) {
+                            <div class="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-xl flex items-center gap-3 animate-pulse">
+                                <div class="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_#3b82f6]"></div>
+                                <span class="text-xs font-black text-blue-400 uppercase tracking-widest">Nouvelle version : {{ hubService.latestHubVersion() }}</span>
+                            </div>
+                        } @else {
+                            <div class="px-4 py-2 bg-slate-800/30 border border-white/5 rounded-xl flex items-center gap-3">
+                                <span class="material-symbols-outlined text-emerald-500 text-[18px]">check_circle</span>
+                                <span class="text-xs font-bold text-slate-400">Votre Hub est à jour</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Update Actions -->
+                    <div class="p-8 bg-white/5 border border-white/5 rounded-3xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-bold text-white">Vérification du Cloud</h4>
+                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Dernière vérification : Aujourd'hui</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                            Le Hub vérifie automatiquement les mises à jour. Vous pouvez forcer une vérification manuelle pour obtenir les derniers correctifs de sécurité et fonctionnalités.
+                        </p>
+
+                        <!-- Progress Bar for Hub Update -->
+                        <div *ngIf="hubService.isUpdatingHub()" class="mb-6 animate-in fade-in duration-300">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-black uppercase text-blue-400 tracking-widest">Téléchargement & Vérification...</span>
+                                <span class="text-xs font-black text-white">{{ hubService.hubUpdateProgress() }}%</span>
+                            </div>
+                            <div class="h-2 bg-slate-950 rounded-full overflow-hidden border border-white/5">
+                                <div class="h-full bg-blue-500 rounded-full transition-all duration-300 shadow-[0_0_8px_#3b82f6]" [style.width.%]="hubService.hubUpdateProgress()"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button (click)="hubService.checkHubUpdate()" 
+                                [disabled]="hubService.isUpdatingHub()"
+                                class="px-6 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-slate-700 transition-colors active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50">
+                                Vérifier
+                            </button>
+                            
+                            @if (hubService.hasUpdate()) {
+                                <button (click)="hubService.triggerHubUpdate()" 
+                                    [disabled]="hubService.isUpdatingHub()"
+                                    class="flex-1 px-6 py-3 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-500 transition-colors active:scale-95 text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+                                    <span *ngIf="!hubService.isUpdatingHub()">Installer la version {{ hubService.latestHubVersion() }}</span>
+                                    <span *ngIf="hubService.isUpdatingHub()" class="flex items-center gap-2">
+                                        <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        Installation en cours...
+                                    </span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- History / Changelog (Placeholder) -->
+                    <div class="mt-4">
+                        <h4 class="px-2 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mb-4">Derniers correctifs</h4>
+                        <div class="space-y-4">
+                            <div class="flex gap-4 p-4 hover:bg-white/5 rounded-2xl transition-colors border border-transparent hover:border-white/5">
+                                <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-200">Launcher 2.0 : Architecture Opérationnelle</p>
+                                    <p class="text-xs text-slate-500">Implémentation des manifestes applicatifs et des ports dynamiques.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4 p-4 hover:bg-white/5 rounded-2xl transition-colors border border-transparent hover:border-white/5 opacity-50">
+                                <div class="w-2 h-2 rounded-full bg-slate-700 mt-1.5 shrink-0"></div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-400">Launcher 1.9 : Correction Synchronisation</p>
+                                    <p class="text-xs text-slate-600">Amélioration du mode hors-ligne et du cache local.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- SECTION: ABOUT -->
+        @if (activeSection() === 'about') {
+            <div class="animate-in fade-in slide-in-from-right-4 duration-500 text-center h-full flex flex-col items-center justify-center max-w-lg mx-auto">
+                <div class="w-24 h-24 bg-gradient-to-tr from-slate-900 to-slate-800 rounded-[2.5rem] border border-white/10 flex items-center justify-center p-4 shadow-2xl mb-8 group overflow-hidden">
+                    <img src="assets/logo-briefcase.png" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700" alt="Logo">
+                </div>
+                
+                <h2 class="text-3xl font-black text-white tracking-tighter mb-2">EtherNanos OS</h2>
+                <p class="text-blue-400 font-black uppercase tracking-[0.3em] text-[10px] mb-8">Système de Gestion Universel</p>
+                
+                <div class="space-y-6 text-slate-400 text-sm leading-relaxed">
+                    <p>
+                        Conçu pour propulser la prochaine génération d'outils de gestion, <strong>EtherNanos</strong> offre une isolation totale et une synchronisation cloud-local de classe mondiale.
+                    </p>
+                    
+                    <div class="pt-8 grid grid-cols-2 gap-4 w-full border-t border-white/5">
+                        <div class="p-4 bg-slate-950/40 rounded-2xl border border-white/5">
+                            <p class="text-[10px] font-black text-slate-600 uppercase mb-1">Édition</p>
+                            <p class="text-white font-bold">Standard</p>
+                        </div>
+                        <div class="p-4 bg-slate-950/40 rounded-2xl border border-white/5">
+                            <p class="text-[10px] font-black text-slate-600 uppercase mb-1">Licence</p>
+                            <p class="text-white font-bold">Professionnelle</p>
+                        </div>
+                    </div>
+
+                    <p class="text-[10px] text-slate-600 pt-12">
+                        &copy; 2026 StechClarin & EtherNanos Technologies.<br>Tout droit réservé.
+                    </p>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>

@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "gigacore-launcher",
+  "productName": "EtherNanos Hub",
   "version": "0.1.0",
   "identifier": "com.tauri.dev",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "GigaCore Launcher",
+        "title": "EtherNanos Hub",
         "width": 800,
         "height": 600,
         "resizable": true,

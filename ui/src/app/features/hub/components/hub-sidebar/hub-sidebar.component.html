@@ -1,0 +1,188 @@
+<aside
+    class="relative w-72 h-full bg-[#0B1120] border-r border-white/5 transition-all duration-300 ease-in-out flex flex-col z-50 shrink-0"
+    [class.-ml-72]="!isSidebarOpen()">
+
+    <!-- 1. HEADER (Logo Area) -->
+    <div class="h-24 flex items-center px-6 border-b border-white/5 bg-[#0B1120]">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="font-black text-lg tracking-wider text-white leading-none uppercase">EtherNanos</h1>
+                <span class="text-[9px] text-blue-400 tracking-[0.2em] font-medium block mt-0.5">CONTROL
+                    CENTER</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. NAVIGATION -->
+    <nav class="flex-1 py-6 space-y-1 overflow-y-auto">
+        <!-- ITEM: HOME -->
+        <button (click)="setActiveTab('home')"
+            class="w-full flex items-center gap-4 px-6 py-4 transition-all relative group" [ngClass]="{
+            'text-white': activeTab() === 'home',
+            'text-slate-500 hover:text-slate-300': activeTab() !== 'home'
+        }">
+            <!-- Active Indicator -->
+            <div *ngIf="activeTab() === 'home'"
+                class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_15px_#3b82f6]"></div>
+            <div *ngIf="activeTab() === 'home'"
+                class="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent"></div>
+
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 relative z-10" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span class="text-xs font-bold tracking-widest relative z-10">HOME</span>
+        </button>
+
+        <!-- ITEM: LIBRARY -->
+        <button (click)="setActiveTab('library')"
+            class="w-full flex items-center gap-4 px-6 py-4 transition-all relative group" [ngClass]="{
+            'text-white': activeTab() === 'library',
+            'text-slate-500 hover:text-slate-300': activeTab() !== 'library'
+        }">
+            <div *ngIf="activeTab() === 'library'"
+                class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_15px_#3b82f6]"></div>
+            <div *ngIf="activeTab() === 'library'"
+                class="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent"></div>
+
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 relative z-10" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span class="text-xs font-bold tracking-widest relative z-10">LIBRARY</span>
+        </button>
+
+        <!-- ITEM: STORE -->
+        <button (click)="setActiveTab('store')"
+            class="w-full flex items-center gap-4 px-6 py-4 transition-all relative group" [ngClass]="{
+            'text-white': activeTab() === 'store',
+            'text-slate-500 hover:text-slate-300': activeTab() !== 'store'
+        }">
+            <div *ngIf="activeTab() === 'store'"
+                class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_15px_#3b82f6]"></div>
+            <div *ngIf="activeTab() === 'store'"
+                class="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent"></div>
+
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 relative z-10" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span class="text-xs font-bold tracking-widest relative z-10">STORE</span>
+        </button>
+
+        <!-- ITEM: SETTINGS -->
+        <button (click)="setActiveTab('settings')"
+            class="w-full flex items-center gap-4 px-6 py-4 transition-all relative group" [ngClass]="{
+            'text-white': activeTab() === 'settings',
+            'text-slate-500 hover:text-slate-300': activeTab() !== 'settings'
+        }">
+            <div *ngIf="activeTab() === 'settings'"
+                class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_15px_#3b82f6]"></div>
+            <div *ngIf="activeTab() === 'settings'"
+                class="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent"></div>
+
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="text-xs font-bold tracking-widest relative z-10">SETTINGS</span>
+        </button>
+    </nav>
+
+
+    <!-- 3. PROMO AREA (Ads) -->
+    <div class="px-4 mb-4 space-y-4">
+        <!-- Ad 1 -->
+        <div
+            class="rounded-xl p-4 bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group cursor-pointer hover:border-blue-500/30 transition-all">
+            <div
+                class="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center">
+            </div>
+            <div class="flex justify-between items-start mb-8 relative z-10">
+                <span class="text-[10px] font-bold text-slate-400">Ad 1</span>
+                <span class="bg-yellow-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded">-20%</span>
+            </div>
+            <div class="relative z-10">
+                <div class="text-[9px] font-bold text-blue-400 uppercase tracking-wider mb-1">TRENDING</div>
+                <div
+                    class="text-xs font-bold text-white leading-tight group-hover:text-blue-300 transition-colors">
+                    UNLOCK AI PREMIUM
+                </div>
+            </div>
+        </div>
+
+        <!-- Ad 2 (Duplicate) -->
+        <div
+            class="rounded-xl p-4 bg-gradient-to-br from-purple-900/40 to-slate-900 border border-purple-500/10 relative overflow-hidden group cursor-pointer hover:border-purple-500/30 transition-all">
+            <div
+                class="absolute inset-0 opacity-30 mix-blend-overlay bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center">
+            </div>
+            <div class="flex justify-between items-start mb-8 relative z-10">
+                <span class="text-[10px] font-bold text-slate-400">Ad 2</span>
+                <span class="bg-purple-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded">NEW</span>
+            </div>
+            <div class="relative z-10">
+                <div class="text-[9px] font-bold text-purple-400 uppercase tracking-wider mb-1">CLOUD</div>
+                <div
+                    class="text-xs font-bold text-white leading-tight group-hover:text-purple-300 transition-colors">
+                    GIGACORE CLOUD
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3.5 CONNECTION STATUS TOGGLE -->
+    <div class="px-6 py-4 border-t border-white/5 bg-[#0B1120]/50">
+        <button (click)="hubService.toggleOfflineMode()" 
+            class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-900/50 border border-white/5 hover:border-white/10 transition-all group">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full transition-all duration-500 shadow-[0_0_8px]"
+                    [ngClass]="hubService.isOffline() ? 'bg-slate-500 shadow-slate-500/50' : 'bg-emerald-500 shadow-emerald-500/50'">
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-widest transition-colors"
+                    [ngClass]="hubService.isOffline() ? 'text-slate-500' : 'text-emerald-500'">
+                    {{ hubService.isOffline() ? 'Hors-ligne' : 'En-ligne' }}
+                </span>
+            </div>
+            <div class="flex items-center gap-2">
+                 <span class="material-symbols-outlined text-lg transition-all"
+                    [ngClass]="hubService.isOffline() ? 'text-slate-600' : 'text-blue-500 group-hover:scale-110'">
+                    {{ hubService.isOffline() ? 'wifi_off' : 'wifi' }}
+                </span>
+            </div>
+        </button>
+    </div>
+
+    <!-- 4. FOOTER (Download Manager) -->
+    <div class="pb-6 pt-2 px-6 border-t border-white/5 bg-[#0B1120]">
+        <button (click)="setActiveTab('downloads')"
+            class="w-full flex items-center gap-3 text-slate-400 hover:text-white transition-colors group py-2"
+            [ngClass]="{
+                'text-white': activeTab() === 'downloads'
+            }">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:text-blue-400 transition-colors"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span class="text-[10px] font-bold tracking-widest">DOWNLOAD MANAGER</span>
+
+            <!-- Badge -->
+            <span *ngIf="hubService.installingApps().length > 0"
+                class="ml-auto bg-blue-600 text-white text-[9px] font-bold px-1.5 rounded-full">
+                {{ hubService.installingApps().length }}
+            </span>
+        </button>
+    </div>
+</aside>

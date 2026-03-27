@@ -1,0 +1,13 @@
+:host {
+  display: block;
+  z-index: 50;
+  height: 100%;
+}
+
+aside {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bg-grid-slate-700\/\[0\.1\] {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+}

@@ -1,79 +1,60 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HubService } from '../../core/services/hub.service';
-import { Window } from '@tauri-apps/api/window';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Router } from '@angular/router';
+import { ToastService } from '../../core/services/toast.service';
+import { toSignal } from '@angular/core/rxjs-interop';
+
+import { HubHeaderComponent } from '../../features/hub/components/hub-header/hub-header.component';
+import { HubSidebarComponent } from '../../features/hub/components/hub-sidebar/hub-sidebar.component';
+import { HomeViewComponent } from '../../features/hub/views/home/home-view.component';
+import { LibraryViewComponent } from '../../features/hub/views/library/library-view.component';
+import { StoreViewComponent } from '../../features/hub/views/store/store-view.component';
+import { DownloadsViewComponent } from '../../features/hub/views/downloads/downloads-view.component';
+import { SettingsViewComponent } from '../../features/hub/views/settings/settings-view.component';
+import { AppDetailViewComponent } from '../../features/hub/views/app-detail/app-detail-view.component';
 
 @Component({
     selector: 'app-hub-layout',
     standalone: true,
-    imports: [CommonModule],
+    imports: [
+        CommonModule, 
+        HubHeaderComponent, 
+        HubSidebarComponent,
+        HomeViewComponent,
+        LibraryViewComponent,
+        StoreViewComponent,
+        DownloadsViewComponent,
+        SettingsViewComponent,
+        AppDetailViewComponent
+    ],
     templateUrl: './hub-layout.component.html',
-    styleUrl: './hub-layout.component.scss' // Make sure styles.scss covers global
+    styleUrl: './hub-layout.component.scss'
 })
 export class HubLayoutComponent {
     hubService = inject(HubService);
+    supabase = inject(SupabaseService);
     sanitizer = inject(DomSanitizer);
+    router = inject(Router);
 
-    // Navigation State
-    activeTab = signal<'home' | 'library' | 'store' | 'downloads' | 'settings'>('home');
-    selectedApp = signal<any | null>(null); // For Detail View
+    user = toSignal(this.supabase.currentUser$);
     isSidebarOpen = signal<boolean>(true);
-
-    // Helper for SVGs
-    getSafeSvg(svgString: string): SafeHtml {
-        return this.sanitizer.bypassSecurityTrustHtml(svgString);
-    }
-
-    // Window Controls
-    async minimizeWindow() {
-        try {
-            const appWindow = new Window('main');
-            await appWindow.minimize();
-        } catch (e) {
-            console.warn('Tauri minimize failed (not in Tauri?)', e);
-        }
-    }
-
-    async maximizeWindow() {
-        try {
-            const appWindow = new Window('main');
-            await appWindow.toggleMaximize();
-        } catch (e) {
-            console.warn('Tauri maximize failed', e);
-        }
-    }
-
-    async closeWindow() {
-        try {
-            const appWindow = new Window('main');
-            await appWindow.close();
-        } catch (e) {
-            console.warn('Tauri close failed', e);
-        }
-    }
 
     toggleSidebar() {
         this.isSidebarOpen.update(v => !v);
     }
 
-    closeSidebar() {
-        this.isSidebarOpen.set(false);
+    // Helper for App Iframes
+    getSafeUrl(url: string) {
+        return this.sanitizer.bypassSecurityTrustResourceUrl(url);
     }
 
-    setActiveTab(tab: 'home' | 'library' | 'store' | 'downloads' | 'settings') {
-        this.activeTab.set(tab);
-        this.selectedApp.set(null); // Clear selection when changing tabs
-        if (window.innerWidth < 768) {
-            this.closeSidebar();
-        }
-    }
-
-    openAppDetails(app: any) {
-        this.selectedApp.set(app);
-    }
-
-    installApp(appId: string) {
-        this.hubService.installApp(appId);
+    async logOut() {
+        await this.supabase.signOut();
+        this.router.navigate(['/login']);
     }
 }

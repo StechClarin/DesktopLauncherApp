@@ -1,0 +1,46 @@
+.custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.animate-in {
+  animation-fill-mode: forwards;
+}
+
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.slide-in-from-right {
+  animation: slideInFromRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .group-hover\:-translate-x-1 {
+  transform: translateX(-0.25rem);
+}
+
+.group-hover\/sync:hover .group-hover\/sync\:animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+}

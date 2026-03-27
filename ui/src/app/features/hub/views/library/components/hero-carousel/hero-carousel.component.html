@@ -1,0 +1,59 @@
+<div class="relative h-[400px] rounded-[48px] overflow-hidden group/carousel border border-white/5 shadow-2xl">
+    <div class="absolute inset-0 transition-all duration-1000 ease-out flex">
+        @for (item of hubService.libraryCarousel(); track item.id; let i = $index) {
+        <div class="absolute inset-0 transition-all duration-1000 ease-in-out"
+            [class.opacity-100]="currentSlide() === i"
+            [class.opacity-0]="currentSlide() !== i"
+            [class.scale-105]="currentSlide() !== i"
+            [class.scale-100]="currentSlide() === i"
+            [class.z-10]="currentSlide() === i">
+            
+            <!-- Background Image with Overlay -->
+            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] ease-linear"
+                [class.scale-110]="currentSlide() === i"
+                [style.backgroundImage]="'url(' + item.image + ')'">
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+            </div>
+
+            <!-- Slide Content -->
+            <div class="absolute inset-0 p-12 lg:p-20 flex flex-col justify-center max-w-2xl space-y-6">
+                <div class="flex items-center gap-3 animate-in slide-in-from-left duration-700 delay-100">
+                    <span class="px-3 py-1 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-400 text-[10px] font-black uppercase tracking-widest">OFFRE LIMITÉE</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                    <span class="text-slate-400 text-xs font-bold uppercase tracking-wider">{{ item.subtitle }}</span>
+                </div>
+                
+                <h2 class="text-5xl lg:text-7xl font-black text-white leading-[0.9] tracking-tighter animate-in slide-in-from-left duration-700 delay-200">
+                    {{ item.title }}
+                </h2>
+                
+                <p class="text-lg text-slate-400 font-medium leading-relaxed max-w-lg animate-in slide-in-from-left duration-700 delay-300">
+                    {{ item.description }}
+                </p>
+
+                <div class="flex items-center gap-6 pt-4 animate-in slide-in-from-left duration-700 delay-500">
+                    <button class="relative group/btn px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold flex items-center gap-3 overflow-hidden transition-all hover:bg-blue-500 hover:shadow-[0_0_25px_rgba(37,99,235,0.5)] active:scale-95">
+                        <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover/btn:animate-shine"></div>
+                        <span>En savoir plus</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                    </button>
+                    <span class="text-2xl font-black text-blue-400">{{ item.price }}</span>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Carousel Controls -->
+    <div class="absolute bottom-10 right-12 flex gap-3 z-30">
+        @for (item of hubService.libraryCarousel(); track item.id; let i = $index) {
+            <button (click)="setSlide(i)" 
+                    class="h-2 rounded-full transition-all duration-300 bg-white"
+                    [class.w-12]="currentSlide() === i"
+                    [class.w-3]="currentSlide() !== i"
+                    [class.opacity-100]="currentSlide() === i"
+                    [class.opacity-20]="currentSlide() !== i"></button>
+        }
+    </div>
+</div>

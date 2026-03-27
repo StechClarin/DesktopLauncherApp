@@ -1,0 +1,97 @@
+================================================================================
+🌍 ETHER NANOS HUB - DOCUMENTATION TECHNIQUE COMPLÈTE
+================================================================================
+Version du Document : 1.0 (Mars 2026)
+Objet : Architecture et Fonctionnalités du Launcher Opérationnel 2.0
+Développeur : Antigravity AI (Google Deepmind)
+================================================================================
+
+1. PRÉSENTATION GÉNÉRALE
+------------------------
+Le Hub EtherNanos est une plateforme de bureau "Cloud-to-Local" construite avec 
+Tauri (Rust) et Angular (TypeScript). Il sert de passerelle entre le cloud 
+Supabase et les applications locales installées sur la machine de l'utilisateur.
+
+Sa mission est de transformer une installation locale complexe en une expérience 
+"App Store" simplifiée, gérant l'installation, la configuration de base de 
+données, la synchronisation des données et les mises à jour de sécurité.
+
+2. ARCHITECTURE TECHNIQUE
+-------------------------
+- Backend (Rust/Tauri) : Gestion du système de fichiers, exécution des binaires, 
+  requêtes HTTP sécurisées (reqwest), hachage SHA-256 (sha2), décompression (tar, 
+  flate2) et configuration PostgreSQL (sqlx).
+- Frontend (Angular) : Interface utilisateur riche, gestion d'état réactive 
+  (Signals), communication IPC asynchrone avec le backend Rust via 'invoke' 
+  et 'listen'.
+- Base de Données : PostgreSQL local partagé, avec isolation par base/utilisateur 
+  pour chaque application installée.
+
+3. FONCTIONNALITÉS CLÉS DU HUB
+------------------------------
+
+A. Système de Lancement Multi-App (Manifest-Driven)
+   Chaque application est gérée via un fichier "ethernanos.json" (Manifeste).
+   - Découverte Dynamique : Le Hub lit le manifeste pour connaître le nom, 
+     la commande d'exécution et le PORT spécifique de l'app.
+   - Ports Dynamiques : Contrairement aux versions précédentes, le port 8000 
+     n'est plus forcé. Le Hub détecte le port défini par l'application pour 
+     éviter les conflits ("Address already in use").
+
+B. Synchronisation Intelligente (Health Polling)
+   Le Hub ne synchronise pas les données au hasard.
+   - Séquencement : Lancement App -> Attente que le serveur local soit PRÊT 
+     (Polling HTTP 200) -> Déclenchement de la synchronisation (Sync Pull/Push).
+   - Fiabilité : Cette approche garantit qu'aucune synchronisation n'échoue 
+     à cause d'une application encore en cours de démarrage.
+
+C. Sécurité et Intégrité (SHA-256 Checksum)
+   C'est la colonne vertébrale de la version 2.0.
+   - Validation Systématique : Chaque binaire (Hub ou App) téléchargé depuis le 
+     cloud possède une empreinte numérique (Checksum).
+   - Vérification Rust : Le backend Rust recalcule le hash du fichier téléchargé 
+     et le compare à celui de la base de données. Si les deux ne correspondent pas, 
+     le fichier est supprimé et l'installation est bloquée.
+
+D. Auto-Mise à Jour (Self-Update)
+   Le Hub est capable de se tenir à jour lui-même.
+   - Détection : Monitoring en temps réel des releases disponibles sur Supabase.
+   - Notification : Badge visuel pulsant dans l'en-tête et les paramètres.
+   - Installation : Processus de téléchargement sécurisé avec barre de 
+     progression et préparation du redémarrage.
+
+E. Store et Installation Automatisée
+   - Téléchargement Background : Les installations ne bloquent pas l'UI.
+   - Init DB Automatique : Lors de l'installation, le Hub crée automatiquement 
+     la base de données locale nécessaire et l'utilisateur PostgreSQL associé.
+
+4. INTERFACE UTILISATEUR (UX/UI)
+--------------------------------
+- Design "Glassmorphism" : Effets de transparence, flou d'arrière-plan et bordures 
+  lumineuses pour un look premium.
+- Sidebar de Paramètres : Organisation claire par sections :
+    - [Base de Données] : Gestion de la connexion PostgreSQL locale.
+    - [Mise à jour] : Centre de contrôle des versions et installation.
+    - [À propos] : Identité visuelle et crédits système.
+- Feedback Réel : Utilisation de Toasts (messages éphémères) et de barres de 
+  progression pour chaque action longue.
+
+5. SPÉCIFICATIONS DES FICHIERS MANIFESTES (ethernanos.json)
+----------------------------------------------------------
+Format requis pour qu'une application soit reconnue par le Hub :
+{
+  "name": "Nom de l'App",
+  "version": "1.0.0",
+  "port": 8001,
+  "exec_command": "npm run start" (ou chemin vers binaire)
+}
+
+6. MAINTENANCE ET ÉVOLUTIONS FUTURES
+-------------------------------------
+- Logs : Le plugin 'tauri-plugin-log' capture les erreurs critiques.
+- Redémarrage : Le Hub est conçu pour être "Always-On", minimisant les besoins 
+  de redémarrage manuel grâce à son système de détection à chaud.
+
+================================================================================
+FIN DU DOCUMENT
+================================================================================

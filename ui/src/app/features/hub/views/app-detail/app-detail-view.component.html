@@ -1,0 +1,191 @@
+@if (app(); as app) {
+<div class="relative z-10 flex flex-col animate-in slide-in-from-right duration-500 min-h-full">
+    
+    <!-- 1. HERO HEADER AREA -->
+    <div class="relative w-full h-[350px] shrink-0 overflow-hidden">
+        <!-- Background Banner -->
+        <div class="absolute inset-0 bg-cover bg-center"
+             [style.backgroundImage]="'url(' + (app.banner || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070') + ')'"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-[#020617]/40 via-[#020617]/80 to-[#020617]"></div>
+
+        <!-- Top Navigation Bar -->
+        <div class="absolute top-8 left-8 right-8 flex justify-between items-center z-20">
+            <button (click)="close()" class="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/80 transition-all font-bold group">
+                <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                RETOUR
+            </button>
+
+            <!-- Action Buttons Area -->
+            <div class="flex items-center gap-3">
+                @if (isInstalled(app.id)) {
+                    <!-- Tirer / Pousser Sync Buttons (Integrated Style) -->
+                    <div class="flex gap-2">
+                        <button (click)="pullSync()" [disabled]="hubService.isSyncing()"
+                                class="h-12 px-5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-blue-400 hover:bg-blue-400/10 transition-all flex items-center gap-2 font-bold disabled:opacity-50">
+                            <span class="material-symbols-outlined text-xl">cloud_download</span>
+                            TIRER
+                        </button>
+                        <button (click)="pushSync(app.id)" [disabled]="hubService.isSyncing()"
+                                class="h-12 px-5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-purple-400 hover:bg-purple-400/10 transition-all flex items-center gap-2 font-bold disabled:opacity-50">
+                            <span class="material-symbols-outlined text-xl">cloud_upload</span>
+                            POUSSER
+                        </button>
+                    </div>
+
+                    <button (click)="launchApp(app)"
+                            class="px-8 py-3 rounded-xl bg-blue-600 text-white font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-500 transition-all flex items-center gap-3">
+                        <span class="material-symbols-outlined text-2xl">play_arrow</span>
+                        LANCER APP
+                    </button>
+                } @else if (isInstalling(app.id)) {
+                    <button class="px-8 py-3 rounded-xl bg-slate-800 text-slate-400 font-black cursor-wait flex items-center gap-3">
+                        <div class="animate-spin h-5 w-5 border-2 border-slate-400 border-t-transparent rounded-full"></div>
+                        INSTALLATION...
+                    </button>
+                } @else {
+                    <button (click)="installApp(app)"
+                            class="px-8 py-4 rounded-xl bg-white text-black font-black text-lg shadow-xl hover:bg-slate-100 transition-all flex items-center gap-3">
+                        <span class="material-symbols-outlined text-2xl">download</span>
+                        OBTENIR APP
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- App Identity Info (Over Banner) -->
+        <div class="absolute bottom-10 left-8 right-8 flex items-end gap-8 z-10">
+            <!-- App Icon Frame -->
+            <div class="w-40 h-40 rounded-[2rem] bg-slate-900/50 backdrop-blur-2xl border border-white/10 p-8 flex items-center justify-center shadow-2xl overflow-hidden relative group">
+                <div class="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-full h-full flex items-center justify-center text-blue-400" [innerHTML]="getSafeSvg(app.icon)"></div>
+            </div>
+
+            <!-- Title and Subtitle -->
+            <div class="flex-1 pb-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">V {{ app.version }}</span>
+                    <span class="text-slate-500 text-sm font-medium">{{ app.installCount || 0 }} Installations</span>
+                </div>
+                <h1 class="text-6xl font-black text-white tracking-tight drop-shadow-2xl">{{ app.name }}</h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN CONTENT AREA (Grid) -->
+    <div class="max-w-[1400px] mx-auto w-full px-8 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
+        
+        <!-- Left Side: Content & Modules -->
+        <div class="lg:col-span-8 space-y-16">
+            
+            <!-- ABout Section -->
+            <section class="space-y-6">
+                <h2 class="text-xl font-black text-white flex items-center gap-3">
+                    <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                    À propos
+                </h2>
+                <p class="text-lg text-slate-400 leading-relaxed max-w-3xl">
+                    {{ app.description || 'Gérez votre solution avec efficacité grâce à notre plateforme intégrée.' }}
+                </p>
+            </section>
+
+            <!-- Modules Inclus Section -->
+            <section class="space-y-8">
+                <h2 class="text-xl font-black text-white flex items-center gap-3">
+                    <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                    Modules Inclus
+                </h2>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    @for (module of app.modules; track module.id) {
+                        @if (!module.is_premium) {
+                            <div class="group relative flex items-center gap-6 p-6 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-white/20 transition-all hover:bg-slate-900/80 overflow-hidden shadow-lg">
+                                <!-- Module Icon -->
+                                <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-inner shrink-0 text-slate-400"
+                                     [innerHTML]="getSafeSvg(module.icon)">
+                                </div>
+                                <!-- Module Meta -->
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-xl font-black text-white mb-1 uppercase tracking-tight">{{ module.name }}</h4>
+                                    <p class="text-slate-500 text-sm leading-snug line-clamp-2 font-medium">{{ module.description }}</p>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+
+            <!-- Modules Premium Section -->
+            <section class="space-y-8">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-black text-white flex items-center gap-3">
+                        <div class="w-1.5 h-6 bg-yellow-500 rounded-full"></div>
+                        Modules Premium
+                    </h2>
+                    <span class="px-3 py-1 bg-yellow-500/10 text-yellow-500 text-[10px] font-black uppercase tracking-widest border border-yellow-500/20 rounded">CONTENU ADDITIONNEL</span>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    @for (module of app.modules; track module.id) {
+                        @if (module.is_premium) {
+                            <div class="group relative flex items-center gap-6 p-6 rounded-3xl bg-[#141b2d] border border-blue-500/10 hover:border-blue-500/30 transition-all hover:bg-[#1a233b] overflow-hidden shadow-xl">
+                                <!-- Module Icon -->
+                                <div class="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-3xl shadow-inner shrink-0 text-blue-400"
+                                     [innerHTML]="getSafeSvg(module.icon)">
+                                </div>
+                                <!-- Module Meta -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="text-lg font-black text-white uppercase tracking-tight">{{ module.name }}</h4>
+                                        <span class="text-yellow-500 font-mono font-black text-lg">{{ module.price | currency:'EUR' }}</span>
+                                    </div>
+                                    <p class="text-slate-400 text-sm leading-snug mb-5 font-medium">{{ module.description }}</p>
+                                    
+                                    <div class="flex justify-between items-center">
+                                        <button class="px-6 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">
+                                            DÉBLOQUÉ
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Side: Sidebar Info -->
+        <div class="lg:col-span-4 space-y-8">
+            <div class="sticky top-12 p-8 rounded-[2.5rem] bg-slate-900/40 border border-white/5 space-y-8">
+                <h3 class="text-lg font-black text-white uppercase tracking-tight">Informations</h3>
+                
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center group/info">
+                        <span class="text-slate-500 text-sm font-bold uppercase tracking-widest">Version</span>
+                        <span class="text-slate-300 font-mono">{{ app.version }}</span>
+                    </div>
+                    <div class="flex justify-between items-center group/info">
+                        <span class="text-slate-500 text-sm font-bold uppercase tracking-widest">Date de sortie</span>
+                        <span class="text-slate-300 font-mono">{{ app.releaseDate | date:'MMM YYYY' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center group/info">
+                        <span class="text-slate-500 text-sm font-bold uppercase tracking-widest">Taille</span>
+                        <span class="text-slate-300 font-mono">1.2 GB</span>
+                    </div>
+                    <div class="flex flex-col gap-1 group/info">
+                        <span class="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Développeur</span>
+                        <span class="text-white font-black text-lg">EtherNanos Labs</span>
+                    </div>
+                </div>
+
+                <!-- Footer / Status Badge -->
+                <div class="pt-8 border-t border-white/5">
+                    <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        VÉRIFIÉ ET SÉCURISÉ
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}

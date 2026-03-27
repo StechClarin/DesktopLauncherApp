@@ -1,0 +1,164 @@
+<div class="relative animate-in fade-in duration-500 pb-20 overflow-hidden min-h-[500px]">
+
+    <!-- OFFLINE OVERLAY -->
+    @if (hubService.isOffline()) {
+        <div class="absolute inset-0 z-50 bg-[#020617]/80 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+            <div class="w-24 h-24 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center mb-6 shadow-2xl">
+                <span class="material-symbols-outlined text-5xl text-slate-500">cloud_off</span>
+            </div>
+            <h2 class="text-3xl font-black text-white mb-4 uppercase tracking-tight">Mode Hors-ligne Actif</h2>
+            <p class="text-slate-400 max-w-md mb-8 font-medium">Le Store nécessite une connexion internet pour parcourir les nouvelles applications et modules.</p>
+            <button (click)="hubService.toggleOfflineMode()" 
+                class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl transition-all shadow-xl shadow-blue-600/30 flex items-center gap-3">
+                <span class="material-symbols-outlined">wifi</span>
+                PASSER EN LIGNE
+            </button>
+        </div>
+    }
+
+    <!-- 1. IMMERSIVE HERO CAROUSEL / SKELETON -->
+    @if (hubService.isLoading()) {
+        <div class="relative h-[60vh] w-full bg-slate-900 animate-pulse border-b border-white/10"></div>
+    } @else {
+        <div class="relative h-[60vh] w-full overflow-hidden mb-12 group">
+            @let featured = hubService.storeFeatured()[0];
+            <div class="absolute inset-0 bg-cover bg-center animate-slow-zoom transition-transform group-hover:scale-105"
+                [style.backgroundImage]="featured ? 'url(' + featured.image + ')' : ''"
+                class="bg-[#0b1120]"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent"></div>
+
+            @if (featured) {
+                <div class="absolute bottom-0 left-0 p-8 md:p-16 max-w-3xl">
+                    <span class="inline-block py-1 px-3 rounded bg-yellow-500 text-black font-black text-xs uppercase tracking-widest mb-4 animate-bounce">Featured</span>
+                    <h1 class="text-5xl md:text-7xl font-black text-white mb-4 leading-tight drop-shadow-2xl">{{ featured.title }}</h1>
+                    <p class="text-xl text-slate-200 mb-8 font-light leading-relaxed drop-shadow-md">{{ featured.description }}</p>
+                    <div class="flex items-center gap-4">
+                        <button class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-none skew-x-[-10deg] shadow-lg shadow-blue-600/30 transition-all hover:-translate-y-1">
+                            <span class="block skew-x-[10deg]">{{ featured.action }} <span class="text-blue-200 ml-2">{{ featured.price }}</span></span>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- 2. CATEGORIES / FILTERS -->
+    <div class="max-w-[1920px] mx-auto px-8 mb-16">
+        <div class="flex items-center gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            <button class="px-6 py-2 rounded-full bg-white text-black font-bold whitespace-nowrap">Tout</button>
+            <button class="px-6 py-2 rounded-full bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-colors whitespace-nowrap">Meilleures Ventes</button>
+            <button class="px-6 py-2 rounded-full bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-colors whitespace-nowrap">Nouveautés</button>
+            <button class="px-6 py-2 rounded-full bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-colors whitespace-nowrap">Offres Spéciales</button>
+            <button class="px-6 py-2 rounded-full bg-white/5 text-slate-300 font-bold hover:bg-white/10 transition-colors whitespace-nowrap">Modules & Extensions</button>
+            <div class="h-8 w-[1px] bg-white/10 mx-2"></div>
+            <div class="relative flex-1 min-w-[300px]">
+                <input type="text" placeholder="Rechercher des applications, modules..."
+                    class="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-slate-200 focus:outline-none focus:bg-white/10 focus:border-white/20 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. DEALS OF THE WEEK -->
+    <section class="max-w-[1920px] mx-auto px-8 mb-16">
+        <h2 class="text-2xl font-black text-white mb-6 uppercase tracking-wider flex items-center gap-3">
+            <span class="text-yellow-500">⚡</span> Offres de la semaine
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            @if (hubService.isLoading()) {
+                @for (i of [1,2,3,4]; track i) {
+                    <div class="aspect-[16/9] bg-slate-900 rounded-lg animate-pulse"></div>
+                }
+            } @else {
+                @for (app of hubService.storeDeals(); track app.id) {
+                <div (click)="openAppDetails(app)" class="group cursor-pointer relative">
+                    <div class="relative aspect-[16/9] overflow-hidden rounded-lg mb-3 shadow-lg group-hover:shadow-yellow-500/10 transition-all duration-300 border border-white/5 group-hover:border-yellow-500/50">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                            [style.backgroundImage]="app.banner ? 'url(' + app.banner + ')' : ''"
+                            [class.bg-gradient-to-br]="!app.banner"
+                            [class.from-slate-800]="!app.banner"
+                            [class.to-slate-900]="!app.banner"></div>
+                        <div class="absolute top-2 right-2 bg-green-500 text-black text-xs font-black px-2 py-1 rounded skew-x-[-10deg] shadow-lg">{{ app.discount }}</div>
+                    </div>
+                    <h3 class="font-bold text-white text-lg group-hover:text-yellow-400 transition-colors truncate">{{ app.name }}</h3>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-slate-500 line-through text-sm">{{ app.oldPrice }}</span>
+                        <span class="text-white font-bold">{{ app.price }}</span>
+                    </div>
+                </div>
+                }
+            }
+        </div>
+    </section>
+
+    <!-- 4. NEW RELEASES -->
+    <section class="mb-16 bg-gradient-to-r from-slate-900 via-slate-900/50 to-transparent py-12 border-y border-white/5">
+        <div class="max-w-[1920px] mx-auto px-8">
+            <h2 class="text-2xl font-black text-white mb-8 uppercase tracking-wider">Nouveautés</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                @if (hubService.isLoading()) {
+                    @for (i of [1,2,3]; track i) {
+                        <div class="h-40 bg-slate-900/50 rounded-xl animate-pulse"></div>
+                    }
+                } @else {
+                    @for (app of hubService.storeNewReleases(); track app.id) {
+                    <div (click)="openAppDetails(app)"
+                        class="flex gap-4 group cursor-pointer hover:bg-white/5 p-4 rounded-xl transition-colors">
+                        <div class="w-32 aspect-[3/4] bg-slate-800 rounded-lg overflow-hidden shrink-0 shadow-xl border border-white/10 group-hover:border-white/30 transition-all relative">
+                            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                                [style.backgroundImage]="app.banner ? 'url(' + app.banner + ')' : ''"
+                                [class.bg-gradient-to-br]="!app.banner"
+                                [class.from-slate-700]="!app.banner"
+                                [class.to-slate-800]="!app.banner"></div>
+                        </div>
+                        <div class="flex flex-col justify-center flex-1">
+                            <h3 class="font-bold text-white text-xl mb-1 group-hover:text-blue-400 transition-colors">{{ app.name }}</h3>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-0.5 rounded bg-white/10 text-slate-300 text-[10px] font-bold border border-white/10 italic tracking-tighter uppercase">BASE APP</span>
+                                @if (app.hasDiscount) {
+                                    <span class="px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-black italic shadow-lg shadow-red-600/10">PROMO</span>
+                                }
+                            </div>
+                            <p class="text-slate-400 text-sm line-clamp-1 mb-3">{{ app.description }}</p>
+                            
+                            <div class="flex items-center gap-4">
+                                <div class="flex flex-col">
+                                    @if (app.hasDiscount) {
+                                        <span class="text-[10px] text-slate-500 line-through leading-none mb-1">{{ app.oldPrice }}</span>
+                                        <span class="text-lg font-black text-white leading-none">{{ app.price }}</span>
+                                    } @else {
+                                        <span class="text-lg font-black text-slate-300 leading-none">{{ app.base_price ? app.base_price.toFixed(2) + '€' : 'Gratuit' }}</span>
+                                    }
+                                </div>
+                                <button class="ml-auto px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-black text-white uppercase tracking-widest transition-all">Consulter</button>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. MODULES & EXTENSIONS -->
+    <section class="max-w-[1920px] mx-auto px-8 mb-20">
+        <h2 class="text-2xl font-black text-white mb-8 uppercase tracking-wider">Modules & Extensions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            @if (hubService.isLoading()) {
+                @for (i of [1,2,3,4]; track i) {
+                    <div class="h-32 bg-slate-900/50 rounded-xl animate-pulse"></div>
+                }
+            } @else {
+                @for (module of hubService.storeModules(); track module.id) {
+                    <app-module-card [module]="module" (clicked)="hubService.navigateToModuleApp(module)"></app-module-card>
+                }
+            }
+        </div>
+    </section>
+</div>

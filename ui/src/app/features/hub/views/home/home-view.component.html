@@ -1,0 +1,47 @@
+<div class="max-w-7xl mx-auto p-6 md:p-8 animate-in fade-in duration-500">
+
+    <!-- 1. HERO SECTION (Mise en avant) -->
+    <app-home-hero (featuredClicked)="openAppDetails($event)"></app-home-hero>
+
+    <!-- 2. Récemment Joués -->
+    <section class="mb-12">
+        <app-section-header 
+            title="Récemment Joués" 
+            borderClass="border-blue-600">
+        </app-section-header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            @for (app of hubService.recentApps(); track app.id) {
+                <app-app-card [app]="app" mode="grid"></app-app-card>
+            }
+        </div>
+    </section>
+
+    <!-- 3. Nouveaux Modules d'Extension -->
+    <section class="mb-12">
+        <app-section-header 
+            title="Nouveautés & Modules" 
+            borderClass="border-purple-500">
+        </app-section-header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @for (module of hubService.featuredModules(); track module.id) {
+                <app-module-card [module]="module" (clicked)="navigateToModuleApp(module)"></app-module-card>
+            }
+        </div>
+    </section>
+
+    <!-- 4. Nouveautés (Grid of 3) -->
+    <section class="mb-12 pb-10">
+        <app-section-header 
+            title="Nouveautés" 
+            borderClass="border-pink-500">
+        </app-section-header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            @for (app of hubService.storeNewReleases(); track app.id) {
+                <app-app-card [app]="app" mode="grid"></app-app-card>
+            }
+        </div>
+    </section>
+</div>
