@@ -60,9 +60,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: app-v__VERSION__ # tauri-action replaces \_\_VERSION\_\_ with the app version.
-          releaseName: "App v__VERSION__"
-          releaseBody: "See the assets below for installables."
+          tagName: v__VERSION__
+          releaseName: "EtherNanos Hub v__VERSION__"
+          releaseBody: "Automated release from GitHub Actions"
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: generate metadata snippet
+        shell: bash
+        run: |
+          mkdir -p bin/artifacts
+          # Map matrix platform to friendly OS name
+          PLATFORM="${{ matrix.platform }}"
+          OS_NAME="unknown"
+          if [[ "$PLATFORM" == *"windows"* ]]; then OS_NAME="windows";
+          elif [[ "$PLATFORM" == *"macos"* ]]; then OS_NAME="macos";
+          elif [[ "$PLATFORM" == *"ubuntu"* ]]; then OS_NAME="linux"; fi
+          
+          # Create a temporary json file for this platform's artifacts
+          echo "{\"os\": \"$OS_NAME\", \"platform\": \"$PLATFORM\"}" > bin/artifacts/os_info.json
+          
+      - name: upload metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metadata-${{ matrix.platform }}
+          path: bin/artifacts/os_info.json

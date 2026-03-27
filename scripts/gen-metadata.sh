@@ -33,23 +33,34 @@ echo "  \"artifacts\": [" >> "$METADATA_FILE"
 FIRST=true
 for file in "$RELEASE_DIR"/*; do
     FILENAME=$(basename "$file")
-    if [ "$FILENAME" != "metadata.json" ]; then
+    # Skip metadata files and the script itself
+    if [[ "$FILENAME" == "metadata.json" || "$FILENAME" == *.os_info.json ]]; then continue; fi
+    
+    if [ -f "$file" ]; then
         HASH=$(sha256sum "$file" | awk '{ print $1 }')
         
-        # Detect OS based on extension
-        EXTENSION="${FILENAME##*.}"
+        # Try to get OS from a sidecar .os_info.json if it exists
+        # This allows GitHub Actions to 'pass' the OS name to this script
         OS="unknown"
-        case "$EXTENSION" in
-            exe|msi) OS="windows" ;;
-            dmg|pkg) OS="macos" ;;
-            deb|AppImage|rpm) OS="linux" ;;
-            gz|zip) 
-                if [[ "$FILENAME" == *"linux"* ]]; then OS="linux"; 
-                elif [[ "$FILENAME" == *"win"* ]]; then OS="windows";
-                elif [[ "$FILENAME" == *"mac"* || "$FILENAME" == *"darwin"* ]]; then OS="macos";
-                fi
-                ;;
-        esac
+        if [ -f "$file.os_info.json" ] && command -v jq >/dev/null 2>&1; then
+            OS=$(jq -r '.os' "$file.os_info.json")
+        fi
+
+        # Fallback to extension detection if still unknown
+        if [ "$OS" == "unknown" ] || [ "$OS" == "null" ]; then
+            EXTENSION="${FILENAME##*.}"
+            case "$EXTENSION" in
+                exe|msi) OS="windows" ;;
+                dmg|pkg) OS="macos" ;;
+                deb|AppImage|rpm) OS="linux" ;;
+                gz|zip) 
+                    if [[ "$FILENAME" == *"linux"* ]]; then OS="linux"; 
+                    elif [[ "$FILENAME" == *"win"* ]]; then OS="windows";
+                    elif [[ "$FILENAME" == *"mac"* || "$FILENAME" == *"darwin"* ]]; then OS="macos";
+                    fi
+                    ;;
+            esac
+        fi
 
         if [ "$FIRST" = true ]; then
             FIRST=false
