@@ -11,6 +11,14 @@ if [ -z "$VERSION" ]; then
     exit 1
 fi
 
+# Update version in tauri.conf.json before building
+if command -v jq >/dev/null 2>&1; then
+    echo "📝 Updating version in tauri.conf.json to $VERSION..."
+    jq ".version = \"$VERSION\"" src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+else
+    echo "⚠️ Warning: jq not found. Version in tauri.conf.json remains unchanged."
+fi
+
 # Stop on error
 set -e
 
