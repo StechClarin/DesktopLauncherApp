@@ -48,8 +48,8 @@ jobs:
         run: cd ui && npm run build
         env:
           # Example of passing secrets to the build
-          # VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          # VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           # For public vars from .env, they should be added here too if not checked in
           VITE_HUB_VERSION: "1.0.0"
 
