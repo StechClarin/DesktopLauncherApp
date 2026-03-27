@@ -41,6 +41,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 
+      - name: install root dependencies
+        run: npm install
+
       - name: install frontend dependencies
         run: cd ui && npm install
 
