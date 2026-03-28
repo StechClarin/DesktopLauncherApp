@@ -32,11 +32,14 @@
                 <h3 class="font-bold text-white text-sm truncate group-hover:text-blue-400 transition-colors">
                     {{ app().name }}</h3>
                 <div class="flex items-center gap-2 mt-0.5">
-                    @if (app().status === 'installed' || hubService.isAppLicensed(app())) {
+                    @if (app().status === 'installed') {
                         <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                         <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Installé</span>
+                    } @else if (app().status === 'owned' || hubService.isAppLicensed(app())) {
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                        <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Débloqué</span>
                     } @else {
-                        <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
                         <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Disponible</span>
                     }
                 </div>

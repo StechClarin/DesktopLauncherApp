@@ -1,4 +1,4 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, inject, input, output, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -10,12 +10,36 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
   templateUrl: './hub-header.component.html',
   styleUrl: './hub-header.component.scss'
 })
-export class HubHeaderComponent {
+export class HubHeaderComponent implements OnInit {
   hubService = inject(HubService);
 
   // Inputs
   user = input<any>();
+  tenantName = input<string | null>();
   isSidebarOpen = input<boolean>(true);
+
+  isMaximized = signal(false);
+
+  async ngOnInit() {
+    try {
+      const appWindow = getCurrentWindow();
+      this.isMaximized.set(await appWindow.isMaximized());
+      
+      // Update when window is resized/maximized
+      await appWindow.onResized(async () => {
+        this.isMaximized.set(await appWindow.isMaximized());
+      });
+    } catch (e) {
+      console.warn('Failed to init window listeners', e);
+    }
+  }
+
+  initials = computed(() => {
+    const u = this.user();
+    if (this.tenantName()) return this.tenantName()?.substring(0, 2).toUpperCase();
+    if (u?.email) return u.email.substring(0, 2).toUpperCase();
+    return '??';
+  });
 
   // Outputs
   toggleSidebar = output<void>();
@@ -42,7 +66,13 @@ export class HubHeaderComponent {
   async maximizeWindow() {
     try {
       const appWindow = getCurrentWindow();
-      await appWindow.toggleMaximize();
+      if (await appWindow.isMaximized() || await appWindow.isFullscreen()) {
+        await appWindow.setFullscreen(false);
+        await appWindow.unmaximize();
+      } else {
+        await appWindow.maximize();
+      }
+      this.isMaximized.set(await appWindow.isMaximized());
     } catch (e) {
       console.warn('Tauri maximize failed', e);
     }

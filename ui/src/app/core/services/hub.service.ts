@@ -76,6 +76,7 @@ export class HubService {
     dbPass = signal<string>('');
     dbConfig = signal<DbConfig | null>(null);
     dbConfigStatus = signal<'checking' | 'connected' | 'error' | null>(null);
+    dbConfigError = signal<string | null>(null);
     isSyncing = signal<boolean>(false);
 
     // Tab Manager (EtherNanos OS)
@@ -131,6 +132,19 @@ export class HubService {
         }
     }
 
+    // Check if app is physically on disk
+    isAppOnDisk(appId: string): boolean {
+        const app = this.installedApps().find(a => a.id === appId) || 
+                    this.availableApps().find(a => a.id === appId);
+        return app?.status === 'installed';
+    }
+
+    isAppOwned(appId: string): boolean {
+        const app = this.installedApps().find(a => a.id === appId) || 
+                    this.availableApps().find(a => a.id === appId);
+        return app?.status === 'owned';
+    }
+
     private async refreshOnlineData() {
         const user = await this.supabase.client.auth.getUser();
         if (user.data.user) {
@@ -173,8 +187,10 @@ export class HubService {
         try {
             await invoke('save_db_config', { config: targetConfig });
             this.dbConfig.set(targetConfig);
+            this.toast.success('Configuration de la base de données sauvegardée !');
         } catch (e) {
             console.error('Failed to save DB config', e);
+            this.toast.error('Échec de la sauvegarde de la configuration.');
             throw e;
         }
     }
@@ -188,11 +204,28 @@ export class HubService {
         };
         try {
             this.dbConfigStatus.set('checking');
+            this.dbConfigError.set(null);
             const result = await invoke<string>('test_db_connection', { config: targetConfig });
             this.dbConfigStatus.set('connected');
+            this.toast.success('Connexion à la base de données établie !');
             return result;
         } catch (e: any) {
+            console.error('DB Connection Test Error:', e);
             this.dbConfigStatus.set('error');
+            
+            let friendlyMessage = 'Impossible de se connecter à la base de données.';
+            const errorStr = e.toString().toLowerCase();
+            
+            if (errorStr.includes('password authentication failed')) {
+                friendlyMessage = 'Utilisateur ou mot de passe PostgreSQL incorrect.';
+            } else if (errorStr.includes('connection refused') || errorStr.includes('is the server running')) {
+                friendlyMessage = 'Serveur PostgreSQL introuvable. Vérifiez qu\'il est bien lancé.';
+            } else if (errorStr.includes('timeout')) {
+                friendlyMessage = 'La connexion a expiré. Vérifiez votre réseau.';
+            }
+            
+            this.dbConfigError.set(friendlyMessage);
+            this.toast.error(friendlyMessage);
             throw e;
         }
     }
@@ -526,6 +559,15 @@ export class HubService {
         localStorage.setItem('hub-app-cache', JSON.stringify(data));
     }
 
+    async checkLocalInstallation(appId: string): Promise<boolean> {
+        try {
+            return await invoke<boolean>('is_app_installed', { appId });
+        } catch (e) {
+            console.error('Failed to check installation for', appId, e);
+            return false;
+        }
+    }
+
     private async loadHomeSections(tenantId: string) {
         if (this.isOffline()) {
             this.loadOfflineData();
@@ -567,21 +609,29 @@ export class HubService {
                     app.modules?.some((mod: any) => licensedModuleIds.has(mod.id))
                 );
 
-                this.installedApps.set(installed.map((a: any) => ({
-                    ...a,
-                    status: 'installed',
-                    icon: a.icon_svg || '',
-                    banner: a.banner_url || '',
-                    modules: a.modules || []
+                this.installedApps.set(await Promise.all(installed.map(async (a: any) => {
+                    const isPhysicallyInstalled = await this.checkLocalInstallation(a.id);
+                    return {
+                        ...a,
+                        status: isPhysicallyInstalled ? 'installed' : 'owned',
+                        icon: a.icon_svg || '',
+                        banner: a.banner_url || '',
+                        modules: a.modules || []
+                    };
                 })));
 
                 const installedIds = new Set(installed.map(a => a.id));
-                this.availableApps.set(allApps.map((a: any) => ({
-                    ...a,
-                    status: installedIds.has(a.id) ? 'installed' : 'available',
-                    icon: a.icon_svg || '',
-                    banner: a.banner_url || '',
-                    modules: a.modules || []
+                this.availableApps.set(await Promise.all(allApps.map(async (a: any) => {
+                    const isInstalled = installedIds.has(a.id);
+                    const isPhysicallyInstalled = isInstalled ? await this.checkLocalInstallation(a.id) : false;
+                    
+                    return {
+                        ...a,
+                        status: isInstalled ? (isPhysicallyInstalled ? 'installed' : 'owned') : 'available',
+                        icon: a.icon_svg || '',
+                        banner: a.banner_url || '',
+                        modules: a.modules || []
+                    };
                 })));
                 this.unlockedModuleIds.set(Array.from(licensedModuleIds));
                 this.saveCache();

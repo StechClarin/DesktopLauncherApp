@@ -13,6 +13,8 @@
         <!-- HEADER / TOPBAR -->
         <app-hub-header 
             [isSidebarOpen]="isSidebarOpen()"
+            [user]="user()"
+            [tenantName]="hubService.tenantName()"
             (toggleSidebar)="toggleSidebar()"
             (logout)="logOut()">
         </app-hub-header>

@@ -109,6 +109,24 @@ async fn get_app_manifest<R: Runtime>(
 }
 
 #[tauri::command]
+async fn is_app_installed<R: Runtime>(
+    app_handle: AppHandle<R>,
+    app_id: String,
+) -> Result<bool, String> {
+    let mut app_path = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    app_path.push("apps");
+    app_path.push(&app_id);
+    
+    // An app is considered installed if its directory exists and is NOT empty
+    if app_path.exists() && app_path.is_dir() {
+        let entries = fs::read_dir(app_path).map_err(|e| e.to_string())?;
+        return Ok(entries.count() > 0);
+    }
+    
+    Ok(false)
+}
+
+#[tauri::command]
 async fn download_app<R: Runtime>(
     app_handle: AppHandle<R>,
     window: Window<R>,
@@ -433,6 +451,7 @@ pub fn run() {
         test_db_connection,
         initialize_database,
         uninstall_app,
+        is_app_installed,
         get_app_manifest,
         update_hub
     ])

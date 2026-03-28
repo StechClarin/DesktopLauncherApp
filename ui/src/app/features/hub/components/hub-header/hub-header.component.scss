@@ -2,3 +2,7 @@
   display: block;
   z-index: 50;
 }
+
+.no-drag {
+  cursor: default;
+}

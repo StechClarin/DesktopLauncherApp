@@ -1,0 +1,16 @@
+{
+  "identifier": "allow-all-commands",
+  "description": "Allow all custom commands",
+  "commands": [
+    "download_app",
+    "execute_app",
+    "save_db_config",
+    "get_db_config",
+    "test_db_connection",
+    "initialize_database",
+    "uninstall_app",
+    "is_app_installed",
+    "get_app_manifest",
+    "update_hub"
+  ]
+}

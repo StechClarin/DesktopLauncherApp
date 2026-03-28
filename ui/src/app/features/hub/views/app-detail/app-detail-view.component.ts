@@ -53,4 +53,8 @@ export class AppDetailViewComponent {
   pushSync(appId: string) {
     this.hubService.pushSync(appId);
   }
+
+  openStoreItem(appId: string) {
+    this.hubService.openStoreItem(appId);
+  }
 }
