@@ -118,6 +118,10 @@ export class HubService {
         this.selectedApp.set(null); 
     }
 
+    clearHistoryItem(itemId: string) {
+        this.downloadHistory.update(history => history.filter(item => item.id !== itemId));
+    }
+
     toggleOfflineMode() {
         const newVal = !this.isOffline();
         this.isOffline.set(newVal);
@@ -660,11 +664,12 @@ export class HubService {
                 .from('app_releases')
                 .select('version, download_url, checksum')
                 .eq('app_id', appId)
-                .order('timestamp', { ascending: false })
+                .order('released_at', { ascending: false })
                 .limit(1)
                 .single();
 
             if (error || !release) {
+                console.error('Supabase error finding release:', error);
                 this.toast.error("Impossible de trouver la version pour cette application.");
                 this.downloadingAppId.set(null);
                 return;
@@ -976,7 +981,7 @@ export class HubService {
                 .from('app_releases')
                 .select('version, checksum')
                 .eq('app_id', hubAppId)
-                .order('timestamp', { ascending: false })
+                .order('released_at', { ascending: false })
                 .limit(1)
                 .single();
 
@@ -1006,7 +1011,7 @@ export class HubService {
                 .from('app_releases')
                 .select('download_url, checksum')
                 .eq('app_id', hubAppId)
-                .order('timestamp', { ascending: false })
+                .order('released_at', { ascending: false })
                 .limit(1)
                 .single();
 

@@ -31,11 +31,11 @@ export class AppDetailViewComponent {
   }
 
   installApp(app: any) {
-    this.hubService.installApp(app);
+    this.hubService.installApp(app.id);
   }
 
   uninstallApp(app: any) {
-    this.hubService.uninstallApp(app);
+    this.hubService.uninstallApp(app.id);
   }
 
   isInstalled(appId: string): boolean {
