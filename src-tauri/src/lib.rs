@@ -6,6 +6,9 @@ use futures_util::StreamExt;
 use flate2::read::GzDecoder;
 use tar::Archive;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::process::Child;
 
 #[derive(Clone, Serialize)]
 struct ProgressPayload {
@@ -21,10 +24,6 @@ struct DbConfig {
     pass: String,
 }
 
-use std::collections::HashMap;
-use std::sync::Mutex;
-use std::process::Child;
-
 struct ProcessManager {
     processes: Mutex<HashMap<String, Child>>,
 }
@@ -37,17 +36,117 @@ impl ProcessManager {
     }
 }
 
-/// MECANISME DE LANCEMENT D'APPLICATION (BADGE DE CONFIGURATION)
-/// ---------------------------------
-/// Lance l'application avec les paramètres de connexion à la base de données spécifique
-/// pour que l'application puisse afficher son propre écran de login (Pas de SSO automatique).
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AppManifest {
     name: String,
     version: String,
     port: u16,
     exec_command: Option<String>,
+}
+
+/// MECANISME DE LANCEMENT D'APPLICATION (ORCHESTRATEUR)
+/// ---------------------------------
+#[tauri::command]
+async fn execute_app<R: Runtime>(
+    app_handle: AppHandle<R>,
+    process_manager: tauri::State<'_, ProcessManager>,
+    _window: Window<R>,
+    app_id: String,
+    tenant_id: String,
+) -> Result<u16, String> {
+    let app_data_path = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
+    
+    // Read global DB config (host, port)
+    let config_path = app_data_path.join("db_config.json");
+    let global_config_json = fs::read_to_string(&config_path)
+        .map_err(|_| "Configuration de base de données globale manquante. Allez dans Settings.".to_string())?;
+    let global_config: DbConfig = serde_json::from_str(&global_config_json).map_err(|e| e.to_string())?;
+
+    let mut app_path = app_data_path.clone();
+    app_path.push("apps");
+    app_path.push(&app_id);
+
+    // Read application DB config (name, user, pass)
+    let app_db_path = app_path.join("db.json");
+    let app_db_json = fs::read_to_string(&app_db_path)
+        .map_err(|_| format!("Configuration de la base de données de l'application {} manquante.", app_id))?;
+    let app_db_creds: serde_json::Value = serde_json::from_str(&app_db_json).map_err(|e| e.to_string())?;
+
+    // Read application manifest
+    let manifest_path = app_path.join("ethernanos.json");
+    let manifest_json = fs::read_to_string(&manifest_path).map_err(|_| "Manifeste 'ethernanos.json' manquant.".to_string())?;
+    let manifest: AppManifest = serde_json::from_str(&manifest_json).map_err(|e| e.to_string())?;
+
+    // --- SCRIPT PERMISSIONS (Unix) ---
+    let exec_cmd = manifest.exec_command.unwrap_or_else(|| "./hub_start.sh".to_string());
+    
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let script_path = app_path.join(&exec_cmd);
+        if script_path.exists() {
+            let mut perms = fs::metadata(&script_path).map_err(|e| e.to_string())?.permissions();
+            perms.set_mode(0o755); // rwxr-xr-x
+            fs::set_permissions(&script_path, perms).map_err(|e| e.to_string())?;
+        }
+    }
+
+    // --- PORT HUNTING LOGIC ---
+    let mut actual_port = manifest.port;
+    let mut found = false;
+    for p in manifest.port..(manifest.port + 100) {
+        if std::net::TcpListener::bind(("127.0.0.1", p)).is_ok() {
+            actual_port = p;
+            found = true;
+            break;
+        }
+    }
+
+    if !found {
+        return Err(format!("Impossible de trouver un port libre pour {} (essayé de {} à {})", app_id, manifest.port, manifest.port + 99));
+    }
+
+    // Execution with Configuration Badge
+    let mut cmd = if cfg!(target_os = "windows") {
+        let mut c = Command::new("cmd");
+        c.arg("/C").arg(&exec_cmd);
+        c
+    } else {
+        let mut c = Command::new("sh");
+        c.arg("-c").arg(format!("./{}", exec_cmd));
+        c
+    };
+
+    let child = cmd
+        .current_dir(&app_path)
+        .arg("--tenant-id")
+        .arg(tenant_id)
+        .arg("--app-port")
+        .arg(actual_port.to_string())
+        .arg("--db-host")
+        .arg(&global_config.host)
+        .arg("--db-port")
+        .arg(global_config.port.to_string())
+        .arg("--db-name")
+        .arg(app_db_creds["db_name"].as_str().unwrap_or(""))
+        .arg("--db-user")
+        .arg(app_db_creds["db_user"].as_str().unwrap_or(""))
+        .arg("--db-pass")
+        .arg(app_db_creds["db_pass"].as_str().unwrap_or(""))
+        .spawn()
+        .map_err(|e| format!("Échec du lancement ({}): {}", exec_cmd, e))?;
+
+    // --- PROCESS REGISTRATION ---
+    let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
+    
+    // Kill previous instance if exists for this app_id
+    if let Some(mut old_child) = lock.remove(&app_id) {
+        let _ = old_child.kill();
+    }
+    
+    lock.insert(app_id, child);
+
+    Ok(actual_port)
 }
 
 #[tauri::command]
@@ -78,7 +177,6 @@ async fn is_app_installed<R: Runtime>(
     app_path.push("apps");
     app_path.push(&app_id);
     
-    // An app is considered installed if its directory exists and is NOT empty
     if app_path.exists() && app_path.is_dir() {
         let entries = fs::read_dir(app_path).map_err(|e| e.to_string())?;
         return Ok(entries.count() > 0);
@@ -102,7 +200,6 @@ async fn download_app<R: Runtime>(
     let mut downloaded: u64 = 0;
     let mut stream = response.bytes_stream();
 
-    // Directory for apps: ~/.ethernanos/apps/
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);
@@ -125,7 +222,6 @@ async fn download_app<R: Runtime>(
         }
     }
 
-    // --- CHECKSUM VERIFICATION ---
     if let Some(expected_checksum) = checksum {
         use sha2::{Sha256, Digest};
         let mut hasher = Sha256::new();
@@ -141,16 +237,13 @@ async fn download_app<R: Runtime>(
                 hash
             ));
         }
-        println!("Checksum verified for {}: {}", app_id, hash);
     }
 
-    // Extraction
     let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
     archive.unpack(&app_dir).map_err(|e| e.to_string())?;
 
-    // Cleanup
     fs::remove_file(temp_tar_gz).ok();
 
     Ok(format!("App {} installed and verified at {:?}", app_id, app_dir))
@@ -188,7 +281,6 @@ async fn update_hub<R: Runtime>(
         }
     }
 
-    // Checksum
     use sha2::{Sha256, Digest};
     let mut hasher = Sha256::new();
     let mut file_to_check = fs::File::open(&update_pack).map_err(|e| e.to_string())?;
@@ -249,7 +341,6 @@ async fn test_db_connection(config: DbConfig) -> Result<String, String> {
         .await
         .map_err(|e| format!("Erreur de connexion : {}", e))?;
 
-    // Simple query to verify
     sqlx::query("SELECT 1")
         .fetch_one(&pool)
         .await
@@ -266,7 +357,6 @@ async fn initialize_database<R: Runtime>(
 ) -> Result<String, String> {
     use sqlx::postgres::PgPoolOptions;
     
-    // 1. Connect to 'postgres' to create the new database
     let admin_url = format!(
         "postgres://{}:{}@{}:{}/postgres",
         config.user, config.pass, config.host, config.port
@@ -278,12 +368,10 @@ async fn initialize_database<R: Runtime>(
         .await
         .map_err(|e| format!("Erreur admin pool : {}", e))?;
 
-    // Normalize app_id for DB name (alphanumeric only)
     let db_name = format!("db_{}", app_id.replace("-", "_"));
     let app_user = format!("user_{}", app_id.replace("-", "_"));
-    let app_pass = uuid::Uuid::new_v4().to_string().replace("-", ""); // Secure random password
+    let app_pass = uuid::Uuid::new_v4().to_string().replace("-", ""); 
 
-    // Check if DB exists
     let exists: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM pg_database WHERE datname = $1")
         .bind(&db_name)
         .fetch_one(&admin_pool)
@@ -291,14 +379,12 @@ async fn initialize_database<R: Runtime>(
         .map_err(|e| e.to_string())?;
 
     if exists.0 == 0 {
-        // SQL Injection protection: we don't bind DB names in CREATE DATABASE, but we normalized it above.
         sqlx::query(&format!("CREATE DATABASE {}", db_name))
             .execute(&admin_pool)
             .await
             .map_err(|e| format!("Erreur création DB : {}", e))?;
     }
 
-    // 2. Connect to the NEW database to create the user and grants
     let new_db_url = format!(
         "postgres://{}:{}@{}:{}/{}",
         config.user, config.pass, config.host, config.port, db_name
@@ -310,25 +396,21 @@ async fn initialize_database<R: Runtime>(
         .await
         .map_err(|e| format!("Erreur new DB pool : {}", e))?;
 
-    // Create App User if not exists
     sqlx::query(&format!(
         "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = '{}') THEN CREATE USER {} WITH PASSWORD '{}'; END IF; END $$;",
         app_user, app_user, app_pass
     )).execute(&db_pool).await.map_err(|e| e.to_string())?;
 
-    // Grant permissions
     sqlx::query(&format!("GRANT ALL PRIVILEGES ON DATABASE {} TO {}", db_name, app_user))
         .execute(&db_pool)
         .await
         .map_err(|e| e.to_string())?;
 
-    // In a real app, we'd also grant schema permissions
     sqlx::query(&format!("GRANT ALL ON SCHEMA public TO {}", app_user))
         .execute(&db_pool)
         .await
         .map_err(|e| e.to_string())?;
 
-    // 3. Save the new isolated credentials locally for execute_app
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);
@@ -353,19 +435,16 @@ async fn uninstall_app<R: Runtime>(
 ) -> Result<String, String> {
     use sqlx::postgres::PgPoolOptions;
     
-    // 1. Path to app directory
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);
 
-    // 2. Read db_name from db.json if exists
     let db_json_path = app_dir.join("db.json");
     if db_json_path.exists() {
         let db_json_str = fs::read_to_string(&db_json_path).map_err(|e| e.to_string())?;
         let creds: serde_json::Value = serde_json::from_str(&db_json_str).map_err(|e| e.to_string())?;
         
         if let Some(db_name) = creds["db_name"].as_str() {
-            // Connect to 'postgres' to drop the database
             let admin_url = format!(
                 "postgres://{}:{}@{}:{}/postgres",
                 config.user, config.pass, config.host, config.port
@@ -377,22 +456,19 @@ async fn uninstall_app<R: Runtime>(
                 .await
                 .map_err(|e| format!("Erreur admin pool (Uninstallation) : {}", e))?;
 
-            // Drop Database (FORCE to disconnect users)
             sqlx::query(&format!("DROP DATABASE IF EXISTS {} WITH (FORCE)", db_name))
                 .execute(&admin_pool)
                 .await
                 .map_err(|e| format!("Erreur drop DB : {}", e))?;
                 
-            // Drop User if we want a COMPLETE wipe (optional but cleaner)
             let app_user = format!("user_{}", app_id.replace("-", "_"));
             sqlx::query(&format!("DROP USER IF EXISTS {}", app_user))
                 .execute(&admin_pool)
                 .await
-                .ok(); // Ignore if user is shared or doesn't exist
+                .ok(); 
         }
     }
 
-    // 3. Delete App Files
     if app_dir.exists() {
         fs::remove_dir_all(&app_dir).map_err(|e| e.to_string())?;
     }
@@ -400,6 +476,12 @@ async fn uninstall_app<R: Runtime>(
     Ok(format!("Application {} désinstallée proprement.", app_id))
 }
 
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+  tauri::Builder::default()
+    .plugin(tauri_plugin_fs::init())
+    .manage(ProcessManager::new())
+    .invoke_handler(tauri::generate_handler![
         download_app,
         execute_app,
         save_db_config,
