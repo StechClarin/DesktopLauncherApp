@@ -21,90 +21,26 @@ struct DbConfig {
     pass: String,
 }
 
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::process::Child;
+
+struct ProcessManager {
+    processes: Mutex<HashMap<String, Child>>,
+}
+
+impl ProcessManager {
+    fn new() -> Self {
+        Self {
+            processes: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
 /// MECANISME DE LANCEMENT D'APPLICATION (BADGE DE CONFIGURATION)
 /// ---------------------------------
 /// Lance l'application avec les paramètres de connexion à la base de données spécifique
 /// pour que l'application puisse afficher son propre écran de login (Pas de SSO automatique).
-#[tauri::command]
-async fn execute_app<R: Runtime>(
-    app_handle: AppHandle<R>,
-    _window: Window<R>,
-    app_id: String,
-    tenant_id: String,
-) -> Result<u16, String> {
-    let app_data_path = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
-    
-    // Read global DB config (host, port)
-    let config_path = app_data_path.join("db_config.json");
-    let global_config_json = fs::read_to_string(&config_path)
-        .map_err(|_| "Configuration de base de données globale manquante. Allez dans Settings.".to_string())?;
-    let global_config: DbConfig = serde_json::from_str(&global_config_json).map_err(|e| e.to_string())?;
-
-    let mut app_path = app_data_path.clone();
-    app_path.push("apps");
-    app_path.push(&app_id);
-
-    // Read application DB config (name, user, pass)
-    let app_db_path = app_path.join("db.json");
-    let app_db_json = fs::read_to_string(&app_db_path)
-        .map_err(|_| format!("Configuration de la base de données de l'application {} manquante.", app_id))?;
-    let app_db_creds: serde_json::Value = serde_json::from_str(&app_db_json).map_err(|e| e.to_string())?;
-
-    let exec_name = if cfg!(target_os = "windows") {
-        format!("{}.exe", app_id)
-    } else {
-        app_id.clone()
-    };
-    let full_exec_path = app_path.join(exec_name);
-
-    if !full_exec_path.exists() {
-        return Err(format!("Executable non trouvé à l'emplacement : {:?}", full_exec_path));
-    }
-
-    // Read application manifest (to get the base app port)
-    let manifest_path = app_path.join("ethernanos.json");
-    let manifest_json = fs::read_to_string(&manifest_path).map_err(|_| "Manifeste 'ethernanos.json' manquant.".to_string())?;
-    let manifest: AppManifest = serde_json::from_str(&manifest_json).map_err(|e| e.to_string())?;
-
-    // --- PORT HUNTING LOGIC ---
-    let mut actual_port = manifest.port;
-    let mut found = false;
-    
-    // Try to find a free port within a range of 100
-    for p in manifest.port..(manifest.port + 100) {
-        if std::net::TcpListener::bind(("127.0.0.1", p)).is_ok() {
-            actual_port = p;
-            found = true;
-            break;
-        }
-    }
-
-    if !found {
-        return Err(format!("Impossible de trouver un port libre pour {} (essayé de {} à {})", app_id, manifest.port, manifest.port + 99));
-    }
-
-    // Execution with Configuration Badge (No User Auth)
-    // We pass the EXPLICIT FREE PORT found to the application
-    Command::new(full_exec_path)
-        .arg("--tenant-id")
-        .arg(tenant_id)
-        .arg("--app-port")
-        .arg(actual_port.to_string())
-        .arg("--db-host")
-        .arg(&global_config.host)
-        .arg("--db-port")
-        .arg(global_config.port.to_string())
-        .arg("--db-name")
-        .arg(app_db_creds["db_name"].as_str().unwrap_or(""))
-        .arg("--db-user")
-        .arg(app_db_creds["db_user"].as_str().unwrap_or(""))
-        .arg("--db-pass")
-        .arg(app_db_creds["db_pass"].as_str().unwrap_or(""))
-        .spawn()
-        .map_err(|e| e.to_string())?;
-
-    Ok(actual_port)
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AppManifest {
@@ -464,11 +400,6 @@ async fn uninstall_app<R: Runtime>(
     Ok(format!("Application {} désinstallée proprement.", app_id))
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-  tauri::Builder::default()
-    .plugin(tauri_plugin_fs::init())
-    .invoke_handler(tauri::generate_handler![
         download_app,
         execute_app,
         save_db_config,
