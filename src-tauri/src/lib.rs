@@ -31,7 +31,7 @@ async fn execute_app<R: Runtime>(
     _window: Window<R>,
     app_id: String,
     tenant_id: String,
-) -> Result<String, String> {
+) -> Result<u16, String> {
     let app_data_path = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     
     // Read global DB config (host, port)
@@ -61,10 +61,35 @@ async fn execute_app<R: Runtime>(
         return Err(format!("Executable non trouvé à l'emplacement : {:?}", full_exec_path));
     }
 
+    // Read application manifest (to get the base app port)
+    let manifest_path = app_path.join("ethernanos.json");
+    let manifest_json = fs::read_to_string(&manifest_path).map_err(|_| "Manifeste 'ethernanos.json' manquant.".to_string())?;
+    let manifest: AppManifest = serde_json::from_str(&manifest_json).map_err(|e| e.to_string())?;
+
+    // --- PORT HUNTING LOGIC ---
+    let mut actual_port = manifest.port;
+    let mut found = false;
+    
+    // Try to find a free port within a range of 100
+    for p in manifest.port..(manifest.port + 100) {
+        if std::net::TcpListener::bind(("127.0.0.1", p)).is_ok() {
+            actual_port = p;
+            found = true;
+            break;
+        }
+    }
+
+    if !found {
+        return Err(format!("Impossible de trouver un port libre pour {} (essayé de {} à {})", app_id, manifest.port, manifest.port + 99));
+    }
+
     // Execution with Configuration Badge (No User Auth)
+    // We pass the EXPLICIT FREE PORT found to the application
     Command::new(full_exec_path)
         .arg("--tenant-id")
         .arg(tenant_id)
+        .arg("--app-port")
+        .arg(actual_port.to_string())
         .arg("--db-host")
         .arg(&global_config.host)
         .arg("--db-port")
@@ -78,7 +103,7 @@ async fn execute_app<R: Runtime>(
         .spawn()
         .map_err(|e| e.to_string())?;
 
-    Ok(format!("Application {} lancée avec succès.", app_id))
+    Ok(actual_port)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

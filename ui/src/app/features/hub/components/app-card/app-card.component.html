@@ -17,8 +17,11 @@
             <!-- Play Button Overlay -->
             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div (click)="launchApp($event, app())" 
+                     [class.bg-green-600]="hubService.runningAppIds().has(app().id)"
                      class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xl scale-75 group-hover:scale-100 transition-transform duration-300">
-                    <span class="material-symbols-outlined text-2xl font-black">play_arrow</span>
+                    <span class="material-symbols-outlined text-2xl font-black">
+                        {{ hubService.runningAppIds().has(app().id) ? 'visibility' : 'play_arrow' }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -68,10 +71,16 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <button (click)="launchApp($event, app())"
-                class="p-2 rounded-lg bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white transition-all active:scale-95 group/play shadow-lg hover:shadow-blue-600/20">
-                <span class="material-symbols-outlined text-xl">play_arrow</span>
-            </button>
+            @if (app().status === 'installed') {
+                <button (click)="launchApp($event, app())"
+                    [class.bg-green-600]="hubService.runningAppIds().has(app().id)"
+                    [class.text-white]="hubService.runningAppIds().has(app().id)"
+                    class="p-2 rounded-lg bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white transition-all active:scale-95 group/play shadow-lg hover:shadow-blue-600/20">
+                    <span class="material-symbols-outlined text-xl">
+                        {{ hubService.runningAppIds().has(app().id) ? 'visibility' : 'play_arrow' }}
+                    </span>
+                </button>
+            }
             <button (click)="$event.stopPropagation()" class="p-2 rounded-lg text-slate-500 hover:bg-white/10 hover:text-white transition-colors">
                 <span class="material-symbols-outlined text-xl">more_vert</span>
             </button>

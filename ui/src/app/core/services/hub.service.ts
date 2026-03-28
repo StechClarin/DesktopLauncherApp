@@ -83,6 +83,7 @@ export class HubService {
     activeTabs = signal<{id: string, name: string, url: string, isActive: boolean}[]>([]);
     appPorts = signal<Record<string, number>>({}); // Track which app is on which port
     isHubActive = computed(() => !this.activeTabs().some(t => t.isActive));
+    runningAppIds = computed(() => new Set(this.activeTabs().map(t => t.id)));
 
     openTab(appId: string, name: string, url: string) {
         this.activeTabs.update(tabs => {
@@ -743,32 +744,34 @@ export class HubService {
                 return;
             }
 
-            // 2. Read Manifest for Port & Command
-            this.toast.info(`Lecture du manifeste de ${app.name}...`);
-            const manifest = await invoke<any>('get_app_manifest', { appId: app.id });
-            const port = manifest.port || 8000;
-            
-            this.appPorts.update(p => ({ ...p, [app.id]: port }));
+            // 2. Check if already running
+            if (this.runningAppIds().has(app.id)) {
+                console.log(`App ${app.id} is already running, switching to tab.`);
+                this.openTab(app.id, app.name, ""); 
+                return;
+            }
 
             // 3. Execute the app
-            console.log(`Executing ${app.id} on port ${port}...`);
-            await invoke('execute_app', {
+            this.toast.info(`Démarrage de ${app.name}...`);
+            const actualPort = await invoke<number>('execute_app', {
                 appId: app.id,
                 tenantId: this.hubId()
             });
 
-            // 4. Wait for App to be READY before opening tab & potential sync
-            this.toast.info(`Démarrage de ${app.name} sur le port ${port}...`);
-            const isReady = await this.waitForAppReady(port);
+            this.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
+            console.log(`Application lancée sur le port dynamique : ${actualPort}`);
+
+            // 3. Wait for App to be READY before opening tab
+            const isReady = await this.waitForAppReady(actualPort);
             
             if (isReady) {
-                const localAppUrl = `http://127.0.0.1:${port}`;
+                const localAppUrl = `http://127.0.0.1:${actualPort}`;
                 this.openTab(app.id, app.name, localAppUrl);
                 
-                // Trigger initial sync if first launch (TODO: track first launch better)
+                // Trigger initial sync
                 this.pullSync(app.id); 
             } else {
-                throw new Error("L'application n'a pas répondu dans le délai imparti.");
+                throw new Error(`L'application sur le port ${actualPort} n'a pas répondu.`);
             }
 
         } catch (error) {

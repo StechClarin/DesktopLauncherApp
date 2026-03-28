@@ -34,15 +34,13 @@ import { HubService } from '../../../../../../core/services/hub.service';
                 <p class="text-slate-300 max-w-lg text-lg mb-8 line-clamp-2">{{ mostUsed.description }}</p>
 
                 <button (click)="launchApp($event, mostUsed)"
+                    [class.bg-blue-600]="hubService.runningAppIds().has(mostUsed.id)"
+                    [class.text-white]="hubService.runningAppIds().has(mostUsed.id)"
                     class="px-8 py-3 bg-white text-slate-950 font-bold rounded-xl hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Lancer maintenant
+                    <span class="material-symbols-outlined text-xl">
+                        {{ hubService.runningAppIds().has(mostUsed.id) ? 'visibility' : 'play_circle' }}
+                    </span>
+                    {{ hubService.runningAppIds().has(mostUsed.id) ? 'En cours...' : 'Lancer maintenant' }}
                 </button>
             </div>
         </div>
