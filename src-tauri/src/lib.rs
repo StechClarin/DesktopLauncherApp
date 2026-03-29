@@ -259,9 +259,6 @@ async fn download_app<R: Runtime>(
 
     let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
     let tar = GzDecoder::new(tar_gz);
-    let mut archive = Archive::new(tar);
-
-#[tauri::command]
 async fn update_hub<R: Runtime>(
     app_handle: AppHandle<R>,
     window: Window<R>,
