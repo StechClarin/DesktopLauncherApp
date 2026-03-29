@@ -56,7 +56,11 @@
                 } @else if (isInstalling(app.id)) {
                     <button class="px-8 py-3 rounded-xl bg-slate-800 text-slate-400 font-black cursor-wait flex items-center gap-3">
                         <div class="animate-spin h-5 w-5 border-2 border-slate-400 border-t-transparent rounded-full"></div>
-                        INSTALLATION...
+                        @if (hubService.installProgress() === 101) {
+                            INITIALISATION...
+                        } @else {
+                            INSTALLATION...
+                        }
                     </button>
                 } @else if (hubService.isAppOwned(app.id) || hubService.isAppLicensed(app)) {
                     <button (click)="installApp(app)"

@@ -336,7 +336,9 @@ export class HubService {
         const appId = this.downloadingAppId();
         if (!appId) return [];
         const app = this.enrichedApps().find(a => a.id === appId);
-        return app ? [{ ...app, status: 'installing', progress: this.installProgress() }] : [];
+        const progress = this.installProgress();
+        const status = progress === 101 ? 'initializing' : 'installing';
+        return app ? [{ ...app, status: status, progress }] : [];
     });
 
     recentApps = computed(() => {

@@ -260,12 +260,6 @@ async fn download_app<R: Runtime>(
     let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
-    archive.unpack(&app_dir).map_err(|e| e.to_string())?;
-
-    fs::remove_file(temp_tar_gz).ok();
-
-    Ok(format!("App {} installed and verified at {:?}", app_id, app_dir))
-}
 
 #[tauri::command]
 async fn update_hub<R: Runtime>(
