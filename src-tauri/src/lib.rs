@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::process::Child;
+use sha2::{Sha256, Digest};
 
 #[derive(Clone, Serialize)]
 struct ProgressPayload {
@@ -44,7 +45,9 @@ struct AppManifest {
     exec_command: Option<String>,
 }
 
-/// MECANISME DE LANCEMENT D'APPLICATION (ORCHESTRATEUR)
+const SHARED_SECRET: &str = "ETHERNANOS_SHIELD_2026_PROD_SECRET";
+
+/// MECANISME DE LANCEMENT D'APPLICATION (ORCHESTRATEUR SÉCURISÉ)
 /// ---------------------------------
 #[tauri::command]
 async fn execute_app<R: Runtime>(
@@ -106,7 +109,18 @@ async fn execute_app<R: Runtime>(
         return Err(format!("Impossible de trouver un port libre pour {} (essayé de {} à {})", app_id, manifest.port, manifest.port + 99));
     }
 
-    // Execution with Configuration Badge
+    // --- SECURITY HANDSHAKE (The Shield) ---
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    
+    let mut hasher = Sha256::new();
+    hasher.update(format!("{}:{}", timestamp, SHARED_SECRET));
+    let security_token = format!("{:x}", hasher.finalize());
+    let hub_pid = std::process::id();
+
+    // Preparation of the command
     let mut cmd = if cfg!(target_os = "windows") {
         let mut c = Command::new("cmd");
         c.arg("/C").arg(&exec_cmd);
@@ -117,8 +131,12 @@ async fn execute_app<R: Runtime>(
         c
     };
 
+    // Execution with Security Handshake and Configuration
     let child = cmd
         .current_dir(&app_path)
+        .env("ETHER_HUB_TOKEN", security_token)
+        .env("ETHER_HUB_TS", timestamp.to_string())
+        .env("ETHER_HUB_PID", hub_pid.to_string())
         .arg("--tenant-id")
         .arg(tenant_id)
         .arg("--app-port")
