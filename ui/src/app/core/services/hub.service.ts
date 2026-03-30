@@ -656,6 +656,11 @@ export class HubService {
         }
     }
 
+    private getOsKeyword(): string {
+        // Retourne la valeur de plateforme standard attendue en base de données
+        return navigator.userAgent.toLowerCase().includes('win') ? 'windows-latest' : 'ubuntu-latest';
+    }
+
     async installApp(appId: string) {
         if (this.downloadingAppId()) return;
 
@@ -667,6 +672,7 @@ export class HubService {
                 .from('app_releases')
                 .select('version, download_url, checksum')
                 .eq('app_id', appId)
+                .eq('platform', this.getOsKeyword())
                 .order('released_at', { ascending: false })
                 .limit(1)
                 .single();
@@ -1011,11 +1017,12 @@ export class HubService {
             this.isUpdatingHub.set(true);
             this.hubUpdateProgress.set(0);
 
-            // 1. Get latest release again to be sure
+            // 1. Get latest release again to be sure (Filtered by OS)
             const { data: release, error } = await this.supabase.client
                 .from('app_releases')
                 .select('download_url, checksum')
                 .eq('app_id', hubAppId)
+                .eq('platform', this.getOsKeyword())
                 .order('released_at', { ascending: false })
                 .limit(1)
                 .single();

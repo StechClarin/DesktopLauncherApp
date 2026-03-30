@@ -168,6 +168,23 @@ async fn execute_app<R: Runtime>(
 }
 
 #[tauri::command]
+async fn is_app_installed<R: Runtime>(
+    app_handle: AppHandle<R>,
+    app_id: String,
+) -> Result<bool, String> {
+    let mut app_path = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    app_path.push("apps");
+    app_path.push(&app_id);
+    
+    if app_path.exists() && app_path.is_dir() {
+        let entries = fs::read_dir(app_path).map_err(|e| e.to_string())?;
+        return Ok(entries.count() > 0);
+    }
+    
+    Ok(false)
+}
+
+#[tauri::command]
 async fn get_app_manifest<R: Runtime>(
     app_handle: AppHandle<R>,
     app_id: String,
@@ -184,23 +201,6 @@ async fn get_app_manifest<R: Runtime>(
     let json = fs::read_to_string(manifest_path).map_err(|e| e.to_string())?;
     let manifest: AppManifest = serde_json::from_str(&json).map_err(|e| e.to_string())?;
     Ok(manifest)
-}
-
-#[tauri::command]
-async fn is_app_installed<R: Runtime>(
-    app_handle: AppHandle<R>,
-    app_id: String,
-) -> Result<bool, String> {
-    let mut app_path = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
-    app_path.push("apps");
-    app_path.push(&app_id);
-    
-    if app_path.exists() && app_path.is_dir() {
-        let entries = fs::read_dir(app_path).map_err(|e| e.to_string())?;
-        return Ok(entries.count() > 0);
-    }
-    
-    Ok(false)
 }
 
 #[tauri::command]
@@ -259,6 +259,48 @@ async fn download_app<R: Runtime>(
 
     let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
     let tar = GzDecoder::new(tar_gz);
+    let mut archive = Archive::new(tar);
+    archive.unpack(&app_dir).map_err(|e| e.to_string())?;
+
+    fs::remove_file(temp_tar_gz).ok();
+
+    // 5. Native Initialization (Setup SQLite & Migrations)
+    // Signal 101 to UI means "Initializing..."
+    window.emit("download-progress", ProgressPayload { 
+        app_id: app_id.clone(), 
+        progress: 101 
+    }).map_err(|e: tauri::Error| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let exe_path = app_dir.join("schoolmanage.exe");
+    #[cfg(not(target_os = "windows"))]
+    let exe_path = app_dir.join("schoolmanage");
+
+    if exe_path.exists() {
+        use std::process::Command;
+        #[cfg(target_os = "windows")]
+        use std::os::windows::process::CommandExt;
+
+        let mut cmd = Command::new(&exe_path);
+        cmd.arg("--ether-setup");
+        cmd.current_dir(&app_dir);
+        
+        // On Windows, hide the console window for setup
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+        let mut child = cmd.spawn().map_err(|e| format!("Failed to launch setup: {}", e))?;
+        let status = child.wait().map_err(|e| format!("Setup wait failed: {}", e))?;
+        
+        if !status.success() {
+            return Err("Installation failed during database initialization (Setup Exit Error).".to_string());
+        }
+    }
+
+    Ok(format!("App {} installed and verified at {:?}", app_id, app_dir))
+}
+
+#[tauri::command]
 async fn update_hub<R: Runtime>(
     app_handle: AppHandle<R>,
     window: Window<R>,
