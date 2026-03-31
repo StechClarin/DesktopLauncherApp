@@ -76,7 +76,13 @@ async fn execute_app<R: Runtime>(
     let app_db_creds: serde_json::Value = serde_json::from_str(&app_db_json).map_err(|e| e.to_string())?;
 
     // Read application manifest
-    let manifest_path = app_path.join("ethernanos.json");
+    let mut manifest_path = app_path.join("ethernanos.json");
+    if !manifest_path.exists() {
+        let fallback = app_path.join("_internal").join("ethernanos.json");
+        if fallback.exists() {
+            std::fs::copy(&fallback, &manifest_path).unwrap_or_default();
+        }
+    }
     let manifest_json = fs::read_to_string(&manifest_path).map_err(|_| "Manifeste 'ethernanos.json' manquant.".to_string())?;
     let manifest: AppManifest = serde_json::from_str(&manifest_json).map_err(|e| e.to_string())?;
 
@@ -195,7 +201,16 @@ async fn get_app_manifest<R: Runtime>(
     manifest_path.push("ethernanos.json");
 
     if !manifest_path.exists() {
-        return Err(format!("Manifeste 'ethernanos.json' manquant pour {}", app_id));
+        let mut fallback = app_handle.path().app_data_dir().unwrap_or_default();
+        fallback.push("apps");
+        fallback.push(&app_id);
+        fallback.push("_internal");
+        fallback.push("ethernanos.json");
+        if fallback.exists() {
+            std::fs::copy(&fallback, &manifest_path).unwrap_or_default();
+        } else {
+            return Err(format!("Manifeste 'ethernanos.json' manquant pour {}", app_id));
+        }
     }
 
     let json = fs::read_to_string(manifest_path).map_err(|e| e.to_string())?;
