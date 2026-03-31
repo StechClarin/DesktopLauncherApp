@@ -76,7 +76,7 @@ async fn execute_app<R: Runtime>(
     let app_db_creds: serde_json::Value = serde_json::from_str(&app_db_json).map_err(|e| e.to_string())?;
 
     // Read application manifest
-    let mut manifest_path = app_path.join("ethernanos.json");
+    let manifest_path = app_path.join("ethernanos.json");
     if !manifest_path.exists() {
         let fallback = app_path.join("_internal").join("ethernanos.json");
         if fallback.exists() {
@@ -178,7 +178,7 @@ async fn is_app_installed<R: Runtime>(
     app_handle: AppHandle<R>,
     app_id: String,
 ) -> Result<bool, String> {
-    let mut app_path = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    let mut app_path = app_handle.path().app_data_dir().map_err(|e| format!("Impossible de localiser AppDataDir : {}", e))?;
     app_path.push("apps");
     app_path.push(&app_id);
     
@@ -227,7 +227,7 @@ async fn download_app<R: Runtime>(
     checksum: Option<String>,
 ) -> Result<String, String> {
     let client = reqwest::Client::new();
-    let response = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let response = client.get(&url).send().await.map_err(|e| format!("Échec du téléchargement réseau : {}", e))?;
     
     let total_size = response.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
@@ -236,10 +236,10 @@ async fn download_app<R: Runtime>(
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);
-    fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&app_dir).map_err(|e| format!("Impossible de créer le dossier de l'app : {}", e))?;
 
     let temp_tar_gz = app_dir.join("temp.tar.gz");
-    let mut file = fs::File::create(&temp_tar_gz).map_err(|e| e.to_string())?;
+    let mut file = fs::File::create(&temp_tar_gz).map_err(|e| format!("Impossible de créer l'archive temporaire : {}", e))?;
     
     while let Some(item) = stream.next().await {
         let chunk = item.map_err(|e| e.to_string())?;
@@ -272,10 +272,10 @@ async fn download_app<R: Runtime>(
         }
     }
 
-    let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
+    let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| format!("Impossible de rouvrir l'archive pour extraction : {}", e))?;
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
-    archive.unpack(&app_dir).map_err(|e| e.to_string())?;
+    archive.unpack(&app_dir).map_err(|e| format!("Le désarchivage du tar.gz a échoué (archive corrompue ?) : {}", e))?;
 
     fs::remove_file(temp_tar_gz).ok();
 
@@ -304,11 +304,12 @@ async fn download_app<R: Runtime>(
         #[cfg(target_os = "windows")]
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
-        let mut child = cmd.spawn().map_err(|e| format!("Failed to launch setup: {}", e))?;
-        let status = child.wait().map_err(|e| format!("Setup wait failed: {}", e))?;
+        let output = cmd.output().map_err(|e| format!("Failed to launch setup: {}", e))?;
         
-        if !status.success() {
-            return Err("Installation failed during database initialization (Setup Exit Error).".to_string());
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            return Err(format!("Installation failed during database initialization (Setup Exit Error).\n\nTrace Rust:\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
         }
     }
 
@@ -323,7 +324,7 @@ async fn update_hub<R: Runtime>(
     checksum: String,
 ) -> Result<String, String> {
     let client = reqwest::Client::new();
-    let response = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let response = client.get(&url).send().await.map_err(|e| format!("Échec du téléchargement de la mise à jour : {}", e))?;
     
     let total_size = response.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
@@ -331,14 +332,14 @@ async fn update_hub<R: Runtime>(
 
     let mut update_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     update_dir.push("pending_update");
-    fs::create_dir_all(&update_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&update_dir).map_err(|e| format!("Impossible de créer le dossier des mises à jour : {}", e))?;
 
     let update_pack = update_dir.join("update.tar.gz");
-    let mut file = fs::File::create(&update_pack).map_err(|e| e.to_string())?;
-    
+    let mut file = fs::File::create(&update_pack).map_err(|e| format!("Impossible d'enregistrer la nouvelle version du Hub : {}", e))?;
+
     while let Some(item) = stream.next().await {
-        let chunk = item.map_err(|e| e.to_string())?;
-        std::io::copy(&mut &*chunk, &mut file).map_err(|e| e.to_string())?;
+        let chunk = item.map_err(|e| format!("Erreur réseau (chunk) : {}", e))?;
+        std::io::copy(&mut &*chunk, &mut file).map_err(|e| format!("Erreur écriture (chunk) : {}", e))?;
         
         downloaded += chunk.len() as u64;
         if total_size > 0 {
@@ -442,7 +443,7 @@ async fn initialize_database<R: Runtime>(
         .bind(&db_name)
         .fetch_one(&admin_pool)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("Impossible de vérifier l'existence de la DB : {}", e))?;
 
     if exists.0 == 0 {
         sqlx::query(&format!("CREATE DATABASE {}", db_name))
@@ -465,22 +466,22 @@ async fn initialize_database<R: Runtime>(
     sqlx::query(&format!(
         "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = '{}') THEN CREATE USER {} WITH PASSWORD '{}'; END IF; END $$;",
         app_user, app_user, app_pass
-    )).execute(&db_pool).await.map_err(|e| e.to_string())?;
+    )).execute(&db_pool).await.map_err(|e| format!("Erreur lors de la création de l'utilisateur PostgreSQL : {}", e))?;
 
     sqlx::query(&format!("GRANT ALL PRIVILEGES ON DATABASE {} TO {}", db_name, app_user))
         .execute(&db_pool)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("Erreur lors de l'attribution des droits sur la DB : {}", e))?;
 
     sqlx::query(&format!("GRANT ALL ON SCHEMA public TO {}", app_user))
         .execute(&db_pool)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("Erreur lors de l'attribution des droits sur le schéma public : {}", e))?;
 
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);
-    fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&app_dir).map_err(|e| format!("Impossible de créer le dossier pour sauvegarder db.json : {}", e))?;
     
     let db_json_path = app_dir.join("db.json");
     let creds = serde_json::json!({
@@ -488,7 +489,7 @@ async fn initialize_database<R: Runtime>(
         "db_user": app_user,
         "db_pass": app_pass
     });
-    fs::write(db_json_path, serde_json::to_string(&creds).unwrap()).map_err(|e| e.to_string())?;
+    fs::write(db_json_path, serde_json::to_string(&creds).unwrap()).map_err(|e| format!("Impossible d'écrire db.json : {}", e))?;
 
     Ok(serde_json::to_string(&creds).unwrap())
 }
