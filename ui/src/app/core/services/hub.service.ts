@@ -788,16 +788,20 @@ export class HubService {
         }
     }
 
-    private async waitForAppReady(port: number, retries = 10): Promise<boolean> {
+    private async waitForAppReady(port: number, retries = 20): Promise<boolean> {
         for (let i = 0; i < retries; i++) {
             try {
+                console.log(`[Hub] Ping de l'application (Essai ${i + 1}/${retries})...`);
                 const response = await fetch(`http://127.0.0.1:${port}/api/external/ping/`, { 
                     method: 'GET',
                     headers: { 'X-Hub-Api-Key': (import.meta as any).env.VITE_HUB_API_KEY || 'ethernanos-hub-secret-2026' }
                 });
                 if (response.ok) return true;
+                if (response.status === 404) {
+                    console.warn(`[Hub] L'application sur port ${port} répond 404, l'URL de ping est incorrecte.`);
+                }
             } catch (e) {
-                // Not ready yet
+                // Not ready yet (connection refused or timeout)
             }
             await new Promise(resolve => setTimeout(resolve, 1500));
         }
