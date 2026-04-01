@@ -59,21 +59,27 @@ async fn execute_app<R: Runtime>(
 ) -> Result<u16, String> {
     let app_data_path = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     
-    // Read global DB config (host, port)
+    // Read global DB config (host, port) - Optional for SQLite mode
     let config_path = app_data_path.join("db_config.json");
-    let global_config_json = fs::read_to_string(&config_path)
-        .map_err(|_| "Configuration de base de données globale manquante. Allez dans Settings.".to_string())?;
-    let global_config: DbConfig = serde_json::from_str(&global_config_json).map_err(|e| e.to_string())?;
+    let global_config: Option<DbConfig> = if config_path.exists() {
+        let json = fs::read_to_string(&config_path).unwrap_or_default();
+        serde_json::from_str(&json).ok()
+    } else {
+        None
+    };
 
     let mut app_path = app_data_path.clone();
     app_path.push("apps");
     app_path.push(&app_id);
 
-    // Read application DB config (name, user, pass)
+    // Read application DB config (name, user, pass) - Optional for SQLite mode
     let app_db_path = app_path.join("db.json");
-    let app_db_json = fs::read_to_string(&app_db_path)
-        .map_err(|_| format!("Configuration de la base de données de l'application {} manquante.", app_id))?;
-    let app_db_creds: serde_json::Value = serde_json::from_str(&app_db_json).map_err(|e| e.to_string())?;
+    let app_db_creds: Option<serde_json::Value> = if app_db_path.exists() {
+        let json = fs::read_to_string(&app_db_path).unwrap_or_default();
+        serde_json::from_str(&json).ok()
+    } else {
+        None
+    };
 
     // Read application manifest
     let manifest_path = app_path.join("ethernanos.json");
@@ -138,26 +144,31 @@ async fn execute_app<R: Runtime>(
     };
 
     // Execution with Security Handshake and Configuration
-    let child = cmd
-        .current_dir(&app_path)
-        .env("ETHER_HUB_TOKEN", security_token)
+    let mut cmd = cmd.current_dir(&app_path);
+    cmd = cmd.env("ETHER_HUB_TOKEN", security_token)
         .env("ETHER_HUB_TS", timestamp.to_string())
         .env("ETHER_HUB_PID", hub_pid.to_string())
         .arg("--tenant-id")
         .arg(tenant_id)
         .arg("--app-port")
-        .arg(actual_port.to_string())
-        .arg("--db-host")
-        .arg(&global_config.host)
-        .arg("--db-port")
-        .arg(global_config.port.to_string())
-        .arg("--db-name")
-        .arg(app_db_creds["db_name"].as_str().unwrap_or(""))
-        .arg("--db-user")
-        .arg(app_db_creds["db_user"].as_str().unwrap_or(""))
-        .arg("--db-pass")
-        .arg(app_db_creds["db_pass"].as_str().unwrap_or(""))
-        .spawn()
+        .arg(actual_port.to_string());
+
+    // Add Database arguments ONLY if we have a configuration (Postgres Mode)
+    // Otherwise the app should default to internal SQLite
+    if let (Some(global), Some(app_creds)) = (global_config, app_db_creds) {
+        cmd = cmd.arg("--db-host")
+            .arg(&global.host)
+            .arg("--db-port")
+            .arg(global.port.to_string())
+            .arg("--db-name")
+            .arg(app_creds["db_name"].as_str().unwrap_or(""))
+            .arg("--db-user")
+            .arg(app_creds["db_user"].as_str().unwrap_or(""))
+            .arg("--db-pass")
+            .arg(app_creds["db_pass"].as_str().unwrap_or(""));
+    }
+
+    let child = cmd.spawn()
         .map_err(|e| format!("Échec du lancement ({}): {}", exec_cmd, e))?;
 
     // --- PROCESS REGISTRATION ---
