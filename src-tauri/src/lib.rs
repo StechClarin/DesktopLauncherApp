@@ -151,7 +151,10 @@ async fn execute_app<R: Runtime>(
         .arg("--tenant-id")
         .arg(tenant_id)
         .arg("--app-port")
-        .arg(actual_port.to_string());
+        .arg(actual_port.to_string())
+        // NEW: Forward logs to the Hub console for debugging
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit());
 
     // Add Database arguments ONLY if we have a configuration (Postgres Mode)
     // Otherwise the app should default to internal SQLite

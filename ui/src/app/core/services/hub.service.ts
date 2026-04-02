@@ -788,7 +788,7 @@ export class HubService {
         }
     }
 
-    private async waitForAppReady(port: number, retries = 20): Promise<boolean> {
+    private async waitForAppReady(port: number, retries = 30): Promise<boolean> {
         for (let i = 0; i < retries; i++) {
             try {
                 console.log(`[Hub] Ping de l'application (Essai ${i + 1}/${retries})...`);
@@ -803,7 +803,7 @@ export class HubService {
             } catch (e) {
                 // Not ready yet (connection refused or timeout)
             }
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
         return false;
     }
