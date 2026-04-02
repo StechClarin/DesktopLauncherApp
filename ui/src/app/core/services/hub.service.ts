@@ -776,8 +776,24 @@ export class HubService {
             this.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
             console.log(`Application lancée sur le port dynamique : ${actualPort}`);
 
-            // 3. Wait for App to be READY before opening tab
-            const isReady = await this.waitForAppReady(actualPort);
+            // --- REACTIVE v2.0 READY SIGNAL ---
+            // On attend que l'application nous dise "JE SUIS PRÊTE" au lieu de pinger
+            this.toast.info(`Initialisation de ${app.name}...`);
+            
+            const isReady = await new Promise<boolean>((resolve) => {
+                const timeout = setTimeout(() => {
+                    sub.unsubscribe();
+                    resolve(false);
+                }, 30000); // 30s Safety Timeout
+
+                const sub = this.terminal.ready$.subscribe(ready => {
+                    if (ready && ready.appId === app.id) {
+                        clearTimeout(timeout);
+                        sub.unsubscribe();
+                        resolve(true);
+                    }
+                });
+            });
             
             if (isReady) {
                 const localAppUrl = `http://127.0.0.1:${actualPort}`;
@@ -786,33 +802,13 @@ export class HubService {
                 // Trigger initial sync
                 this.pullSync(app.id); 
             } else {
-                throw new Error(`L'application sur le port ${actualPort} n'a pas répondu.`);
+                throw new Error(`L'application ${app.name} n'a pas envoyé de signal READY après 30s.`);
             }
 
         } catch (error) {
             console.error('Launch failed:', error);
             this.toast.error(`Erreur au lancement : ${error}`, 6000);
         }
-    }
-
-    private async waitForAppReady(port: number, retries = 30): Promise<boolean> {
-        for (let i = 0; i < retries; i++) {
-            try {
-                console.log(`[Hub] Ping de l'application (Essai ${i + 1}/${retries})...`);
-                const response = await fetch(`http://127.0.0.1:${port}/api/external/ping/`, { 
-                    method: 'GET',
-                    headers: { 'X-Hub-Api-Key': (import.meta as any).env.VITE_HUB_API_KEY || 'ethernanos-hub-secret-2026' }
-                });
-                if (response.ok) return true;
-                if (response.status === 404) {
-                    console.warn(`[Hub] L'application sur port ${port} répond 404, l'URL de ping est incorrecte.`);
-                }
-            } catch (e) {
-                // Not ready yet (connection refused or timeout)
-            }
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-        return false;
     }
 
     async pullSync(appId?: string) {

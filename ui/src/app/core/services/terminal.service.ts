@@ -20,13 +20,17 @@ export class TerminalService {
   private isOpenSubject = new BehaviorSubject<boolean>(false);
   public isOpen$ = this.isOpenSubject.asObservable();
 
+  private readySubject = new BehaviorSubject<{appId: string} | null>(null);
+  public ready$ = this.readySubject.asObservable();
+
   private activeAppId: string | null = null;
 
   constructor() {
-    this.initListener();
+    this.initListeners();
   }
 
-  private async initListener() {
+  private async initListeners() {
+    // 1. Listen for raw logs
     await listen<any>('app-log', (event) => {
       const payload = event.payload;
       const log: AppLog = {
@@ -43,14 +47,17 @@ export class TerminalService {
       const appLogs = this.logs.get(log.app_id)!;
       appLogs.push(log);
       
-      // Keep only last 500 lines
-      if (appLogs.length > 500) {
-        appLogs.shift();
-      }
+      if (appLogs.length > 500) appLogs.shift();
 
       if (log.app_id === this.activeAppId) {
         this.logsSubject.next([...appLogs]);
       }
+    });
+
+    // 2. Listen for the reactive READY signal (Industrial v2.0)
+    await listen<string>('app-ready', (event) => {
+      console.log(`[Terminal] Signal READY reçu pour l'application: ${event.payload}`);
+      this.readySubject.next({ appId: event.payload });
     });
   }
 

@@ -143,49 +143,66 @@ async fn execute_app<R: Runtime>(
         c
     };
 
-    // Execution with Security Handshake and Configuration
+    // GENERATE UNIQUE SESSION TOKEN (Industrial v2.0)
+    use sha2::Digest;
+    let session_msg = format!("{}:{}", hub_pid, timestamp);
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(session_msg.as_bytes());
+    let session_token = format!("{:x}", hasher.finalize());
+
     let mut cmd = cmd.current_dir(&app_path);
-    cmd = cmd.env("ETHER_HUB_TOKEN", security_token)
-        .env("ETHER_HUB_TS", timestamp.to_string())
+    cmd = cmd.env("ETHER_SESSION_TOKEN", &session_token)
         .env("ETHER_HUB_PID", hub_pid.to_string())
         .env("ETHER_HUB_API_KEY", "ethernanos-hub-secret-2026")
-        .arg("--tenant-id")
-        .arg(tenant_id)
-        .arg("--app-port")
-        .arg(actual_port.to_string())
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped());
-
-    // Add Database arguments ONLY if we have a configuration (Postgres Mode)
-    // Otherwise the app should default to internal SQLite
-    if let (Some(global), Some(app_creds)) = (global_config, app_db_creds) {
-        cmd = cmd.arg("--db-host")
-            .arg(&global.host)
-            .arg("--db-port")
-            .arg(global.port.to_string())
-            .arg("--db-name")
-            .arg(app_creds["db_name"].as_str().unwrap_or(""))
-            .arg("--db-user")
-            .arg(app_creds["db_user"].as_str().unwrap_or(""))
-            .arg("--db-pass")
-            .arg(app_creds["db_pass"].as_str().unwrap_or(""));
-    }
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::piped()); // Use stdin for sensitive config
 
     let mut child = cmd.spawn()
         .map_err(|e| format!("Échec du lancement ({}): {}", exec_cmd, e))?;
 
-    // --- LOG BROADCASTING TASK ---
+    // --- CONFIG INJECTION VIA STDIN ---
+    let mut stdin = child.stdin.take().expect("Failed to open stdin");
+    let config_payload = serde_json::json!({
+        "session_token": session_token,
+        "tenant_id": tenant_id,
+        "app_port": actual_port,
+        "db_config": match (&global_config, &app_db_creds) {
+            (Some(global), Some(app)) => Some(serde_json::json!({
+                "host": global.host,
+                "port": global.port,
+                "name": app["db_name"].as_str().unwrap_or(""),
+                "user": app["db_user"].as_str().unwrap_or(""),
+                "pass": app["db_pass"].as_str().unwrap_or("")
+            })),
+            _ => None
+        },
+        "hub_api_key": "ethernanos-hub-secret-2026"
+    });
+
+    use std::io::Write;
+    let config_str = serde_json::to_string(&config_payload).unwrap();
+    let _ = stdin.write_all(config_str.as_bytes());
+    let _ = stdin.write_all(b"\n");
+    drop(stdin); // Close stdin to signal config is sent
+
+    // --- LOG BROADCASTING & SIGNAL DETECTION ---
     let stdout = child.stdout.take().expect("Child did not have a handle to stdout");
     let stderr = child.stderr.take().expect("Child did not have a handle to stderr");
     let app_handle_clone = app_handle.clone();
     let app_id_clone = app_id.clone();
 
-    // Task for STDOUT
+    // Task for STDOUT (with Signal Detector)
     tokio::spawn(async move {
         use std::io::{BufRead, BufReader};
         let reader = BufReader::new(stdout);
         for line in reader.lines() {
             if let Ok(l) = line {
+                // DETECTOR: [HUB_SIGNAL:READY]
+                if l.contains("[HUB_SIGNAL:READY]") {
+                    let _ = app_handle_clone.emit("app-ready", &app_id_clone);
+                }
+
                 let _ = app_handle_clone.emit("app-log", serde_json::json!({
                     "app_id": app_id_clone,
                     "stream": "stdout",
