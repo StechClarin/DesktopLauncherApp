@@ -152,9 +152,8 @@ async fn execute_app<R: Runtime>(
         .arg(tenant_id)
         .arg("--app-port")
         .arg(actual_port.to_string())
-        // NEW: Forward logs to the Hub console for debugging
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
 
     // Add Database arguments ONLY if we have a configuration (Postgres Mode)
     // Otherwise the app should default to internal SQLite
@@ -171,8 +170,46 @@ async fn execute_app<R: Runtime>(
             .arg(app_creds["db_pass"].as_str().unwrap_or(""));
     }
 
-    let child = cmd.spawn()
+    let mut child = cmd.spawn()
         .map_err(|e| format!("Échec du lancement ({}): {}", exec_cmd, e))?;
+
+    // --- LOG BROADCASTING TASK ---
+    let stdout = child.stdout.take().expect("Child did not have a handle to stdout");
+    let stderr = child.stderr.take().expect("Child did not have a handle to stderr");
+    let app_handle_clone = app_handle.clone();
+    let app_id_clone = app_id.clone();
+
+    // Task for STDOUT
+    tokio::spawn(async move {
+        use std::io::{BufRead, BufReader};
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(l) = line {
+                let _ = app_handle_clone.emit("app-log", serde_json::json!({
+                    "app_id": app_id_clone,
+                    "stream": "stdout",
+                    "message": l
+                }));
+            }
+        }
+    });
+
+    // Task for STDERR
+    let app_handle_clone_err = app_handle.clone();
+    let app_id_clone_err = app_id.clone();
+    tokio::spawn(async move {
+        use std::io::{BufRead, BufReader};
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            if let Ok(l) = line {
+                let _ = app_handle_clone_err.emit("app-log", serde_json::json!({
+                    "app_id": app_id_clone_err,
+                    "stream": "stderr",
+                    "message": l
+                }));
+            }
+        }
+    });
 
     // --- PROCESS REGISTRATION ---
     let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;

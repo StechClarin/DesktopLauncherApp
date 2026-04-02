@@ -5,6 +5,7 @@ import { listen } from '@tauri-apps/api/event';
 import { BehaviorSubject } from 'rxjs';
 import { ToastService } from './toast.service';
 import { MOCK_APPS } from '../models/app-manifest.mock';
+import { TerminalService } from './terminal.service';
 
 export interface DbConfig {
     host: string;
@@ -27,6 +28,7 @@ export class HubService {
 
     private supabase = inject(SupabaseService);
     private toast = inject(ToastService);
+    private terminal = inject(TerminalService);
 
     constructor() {
         this.init();
@@ -743,6 +745,11 @@ export class HubService {
 
     async launchApp(app: any) {
         console.log(`Preparing launch for app: ${app.name}`);
+        
+        // Open debug console
+        this.terminal.setActiveApp(app.id);
+        this.terminal.clear(app.id);
+        this.terminal.open();
         
         try {
             // 1. Get current session data
