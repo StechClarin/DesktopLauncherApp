@@ -206,15 +206,16 @@ async fn get_app_manifest<R: Runtime>(
     app_handle: AppHandle<R>,
     app_id: String,
 ) -> Result<AppManifest, String> {
-    let mut manifest_path = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
-    manifest_path.push("apps");
-    manifest_path.push(&app_id);
-    manifest_path.push("ethernanos.json");
+    let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    let mut app_dir = app_data_dir.clone();
+    app_dir.push("apps");
+    app_dir.push(&app_id);
+
+    let manifest_path = app_dir.join("ethernanos.json");
 
     if !manifest_path.exists() {
-        let fallback = app_path.join("_internal").push("ethernanos.json");
-        // We already have app_path which is absolute, use it directly
-        let mut fallback_path = app_path.clone();
+        // We already have app_dir which is absolute, use it directly
+        let mut fallback_path = app_dir.clone();
         fallback_path.push("_internal");
         fallback_path.push("ethernanos.json");
         
