@@ -148,6 +148,7 @@ async fn execute_app<R: Runtime>(
     cmd = cmd.env("ETHER_HUB_TOKEN", security_token)
         .env("ETHER_HUB_TS", timestamp.to_string())
         .env("ETHER_HUB_PID", hub_pid.to_string())
+        .env("ETHER_HUB_API_KEY", "ethernanos-hub-secret-2026")
         .arg("--tenant-id")
         .arg(tenant_id)
         .arg("--app-port")
