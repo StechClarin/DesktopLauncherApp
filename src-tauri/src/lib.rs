@@ -212,15 +212,16 @@ async fn get_app_manifest<R: Runtime>(
     manifest_path.push("ethernanos.json");
 
     if !manifest_path.exists() {
-        let mut fallback = app_handle.path().app_data_dir().unwrap_or_default();
-        fallback.push("apps");
-        fallback.push(&app_id);
-        fallback.push("_internal");
-        fallback.push("ethernanos.json");
-        if fallback.exists() {
-            std::fs::copy(&fallback, &manifest_path).unwrap_or_default();
+        let fallback = app_path.join("_internal").push("ethernanos.json");
+        // We already have app_path which is absolute, use it directly
+        let mut fallback_path = app_path.clone();
+        fallback_path.push("_internal");
+        fallback_path.push("ethernanos.json");
+        
+        if fallback_path.exists() {
+            std::fs::copy(&fallback_path, &manifest_path).unwrap_or_default();
         } else {
-            return Err(format!("Manifeste 'ethernanos.json' manquant pour {}", app_id));
+            return Err(format!("Manifeste 'ethernanos.json' manquant pour {} (Tentative racine et _internal échouées)", app_id));
         }
     }
 
