@@ -21,11 +21,11 @@
         
         <!-- FIXED HUB TAB -->
         <div (click)="hubService.selectTab('hub')"
-            class="h-9 px-4 flex items-center gap-2 rounded-t-lg cursor-pointer transition-all duration-300 group relative shrink-0"
-            [class.bg-white/10]="hubService.isHubActive()"
-            [class.text-white]="hubService.isHubActive()"
-            [class.text-slate-500]="!hubService.isHubActive()"
-            [class.hover:bg-white/5]="!hubService.isHubActive()">
+            class="h-10 px-4 flex items-center gap-2 rounded-t-lg cursor-pointer transition-all duration-300 group relative shrink-0"
+            [ngClass]="{
+                'bg-white/10 text-white': hubService.isHubActive(),
+                'text-slate-500 hover:bg-white/5': !hubService.isHubActive()
+            }">
             <span class="material-symbols-outlined text-[18px]">grid_view</span>
             <span class="text-[11px] font-bold uppercase tracking-wider hidden lg:block">Hub</span>
             
@@ -41,13 +41,12 @@
         <!-- DYNAMIC APP TABS -->
         <div class="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar mask-fade-right">
             @for (tab of hubService.activeTabs(); track tab.id) {
-                <div class="h-9 min-w-[120px] max-w-[200px] px-3 flex items-center justify-between gap-2 rounded-t-lg cursor-pointer transition-all duration-300 group relative shrink-0 border-x border-t border-transparent"
-                    [class.bg-slate-800/80]="tab.isActive"
-                    [class.border-white/10]="tab.isActive"
-                    [class.text-white]="tab.isActive"
-                    [class.text-slate-500]="!tab.isActive"
-                    [class.hover:bg-white/5]="!tab.isActive"
-                    (click)="hubService.selectTab(tab.id)">
+                <div (click)="hubService.selectTab(tab.id)"
+                    class="h-10 min-w-[120px] max-w-[200px] px-3 flex items-center justify-between gap-2 rounded-t-lg cursor-pointer transition-all duration-300 group relative shrink-0 border-x border-t border-transparent"
+                    [ngClass]="{
+                        'bg-slate-800/80 border-white/10 text-white': tab.isActive,
+                        'text-slate-500 hover:bg-white/5': !tab.isActive
+                    }">
                     
                     <div class="flex items-center gap-2 truncate">
                         <div class="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center shrink-0">
@@ -82,12 +81,10 @@
                 {{ tenantName() || user()?.email || 'Invité' }}
             </span>
             
-            <!-- Context Menu (Simplified Logout) -->
+            <!-- Context Menu (Logout) -->
             <div class="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] p-1">
                 <button (click)="logOut()" class="w-full flex items-center gap-3 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
                     Déconnexion
                 </button>
             </div>

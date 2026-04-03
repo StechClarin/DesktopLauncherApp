@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::process::Child;
-use sha2::{Sha256, Digest};
+use sha2::Sha256;
 
 #[derive(Clone, Serialize)]
 struct ProgressPayload {
@@ -127,9 +127,9 @@ async fn execute_app<R: Runtime>(
         .unwrap()
         .as_secs();
     
-    let mut hasher = Sha256::new();
-    hasher.update(format!("{}:{}", timestamp, SHARED_SECRET));
-    let security_token = format!("{:x}", hasher.finalize());
+    let _ = Sha256::new()
+        .chain_update(format!("{}:{}", timestamp, SHARED_SECRET))
+        .finalize();
     let hub_pid = std::process::id();
 
     // Preparation of the command
