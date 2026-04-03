@@ -6,3 +6,15 @@
 .no-drag {
   cursor: default;
 }
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.mask-fade-right {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}

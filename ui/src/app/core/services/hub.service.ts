@@ -101,11 +101,28 @@ export class HubService {
         });
     }
 
-    closeTab(appId: string) {
-        this.activeTabs.update(tabs => tabs.filter(t => t.id !== appId));
-        // Si plus d'onglet actif, le Hub reprend le devant automatiquement via isHubActive
-        // Si l'onglet actif est fermé, on active le dernier onglet restant ou on retourne au Hub
-        /* TODO: Appeler Rust pour "kill" le process de cet appId */
+    async closeTab(appId: string) {
+        // 1. Kill the process in Rust
+        try {
+            await invoke('kill_app', { appId });
+        } catch (e) {
+            console.error('Failed to kill app process', e);
+        }
+
+        // 2. Remove from tabs and manage focus
+        this.activeTabs.update(tabs => {
+            const closingTab = tabs.find(t => t.id === appId);
+            const newTabs = tabs.filter(t => t.id !== appId);
+            
+            // If the closing tab was active, we need to pick a new one
+            if (closingTab?.isActive) {
+                if (newTabs.length > 0) {
+                    // Activate the last one
+                    newTabs[newTabs.length - 1].isActive = true;
+                }
+            }
+            return newTabs;
+        });
     }
 
     selectTab(appId: string | 'hub') {

@@ -10,7 +10,7 @@
     <!-- 2. MAIN CONTENT AREA -->
     <main class="flex-1 flex flex-col relative overflow-hidden">
         
-        <!-- HEADER / TOPBAR -->
+        <!-- 1. PERSISTENT HEADER / TOPBAR (Always Visible) -->
         <app-hub-header 
             [isSidebarOpen]="isSidebarOpen()"
             [user]="user()"
@@ -19,57 +19,43 @@
             (logout)="logOut()">
         </app-hub-header>
 
-        <!-- VIEW CONTAINER -->
-        <div class="flex-1 relative overflow-y-auto custom-scrollbar" 
-             [class.overflow-hidden]="hubService.selectedApp()">
+        <!-- 2. CONTENT AREA (Switchable) -->
+        <div class="flex-1 relative overflow-hidden bg-black/20">
             
-            <!-- BACKGROUND ELEMENTS (Immersive) -->
-            <div class="absolute inset-0 pointer-events-none">
-                <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
-                <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full"></div>
-            </div>
+            <!-- HUB CONTENT (Home, Library, Store, etc.) -->
+            <div class="absolute inset-0 overflow-y-auto custom-scrollbar" 
+                 [class.hidden]="!hubService.isHubActive()">
+                
+                <!-- BACKGROUND ELEMENTS (Immersive) -->
+                <div class="absolute inset-0 pointer-events-none">
+                    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
+                    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full"></div>
+                </div>
 
-            <!-- VIEW ROUTING (Simulated via activeTab) -->
-            @if (hubService.selectedApp()) {
-                <app-app-detail-view></app-app-detail-view>
-            } @else {
+                <!-- VIEW ROUTING -->
                 <div class="relative z-10 min-h-full">
-                    @switch (hubService.activeTab()) {
-                        @case ('home') {
-                            <app-home-view></app-home-view>
-                        }
-                        @case ('library') {
-                            <app-library-view></app-library-view>
-                        }
-                        @case ('store') {
-                            <app-store-view></app-store-view>
-                        }
-                        @case ('downloads') {
-                            <app-downloads-view></app-downloads-view>
-                        }
-                        @case ('settings') {
-                            <app-settings-view></app-settings-view>
+                    @if (hubService.selectedApp()) {
+                        <app-app-detail-view></app-app-detail-view>
+                    } @else {
+                        @switch (hubService.activeTab()) {
+                            @case ('home') { <app-home-view></app-home-view> }
+                            @case ('library') { <app-library-view></app-library-view> }
+                            @case ('store') { <app-store-view></app-store-view> }
+                            @case ('downloads') { <app-downloads-view></app-downloads-view> }
+                            @case ('settings') { <app-settings-view></app-settings-view> }
                         }
                     }
                 </div>
+            </div>
+
+            <!-- APP IFRAMES -->
+            @for (tab of hubService.activeTabs(); track tab.id) {
+                <div class="absolute inset-0 z-10 bg-black animate-in fade-in duration-500"
+                     [class.hidden]="!tab.isActive">
+                    <iframe [src]="getSafeUrl(tab.url)" class="w-full h-full border-none"></iframe>
+                </div>
             }
         </div>
-
-        <!-- APP LOADER OVERLAY (When an app is launched) -->
-        @if (!hubService.isHubActive()) {
-            @for (tab of hubService.activeTabs(); track tab.id) {
-                @if (tab.isActive) {
-                    <div class="absolute inset-0 z-[100] bg-black animate-in fade-in duration-500">
-                        <iframe [src]="getSafeUrl(tab.url)" class="w-full h-full border-none"></iframe>
-                        <!-- Floating Close Button for Apps -->
-                        <button (click)="hubService.closeTab(tab.id)" 
-                            class="absolute top-6 right-20 w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center hover:bg-red-500 transition-all shadow-2xl">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
-                    </div>
-                }
-            }
-        }
     </main>
 
     <!-- 3. IMMERSIVE APP DETAIL OVERLAY -->

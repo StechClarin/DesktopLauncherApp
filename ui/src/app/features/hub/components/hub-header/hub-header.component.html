@@ -16,17 +16,59 @@
         </button>
     </div>
 
-    <!-- Center: Navigation (Optional) / System Info -->
-    <div class="flex items-center gap-6 no-drag">
-        <!-- Hub Update Notification -->
-        @if (hubService.hasUpdate()) {
-            <button class="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 border border-blue-500/30 rounded-full hover:bg-blue-600/30 transition-all group no-drag animate-pulse"
-                title="Une mise à jour du Hub est disponible !">
-                <span class="material-symbols-outlined text-[16px] text-blue-400 group-hover:text-blue-300">system_update</span>
-                <span class="text-[10px] font-black text-blue-400 group-hover:text-blue-300 uppercase tracking-widest hidden md:block">Mise à jour disponible</span>
-                <div class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_#60a5fa] ml-1"></div>
-            </button>
-        }
+    <!-- Center: Browser-Style Tabs -->
+    <div class="flex-1 flex items-center h-full px-2 gap-1 overflow-hidden no-drag">
+        
+        <!-- FIXED HUB TAB -->
+        <div (click)="hubService.selectTab('hub')"
+            class="h-9 px-4 flex items-center gap-2 rounded-t-lg cursor-pointer transition-all duration-300 group relative shrink-0"
+            [class.bg-white/10]="hubService.isHubActive()"
+            [class.text-white]="hubService.isHubActive()"
+            [class.text-slate-500]="!hubService.isHubActive()"
+            [class.hover:bg-white/5]="!hubService.isHubActive()">
+            <span class="material-symbols-outlined text-[18px]">grid_view</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider hidden lg:block">Hub</span>
+            
+            <!-- Active Indicator Line -->
+            @if (hubService.isHubActive()) {
+                <div class="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]"></div>
+            }
+        </div>
+
+        <!-- DIVIDER -->
+        <div class="w-px h-4 bg-white/10 mx-1 shrink-0"></div>
+
+        <!-- DYNAMIC APP TABS -->
+        <div class="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar mask-fade-right">
+            @for (tab of hubService.activeTabs(); track tab.id) {
+                <div class="h-9 min-w-[120px] max-w-[200px] px-3 flex items-center justify-between gap-2 rounded-t-lg cursor-pointer transition-all duration-300 group relative shrink-0 border-x border-t border-transparent"
+                    [class.bg-slate-800/80]="tab.isActive"
+                    [class.border-white/10]="tab.isActive"
+                    [class.text-white]="tab.isActive"
+                    [class.text-slate-500]="!tab.isActive"
+                    [class.hover:bg-white/5]="!tab.isActive"
+                    (click)="hubService.selectTab(tab.id)">
+                    
+                    <div class="flex items-center gap-2 truncate">
+                        <div class="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-[14px] text-blue-400">rocket_launch</span>
+                        </div>
+                        <span class="text-[11px] font-medium truncate uppercase tracking-tight">{{ tab.name }}</span>
+                    </div>
+
+                    <!-- Close Button -->
+                    <button (click)="$event.stopPropagation(); hubService.closeTab(tab.id)"
+                        class="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-white/10 text-slate-400 hover:text-red-400 transition-all shrink-0">
+                        <span class="material-symbols-outlined text-[14px]">close</span>
+                    </button>
+
+                    <!-- Active Indicator Line -->
+                    @if (tab.isActive) {
+                        <div class="absolute bottom-0 left-1 right-1 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee]"></div>
+                    }
+                </div>
+            }
+        </div>
     </div>
 
     <!-- Right: System Controls -->

@@ -297,7 +297,13 @@ async fn download_app<R: Runtime>(
     url: String,
     checksum: Option<String>,
 ) -> Result<String, String> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .no_gzip()
+        .no_brotli()
+        .no_deflate()
+        .build()
+        .map_err(|e| format!("Échec création client réseau : {}", e))?;
+
     let response = client.get(&url).send().await.map_err(|e| format!("Échec du téléchargement réseau : {}", e))?;
     
     let total_size = response.content_length().unwrap_or(0);
@@ -394,7 +400,13 @@ async fn update_hub<R: Runtime>(
     url: String,
     checksum: String,
 ) -> Result<String, String> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .no_gzip()
+        .no_brotli()
+        .no_deflate()
+        .build()
+        .map_err(|e| format!("Échec création client réseau (Update) : {}", e))?;
+
     let response = client.get(&url).send().await.map_err(|e| format!("Échec du téléchargement de la mise à jour : {}", e))?;
     
     let total_size = response.content_length().unwrap_or(0);
@@ -614,6 +626,21 @@ async fn uninstall_app<R: Runtime>(
     Ok(format!("Application {} désinstallée proprement.", app_id))
 }
 
+#[tauri::command]
+async fn kill_app(
+    process_manager: tauri::State<'_, ProcessManager>,
+    app_id: String,
+) -> Result<bool, String> {
+    let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
+    
+    if let Some(mut child) = lock.remove(&app_id) {
+        let _ = child.kill();
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -622,6 +649,7 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
         download_app,
         execute_app,
+        kill_app,
         save_db_config,
         get_db_config,
         test_db_connection,
