@@ -529,10 +529,12 @@ export class HubService {
                         this.tenantName.set(tenant.name || 'Mon Établissement');
                         await this.loadHomeSections(tenant.id);
                         
-                        // Only check for updates if we have a valid Hub ID
                         if (tenant.hub_id) {
                             this.checkHubUpdate(tenant.hub_id);
                         }
+                        
+                        // SYNC: Persistence across reloads
+                        await this.syncActiveApps();
                     }
                 } catch (e) {
                     console.error("Initialization error for user:", e);
@@ -545,6 +547,30 @@ export class HubService {
                 this.isLoading.set(false);
             }
         });
+    }
+
+    async syncActiveApps() {
+        try {
+            const apps: any[] = await invoke('get_active_apps');
+            if (apps && apps.length > 0) {
+                this.activeTabs.update(tabs => {
+                    const newTabs = [...tabs];
+                    apps.forEach(app => {
+                        if (!newTabs.find(t => t.id === app.id)) {
+                            newTabs.push({ 
+                                id: app.id, 
+                                name: app.name, 
+                                url: `http://127.0.0.1:${app.port}`, 
+                                isActive: false 
+                            });
+                        }
+                    });
+                    return newTabs;
+                });
+            }
+        } catch (e) {
+            console.error('Failed to sync active apps', e);
+        }
     }
 
     private clearData() {

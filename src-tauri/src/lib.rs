@@ -25,8 +25,14 @@ struct DbConfig {
     pass: String,
 }
 
+struct ActiveApp {
+    child: Child,
+    name: String,
+    port: u16,
+}
+
 struct ProcessManager {
-    processes: Mutex<HashMap<String, Child>>,
+    processes: Mutex<HashMap<String, ActiveApp>>,
 }
 
 impl ProcessManager {
@@ -153,6 +159,7 @@ async fn execute_app<R: Runtime>(
     let mut cmd = cmd.current_dir(&app_path);
     cmd = cmd.env("ETHER_SESSION_TOKEN", &session_token)
         .env("ETHER_HUB_PID", hub_pid.to_string())
+        .env("ETHER_APP_PORT", actual_port.to_string())
         .env("ETHER_HUB_API_KEY", "ethernanos-hub-secret-2026")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -233,11 +240,22 @@ async fn execute_app<R: Runtime>(
     let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
     
     // Kill previous instance if exists for this app_id
-    if let Some(mut old_child) = lock.remove(&app_id) {
+    if let Some(old_app) = lock.remove(&app_id) {
+        let mut old_child = old_app.child;
         let _ = old_child.kill();
     }
     
-    lock.insert(app_id, child);
+    // Retrieve app name from manifest or metadata
+    let app_name = match get_app_manifest(app_handle, app_id.clone()).await {
+        Ok(m) => m.name,
+        Err(_) => "Application".to_string(),
+    };
+
+    lock.insert(app_id, ActiveApp { 
+        child, 
+        name: app_name, 
+        port: actual_port 
+    });
 
     Ok(actual_port)
 }
@@ -626,6 +644,31 @@ async fn uninstall_app<R: Runtime>(
     Ok(format!("Application {} désinstallée proprement.", app_id))
 }
 
+#[derive(Serialize)]
+struct ActiveAppResponse {
+    id: String,
+    name: String,
+    port: u16,
+}
+
+#[tauri::command]
+async fn get_active_apps(
+    process_manager: tauri::State<'_, ProcessManager>,
+) -> Result<Vec<ActiveAppResponse>, String> {
+    let lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
+    let mut apps = Vec::new();
+    
+    for (id, app) in lock.iter() {
+        apps.push(ActiveAppResponse {
+            id: id.clone(),
+            name: app.name.clone(),
+            port: app.port,
+        });
+    }
+    
+    Ok(apps)
+}
+
 #[tauri::command]
 async fn kill_app(
     process_manager: tauri::State<'_, ProcessManager>,
@@ -633,7 +676,8 @@ async fn kill_app(
 ) -> Result<bool, String> {
     let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
     
-    if let Some(mut child) = lock.remove(&app_id) {
+    if let Some(app) = lock.remove(&app_id) {
+        let mut child = app.child;
         let _ = child.kill();
         Ok(true)
     } else {
@@ -650,6 +694,7 @@ pub fn run() {
         download_app,
         execute_app,
         kill_app,
+        get_active_apps,
         save_db_config,
         get_db_config,
         test_db_connection,
