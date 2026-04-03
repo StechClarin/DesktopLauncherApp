@@ -236,6 +236,12 @@ async fn execute_app<R: Runtime>(
         }
     });
 
+    // Retrieve app name from manifest or metadata (Async, before lock)
+    let app_name = match get_app_manifest(app_handle, app_id.clone()).await {
+        Ok(m) => m.name,
+        Err(_) => "Application".to_string(),
+    };
+
     // --- PROCESS REGISTRATION ---
     let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
     
@@ -245,12 +251,6 @@ async fn execute_app<R: Runtime>(
         let _ = old_child.kill();
     }
     
-    // Retrieve app name from manifest or metadata
-    let app_name = match get_app_manifest(app_handle, app_id.clone()).await {
-        Ok(m) => m.name,
-        Err(_) => "Application".to_string(),
-    };
-
     lock.insert(app_id, ActiveApp { 
         child, 
         name: app_name, 
