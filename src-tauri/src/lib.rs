@@ -112,14 +112,20 @@ async fn execute_app<R: Runtime>(
         }
     }
 
-    // --- PORT HUNTING LOGIC ---
+    // --- PORT SHIELDING LOGIC (v3.5 Industrial) ---
     let mut actual_port = manifest.port;
     let mut found = false;
+    let mut _port_shield: Option<std::net::TcpListener> = None; // Keeping it in scope to lock the port
+
     for p in manifest.port..(manifest.port + 100) {
-        if std::net::TcpListener::bind(("127.0.0.1", p)).is_ok() {
-            actual_port = p;
-            found = true;
-            break;
+        match std::net::TcpListener::bind(("127.0.0.1", p)) {
+            Ok(listener) => {
+                actual_port = p;
+                found = true;
+                _port_shield = Some(listener); // We "hold" the port and keep it busy for others
+                break;
+            },
+            Err(_) => continue,
         }
     }
 
@@ -272,6 +278,8 @@ async fn execute_app<R: Runtime>(
         port: actual_port 
     });
 
+    // The _port_shield listener automatically drops here, releasing the port
+    // precisely when Python (Waitress) is ready to take it over.
     Ok(actual_port)
 }
 
@@ -388,69 +396,6 @@ async fn download_app<R: Runtime>(
     archive.unpack(&app_dir).map_err(|e| format!("Le désarchivage du tar.gz a échoué (archive corrompue ?) : {}", e))?;
 
     fs::remove_file(temp_tar_gz).ok();
-
-    // 5. Native Initialization (Setup SQLite & Migrations)
-    // Signal 101 to UI means "Initializing..."
-    window.emit("download-progress", ProgressPayload { 
-        app_id: app_id.clone(), 
-        progress: 101 
-    }).map_err(|e: tauri::Error| e.to_string())?;
-
-    #[cfg(target_os = "windows")]
-    let exe_path = app_dir.join("schoolmanage.exe");
-    #[cfg(not(target_os = "windows"))]
-    let exe_path = app_dir.join("schoolmanage");
-
-    if exe_path.exists() {
-        use std::process::{Command, Stdio};
-        use std::io::Write;
-        #[cfg(target_os = "windows")]
-        use std::os::windows::process::CommandExt;
-
-        let mut cmd = Command::new(&exe_path);
-        cmd.arg("--ether-setup");
-        cmd.current_dir(&app_dir);
-        cmd.stdin(Stdio::piped());
-        cmd.stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-        
-        #[cfg(target_os = "windows")]
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-
-        let mut child = cmd.spawn().map_err(|e| format!("Failed to launch setup: {}", e))?;
-        
-        // --- CONFIG INJECTION FOR SETUP ---
-        let mut stdin = child.stdin.take().expect("Failed to open setup stdin");
-        let global_config = get_db_config(app_handle.clone()).await.ok().flatten();
-        
-        // Minimal secure payload for setup
-        let config_payload = serde_json::json!({
-            "session_token": "installation-handshake-v2.7",
-            "db_config": match global_config {
-                Some(conf) => Some(serde_json::json!({
-                    "host": conf.host,
-                    "port": conf.port,
-                    "name": format!("db_{}", app_id.replace("-", "_")),
-                    "user": format!("user_{}", app_id.replace("-", "_")),
-                    "pass": "auto-generated-via-hub" // Placeholder during install
-                })),
-                None => None
-            },
-            "app_port": 8000 // Placeholder for setup
-        });
-
-        let config_str = format!("{}\n", serde_json::to_string(&config_payload).unwrap());
-        let _ = stdin.write_all(config_str.as_bytes());
-        drop(stdin); // Vital: ensure python reads EOF if it uses simpler read logic
-
-        let output = child.wait_with_output().map_err(|e| format!("Setup process error: {}", e))?;
-        
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            return Err(format!("Installation failed (Setup Exit Error).\n\nDetails:\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
-        }
-    }
 
     Ok(format!("App {} installed and verified at {:?}", app_id, app_dir))
 }
@@ -581,8 +526,7 @@ async fn initialize_database<R: Runtime>(
         .map_err(|e| format!("Erreur admin pool : {}", e))?;
 
     let db_name = format!("db_{}", app_id.replace("-", "_"));
-    let app_user = format!("user_{}", app_id.replace("-", "_"));
-    let app_pass = uuid::Uuid::new_v4().to_string().replace("-", ""); 
+    let db_user = "postgres"; // Forced as per industrial v3.4
 
     let exists: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM pg_database WHERE datname = $1")
         .bind(&db_name)
@@ -597,32 +541,6 @@ async fn initialize_database<R: Runtime>(
             .map_err(|e| format!("Erreur création DB : {}", e))?;
     }
 
-    let new_db_url = format!(
-        "postgres://{}:{}@{}:{}/{}",
-        config.user, config.pass, config.host, config.port, db_name
-    );
-    
-    let db_pool = PgPoolOptions::new()
-        .max_connections(1)
-        .connect(&new_db_url)
-        .await
-        .map_err(|e| format!("Erreur new DB pool : {}", e))?;
-
-    sqlx::query(&format!(
-        "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = '{}') THEN CREATE USER {} WITH PASSWORD '{}'; END IF; END $$;",
-        app_user, app_user, app_pass
-    )).execute(&db_pool).await.map_err(|e| format!("Erreur lors de la création de l'utilisateur PostgreSQL : {}", e))?;
-
-    sqlx::query(&format!("GRANT ALL PRIVILEGES ON DATABASE {} TO {}", db_name, app_user))
-        .execute(&db_pool)
-        .await
-        .map_err(|e| format!("Erreur lors de l'attribution des droits sur la DB : {}", e))?;
-
-    sqlx::query(&format!("GRANT ALL ON SCHEMA public TO {}", app_user))
-        .execute(&db_pool)
-        .await
-        .map_err(|e| format!("Erreur lors de l'attribution des droits sur le schéma public : {}", e))?;
-
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);
@@ -631,12 +549,87 @@ async fn initialize_database<R: Runtime>(
     let db_json_path = app_dir.join("db.json");
     let creds = serde_json::json!({
         "db_name": db_name,
-        "db_user": app_user,
-        "db_pass": app_pass
+        "db_user": db_user,
+        "db_pass": config.pass // Reuse global password
     });
     fs::write(db_json_path, serde_json::to_string(&creds).unwrap()).map_err(|e| format!("Impossible d'écrire db.json : {}", e))?;
 
     Ok(serde_json::to_string(&creds).unwrap())
+}
+
+#[tauri::command]
+async fn run_app_setup<R: Runtime>(
+    app_handle: AppHandle<R>,
+    app_id: String,
+    tenant_id: String,
+    config: DbConfig
+) -> Result<String, String> {
+    let app_data_path = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut app_path = app_data_path.clone();
+    app_path.push("apps");
+    app_path.push(&app_id);
+
+    #[cfg(target_os = "windows")]
+    let exe_path = app_path.join("schoolmanage.exe");
+    #[cfg(not(target_os = "windows"))]
+    let exe_path = app_path.join("schoolmanage");
+
+    if !exe_path.exists() {
+        return Err("Exécutable introuvable pour le setup.".into());
+    }
+
+    use std::process::Stdio;
+    use std::io::Write;
+    #[cfg(target_os = "windows")]
+    use std::os::windows::process::CommandExt;
+
+    let mut cmd = Command::new(&exe_path);
+    cmd.arg("--ether-setup");
+    cmd.current_dir(&app_path);
+    cmd.stdin(Stdio::piped());
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+    
+    // Handshake Security v3.4
+    let hub_pid = std::process::id();
+    cmd.env("ETHER_HUB_PID", hub_pid.to_string())
+       .env("ETHER_SESSION_TOKEN", "setup-handshake-v3.4")
+       .env("ETHER_HUB_API_KEY", "ethernanos-hub-secret-2026");
+    
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to launch setup: {}", e))?;
+    
+    // Config Injection
+    let mut stdin = child.stdin.take().expect("Failed to open setup stdin");
+    let db_name = format!("db_{}", app_id.replace("-", "_"));
+    
+    let config_payload = serde_json::json!({
+        "session_token": "setup-handshake-v3.4",
+        "tenant_id": tenant_id,
+        "db_config": {
+            "host": config.host,
+            "port": config.port,
+            "name": db_name,
+            "user": "postgres",
+            "pass": config.pass
+        }
+    });
+
+    let config_str = format!("{}\n", serde_json::to_string(&config_payload).unwrap());
+    let _ = stdin.write_all(config_str.as_bytes());
+    drop(stdin); 
+
+    let output = child.wait_with_output().map_err(|e| format!("Setup process error: {}", e))?;
+    
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(format!("Installation failed (Setup Error).\n\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
+    }
+
+    Ok("Setup completed successfully.".into())
 }
 
 #[tauri::command]
@@ -743,6 +736,7 @@ pub fn run() {
         get_db_config,
         test_db_connection,
         initialize_database,
+        run_app_setup,
         uninstall_app,
         is_app_installed,
         get_app_manifest,

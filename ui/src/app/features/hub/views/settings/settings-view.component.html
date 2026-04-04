@@ -60,10 +60,10 @@
                         </div>
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Utilisateur SuperAdmin</label>
+                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Utilisateur SuperAdmin PostgreSQL</label>
                         <div class="relative group">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">admin_panel_settings</span>
-                            <input type="text" [ngModel]="dbUser()" (ngModelChange)="dbUser.set($event)" class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-medium focus:outline-none focus:border-emerald-500/30 transition-all placeholder:text-slate-700">
+                            <input type="text" [ngModel]="dbUser()" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-slate-500 font-medium cursor-not-allowed" readonly>
                         </div>
                     </div>
                     <div class="space-y-2">

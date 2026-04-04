@@ -79,7 +79,7 @@ export class HubService {
     // DB Configuration
     dbHost = signal<string>('127.0.0.1');
     dbPort = signal<number>(5432);
-    dbUser = signal<string>('postgres');
+    dbUser = signal<string>('postgres'); // Forced for Industrial v3.4
     dbPass = signal<string>('');
     dbConfig = signal<DbConfig | null>(null);
     dbConfigStatus = signal<'checking' | 'connected' | 'error' | null>(null);
@@ -736,32 +736,42 @@ export class HubService {
 
             console.log(`Starting real download for ${appId} from ${release.download_url}`);
             try {
-                // Phase 1 & 2: Download & Extract
+                // Phase 1: Download & Extract
+                this.toast.info(`Étape 1/3 : Téléchargement et extraction de ${appId}...`);
                 await invoke('download_app', { 
                     appId: appId, 
                     url: release.download_url,
                     checksum: release.checksum
                 });
                 
-                // Phase 3: Initialize Database
                 const config = this.dbConfig();
                 if (config) {
-                    console.log(`Initializing database for ${appId}`);
+                    // Phase 2: Create Infrastructure (Database ONLY)
+                    this.installProgress.set(101); // Special visual state
+                    this.toast.info(`Étape 2/3 : Création de l'infrastructure SQL pour ${appId}...`);
                     await invoke('initialize_database', {
                         config: config,
                         appId: appId
                     });
                     
-                    // Phase 4: Wait for app to be launched and ready before syncing
-                    this.toast.info(`Installation de ${appId} terminée. En attente du premier lancement pour synchronisation...`);
+                    // Phase 3: Initialize Application (Migrations & Seeds)
+                    this.installProgress.set(102); // Special visual state
+                    this.toast.info(`Étape 3/3 : Initialisation et configuration finale de ${appId}...`);
+                    await invoke('run_app_setup', {
+                        appId: appId,
+                        tenantId: this.hubId(),
+                        config: config
+                    });
+                    
+                    this.toast.success(`Installation de ${appId} terminée avec succès !`);
                 } else {
-                    console.warn(`No DB config found, skipping database initialization for ${appId}`);
+                    this.toast.info(`Note : Aucune configuration base de données trouvée. L'application pourrait ne pas fonctionner.`);
                 }
                 
                 this.finalizeInstallation(appId, release.version);
             } catch (err) {
-                console.error("Installation error:", err);
-                this.toast.error(`Erreur d'installation : ${err}`, 6000);
+                console.error("Installation sequence error:", err);
+                this.toast.error(`Échec de l'installation : ${err}`, 8000);
                 this.downloadingAppId.set(null);
             }
         } catch (e) {
