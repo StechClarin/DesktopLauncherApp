@@ -175,13 +175,28 @@ async fn execute_app<R: Runtime>(
         "tenant_id": tenant_id,
         "app_port": actual_port,
         "db_config": match (&global_config, &app_db_creds) {
-            (Some(global), Some(app)) => Some(serde_json::json!({
-                "host": global.host,
-                "port": global.port,
-                "name": app["db_name"].as_str().unwrap_or(""),
-                "user": app["db_user"].as_str().unwrap_or(""),
-                "pass": app["db_pass"].as_str().unwrap_or("")
-            })),
+            (Some(global), _) => {
+                // Determine database name: use app specific name if available, else fallback to safe app_id name
+                let db_name = match app_db_creds {
+                    Some(ref app) => app["db_name"].as_str().unwrap_or(&format!("db_{}", app_id.replace("-", "_"))).to_string(),
+                    None => format!("db_{}", app_id.replace("-", "_"))
+                };
+                let db_user = match app_db_creds {
+                    Some(ref app) => app["db_user"].as_str().unwrap_or(&format!("user_{}", app_id.replace("-", "_"))).to_string(),
+                    None => format!("user_{}", app_id.replace("-", "_"))
+                };
+                
+                Some(serde_json::json!({
+                    "host": global.host,
+                    "port": global.port,
+                    "name": db_name,
+                    "user": db_user,
+                    "pass": match app_db_creds {
+                        Some(ref app) => app["db_pass"].as_str().unwrap_or(""),
+                        None => ""
+                    }
+                }))
+            },
             _ => None
         },
         "hub_api_key": "ethernanos-hub-secret-2026"
