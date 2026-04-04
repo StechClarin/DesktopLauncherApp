@@ -911,7 +911,8 @@ export class HubService {
         this.isSyncing.set(true);
         this.toast.info(`Préparation de l'envoi vers le Cloud (Port ${port})...`);
         try {
-            const apiKey = (import.meta as any).env.VITE_HUB_API_KEY || 'ethernanos-hub-secret-2026';
+            const meta = import.meta as any;
+            const apiKey = (meta.env && meta.env.VITE_HUB_API_KEY) || 'ethernanos-hub-secret-2026';
             const cloudApiUrl = (import.meta as any).env.VITE_CLOUD_API_URL || 'http://127.0.0.1:8000';
 
             // 1. Fetch Deltas from LOCAL

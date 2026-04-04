@@ -387,24 +387,53 @@ async fn download_app<R: Runtime>(
     let exe_path = app_dir.join("schoolmanage");
 
     if exe_path.exists() {
-        use std::process::Command;
+        use std::process::{Command, Stdio};
+        use std::io::Write;
         #[cfg(target_os = "windows")]
         use std::os::windows::process::CommandExt;
 
         let mut cmd = Command::new(&exe_path);
         cmd.arg("--ether-setup");
         cmd.current_dir(&app_dir);
+        cmd.stdin(Stdio::piped());
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
         
-        // On Windows, hide the console window for setup
         #[cfg(target_os = "windows")]
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
-        let output = cmd.output().map_err(|e| format!("Failed to launch setup: {}", e))?;
+        let mut child = cmd.spawn().map_err(|e| format!("Failed to launch setup: {}", e))?;
+        
+        // --- CONFIG INJECTION FOR SETUP ---
+        let mut stdin = child.stdin.take().expect("Failed to open setup stdin");
+        let global_config = get_db_config(app_handle.clone()).await.ok();
+        
+        // Minimal secure payload for setup
+        let config_payload = serde_json::json!({
+            "session_token": "installation-handshake-v2.7",
+            "db_config": match global_config {
+                Some(conf) => Some(serde_json::json!({
+                    "host": conf.host,
+                    "port": conf.port,
+                    "name": format!("db_{}", app_id.replace("-", "_")),
+                    "user": format!("user_{}", app_id.replace("-", "_")),
+                    "pass": "auto-generated-via-hub" // Placeholder during install
+                })),
+                None => None
+            },
+            "app_port": 8000 // Placeholder for setup
+        });
+
+        let config_str = format!("{}\n", serde_json::to_string(&config_payload).unwrap());
+        let _ = stdin.write_all(config_str.as_bytes());
+        drop(stdin); // Vital: ensure python reads EOF if it uses simpler read logic
+
+        let output = child.wait_with_output().map_err(|e| format!("Setup process error: {}", e))?;
         
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            return Err(format!("Installation failed during database initialization (Setup Exit Error).\n\nTrace Rust:\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
+            return Err(format!("Installation failed (Setup Exit Error).\n\nDetails:\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
         }
     }
 
