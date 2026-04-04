@@ -11,10 +11,11 @@ export class SupabaseService {
   private _currentUser = new BehaviorSubject<User | null | undefined>(undefined);
 
   constructor() {
-    // Use environment variables with fallbacks for stability
-    const metaEnv = (import.meta as any).env || {};
-    const supabaseUrl = metaEnv['VITE_SUPABASE_URL'] || 'https://tskaatmquckvuvamymcx.supabase.co';
-    const supabaseKey = metaEnv['VITE_SUPABASE_ANON_KEY'] || 'sb_publishable_7EySw7dL-ZndQLvZ0MNoeQ_Ee36OzxT';
+    // Use environment variables with fallbacks
+    const meta = import.meta as any;
+    const metaEnv = meta.env || {};
+    const supabaseUrl = metaEnv.VITE_SUPABASE_URL || 'https://tskaatmquckvuvamymcx.supabase.co';
+    const supabaseKey = metaEnv.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7EySw7dL-ZndQLvZ0MNoeQ_Ee36OzxT';
     
     this.supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {

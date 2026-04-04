@@ -21,7 +21,12 @@ export class HubService {
     activeReleases = signal<any[]>([]);
     
     // Hub Self-Update Signals
-    currentHubVersion = signal<string>((import.meta as any).env?.['VITE_HUB_VERSION'] || '1.0.0');
+    private getMetaEnv(key: string, defaultValue: any): any {
+        const meta = import.meta as any;
+        return (meta.env && meta.env[key]) || defaultValue;
+    }
+    
+    currentHubVersion = signal<string>(this.getMetaEnv('VITE_HUB_VERSION', '1.0.0'));
     latestHubVersion = signal<string | null>(null);
     hasUpdate = computed(() => this.latestHubVersion() !== null && this.latestHubVersion() !== this.currentHubVersion());
     isOffline = signal<boolean>(localStorage.getItem('hub-offline-mode') === 'true');
@@ -869,8 +874,8 @@ export class HubService {
             }
 
             // 1. Fetch from CLOUD (Django API)
-            const cloudApiUrl = (import.meta as any).env.VITE_CLOUD_API_URL || 'http://127.0.0.1:8000'; 
-            const apiKey = (import.meta as any).env.VITE_HUB_API_KEY || 'ethernanos-hub-secret-2026';
+            const cloudApiUrl = this.getMetaEnv('VITE_CLOUD_API_URL', 'http://127.0.0.1:8000'); 
+            const apiKey = this.getMetaEnv('VITE_HUB_API_KEY', 'ethernanos-hub-secret-2026');
 
             this.toast.info("Récupération des données distantes...");
             const cloudResponse = await fetch(`${cloudApiUrl}/api/external/sync-tenant/?tenant_id=${this.hubId()}`, {
@@ -913,7 +918,7 @@ export class HubService {
         try {
             const meta = import.meta as any;
             const apiKey = (meta.env && meta.env.VITE_HUB_API_KEY) || 'ethernanos-hub-secret-2026';
-            const cloudApiUrl = (import.meta as any).env.VITE_CLOUD_API_URL || 'http://127.0.0.1:8000';
+            const cloudApiUrl = this.getMetaEnv('VITE_CLOUD_API_URL', 'http://127.0.0.1:8000');
 
             // 1. Fetch Deltas from LOCAL
             this.toast.info("Extraction des modifications locales...");
@@ -1028,7 +1033,7 @@ export class HubService {
 
     async checkHubUpdate(providedAppId?: string) {
         // Use provided ID or fallback to env, cleaning any potential quotes from Vite/Docker
-        let hubAppId = providedAppId || (import.meta as any).env?.['VITE_HUB_APP_ID'] || '00000000-0000-0000-0000-000000000000';
+        let hubAppId = providedAppId || this.getMetaEnv('VITE_HUB_APP_ID', '00000000-0000-0000-0000-000000000000');
         hubAppId = hubAppId.replace(/['"]+/g, ''); // Remove quotes
 
         // Robust check for UUID format to avoid 400 Bad Request
@@ -1058,7 +1063,8 @@ export class HubService {
     async triggerHubUpdate() {
         if (this.isUpdatingHub()) return;
         
-        const hubAppId = (import.meta as any).env?.['VITE_HUB_APP_ID']?.replace(/['"]+/g, '');
+        const rawId = this.getMetaEnv('VITE_HUB_APP_ID', '00000000-0000-0000-0000-000000000000');
+        const hubAppId = (rawId as string)?.replace(/['\"]+/g, '');
         if (!hubAppId) {
             this.toast.error("Impossible de trouver l'ID du Hub.");
             return;
