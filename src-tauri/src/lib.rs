@@ -406,7 +406,7 @@ async fn download_app<R: Runtime>(
         
         // --- CONFIG INJECTION FOR SETUP ---
         let mut stdin = child.stdin.take().expect("Failed to open setup stdin");
-        let global_config = get_db_config(app_handle.clone()).await.ok();
+        let global_config = get_db_config(app_handle.clone()).await.ok().flatten();
         
         // Minimal secure payload for setup
         let config_payload = serde_json::json!({
