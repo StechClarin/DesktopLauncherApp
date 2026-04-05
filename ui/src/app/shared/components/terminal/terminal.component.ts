@@ -15,6 +15,7 @@ import { Subscription } from 'rxjs';
           <span class="title">Console de Debugging - {{ activeAppId || 'Aucune app active' }}</span>
         </div>
         <div class="right">
+          <button (click)="copyLogs($event)" class="action-btn" title="Copier le contenu">📋</button>
           <button (click)="clearLogs($event)" class="action-btn" title="Effacer la console">🗑️</button>
           <button (click)="close($event)" class="action-btn" title="Fermer la console">❌</button>
         </div>
@@ -95,6 +96,7 @@ import { Subscription } from 'rxjs';
       font-family: 'Fira Code', 'Courier New', monospace;
       font-size: 12px;
       line-height: 1.5;
+      user-select: text; /* Garantit que l'utilisateur peut sélectionner du texte */
     }
     .log-line {
       margin-bottom: 2px;
@@ -167,6 +169,20 @@ export class TerminalComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   toggleCollapse() {
     this.isCollapsed = !this.isCollapsed;
+  }
+
+  copyLogs(event: MouseEvent) {
+    event.stopPropagation();
+    if (this.logs.length === 0) return;
+    
+    const text = this.logs.map(log => {
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      return `[${time}] [${log.stream.toUpperCase()}] ${log.message}`;
+    }).join('\n');
+    
+    navigator.clipboard.writeText(text).then(() => {
+      // Le texte est copié ! On pourrait ajouter une petite confirmation visuelle ici
+    });
   }
 
   clearLogs(event: MouseEvent) {

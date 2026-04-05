@@ -37,6 +37,24 @@ fi
 
 npm install --legacy-peer-deps
 npm run build -- --base-href /
+
+# --- INDUSTRIAL GUARD: INDEX.HTML SANITIZATION ---
+# We MUST ensure index.html doesn't contain local filesystem paths
+echo "🛡️ Auditing index.html for local path leaks..."
+INDEX_FILE="dist/$APP_ID/browser/index.html"
+if [ ! -f "$INDEX_FILE" ]; then
+    INDEX_FILE="dist/index.html"
+fi
+
+if [ -f "$INDEX_FILE" ]; then
+    # Detect the 'Smoking Gun' (C:/Program Files/Git/) or any absolute disk paths
+    if grep -q "base href=\"C:/" "$INDEX_FILE"; then
+        echo "⚠️ WARNING: Local path leak detected in index.html! Fixing..."
+        sed -i 's|base href="[^"]*"|base href="/"|g' "$INDEX_FILE"
+        echo "✅ index.html base href corrected to /"
+    fi
+fi
+
 cd - > /dev/null
 
 # 2. Locate build folder (detecting common Angular/Vite paths)
