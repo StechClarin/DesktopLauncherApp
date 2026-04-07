@@ -205,7 +205,8 @@ async fn execute_app<R: Runtime>(
             },
             _ => None
         },
-        "hub_api_key": "ethernanos-hub-secret-2026"
+        "hub_api_key": "ethernanos-hub-secret-2026",
+        "url_prefix": format!("/schoolmanage/{}/", tenant_id) // SYNCHRONISATION ROUTAGE (v22.3)
     });
 
     use std::io::Write;
