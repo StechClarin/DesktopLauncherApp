@@ -258,7 +258,7 @@ async fn execute_app<R: Runtime>(
     });
 
     // Retrieve app name from manifest or metadata (Async, before lock)
-    let app_name = match get_app_manifest(app_handle, app_id.clone()).await {
+    let app_name = match get_app_manifest(app_handle.clone(), app_id.clone()).await {
         Ok(m) => m.name,
         Err(_) => "Application".to_string(),
     };
@@ -403,9 +403,6 @@ async fn download_app<R: Runtime>(
 
     fs::remove_file(temp_tar_gz).ok();
 
-    Ok(format!("App {} installed and verified at {:?}", app_id, app_dir));
-
-    // NOTIFY FRONTEND (v11.1)
     let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
         "app_id": app_id,
         "status": "installed"
