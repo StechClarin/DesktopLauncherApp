@@ -272,11 +272,17 @@ async fn execute_app<R: Runtime>(
         let _ = old_child.kill();
     }
     
-    lock.insert(app_id, ActiveApp { 
+    lock.insert(app_id.clone(), ActiveApp { 
         child, 
         name: app_name, 
         port: actual_port 
     });
+
+    // NOTIFY FRONTEND (v11.1)
+    let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
+        "app_id": app_id,
+        "status": "started"
+    }));
 
     // The _port_shield listener automatically drops here, releasing the port
     // precisely when Python (Waitress) is ready to take it over.
@@ -396,6 +402,14 @@ async fn download_app<R: Runtime>(
     archive.unpack(&app_dir).map_err(|e| format!("Le désarchivage du tar.gz a échoué (archive corrompue ?) : {}", e))?;
 
     fs::remove_file(temp_tar_gz).ok();
+
+    Ok(format!("App {} installed and verified at {:?}", app_id, app_dir));
+
+    // NOTIFY FRONTEND (v11.1)
+    let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
+        "app_id": app_id,
+        "status": "installed"
+    }));
 
     Ok(format!("App {} installed and verified at {:?}", app_id, app_dir))
 }
@@ -678,6 +692,12 @@ async fn uninstall_app<R: Runtime>(
         fs::remove_dir_all(&app_dir).map_err(|e| e.to_string())?;
     }
 
+    // NOTIFY FRONTEND (v11.1)
+    let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
+        "app_id": app_id,
+        "status": "uninstalled"
+    }));
+
     Ok(format!("Application {} désinstallée proprement.", app_id))
 }
 
@@ -707,7 +727,8 @@ async fn get_active_apps(
 }
 
 #[tauri::command]
-async fn kill_app(
+async fn kill_app<R: Runtime>(
+    app_handle: AppHandle<R>,
     process_manager: tauri::State<'_, ProcessManager>,
     app_id: String,
 ) -> Result<bool, String> {
@@ -716,6 +737,13 @@ async fn kill_app(
     if let Some(app) = lock.remove(&app_id) {
         let mut child = app.child;
         let _ = child.kill();
+
+        // NOTIFY FRONTEND (v11.1)
+        let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
+            "app_id": app_id,
+            "status": "stopped"
+        }));
+
         Ok(true)
     } else {
         Ok(false)

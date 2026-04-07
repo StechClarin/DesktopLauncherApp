@@ -51,6 +51,27 @@ export class HubService {
         await listen('hub-update-progress', (event: any) => {
             this.hubUpdateProgress.set(event.payload as number);
         });
+
+        // REACTIVITY ENGINE (v11.2)
+        await listen('hub-app-status-changed', async (event: any) => {
+            const { app_id, status } = event.payload;
+            console.log(`[HUB_EVENT] App ${app_id} changed to ${status}`);
+
+            // 1. Synchronize process state (tabs)
+            if (status === 'started' || status === 'stopped') {
+                await this.syncActiveApps();
+            }
+
+            // 2. Refresh library data if needed
+            if (status === 'installed' || status === 'uninstalled') {
+                const currentHubId = this.hubId();
+                if (currentHubId) {
+                    await this.loadHomeSections(currentHubId);
+                } else {
+                    this.loadOfflineData();
+                }
+            }
+        });
     }
 
     // State
