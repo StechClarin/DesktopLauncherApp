@@ -1,4 +1,4 @@
-import { Component, inject, input, output, computed, signal, OnInit } from '@angular/core';
+import { Component, inject, input, output, computed, signal, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -85,5 +85,34 @@ export class HubHeaderComponent implements OnInit {
     } catch (e) {
       console.warn('Tauri close failed', e);
     }
+  }
+
+  // CONTEXT MENU (v13.2)
+  contextMenuVisible = signal(false);
+  contextMenuX = signal(0);
+  contextMenuY = signal(0);
+  contextMenuTargetId = signal<string | null>(null);
+
+  onTabContextMenu(event: MouseEvent, appId: string) {
+    event.preventDefault(); // Bloquer le menu natif
+    this.contextMenuX.set(event.clientX);
+    this.contextMenuY.set(event.clientY);
+    this.contextMenuTargetId.set(appId);
+    this.contextMenuVisible.set(true);
+  }
+
+  refreshTab() {
+    const id = this.contextMenuTargetId();
+    if (id) {
+      this.hubService.refreshTab(id);
+    }
+    this.closeContextMenu();
+  }
+
+  // Fermeture lors du clic ailleurs
+  @HostListener('document:click')
+  closeContextMenu() {
+    this.contextMenuVisible.set(false);
+    this.contextMenuTargetId.set(null);
   }
 }

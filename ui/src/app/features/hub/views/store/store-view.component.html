@@ -1,41 +1,35 @@
-<div class="relative animate-in fade-in duration-500 pb-20 overflow-hidden min-h-[500px]">
+<div class="relative animate-in fade-in duration-700 pb-20 overflow-hidden min-h-screen bg-[#020617]">
 
-    <!-- OFFLINE OVERLAY -->
-    @if (hubService.isOffline()) {
-        <div class="absolute inset-0 z-50 bg-[#020617]/80 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
-            <div class="w-24 h-24 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center mb-6 shadow-2xl">
-                <span class="material-symbols-outlined text-5xl text-slate-500">cloud_off</span>
-            </div>
-            <h2 class="text-3xl font-black text-white mb-4 uppercase tracking-tight">Mode Hors-ligne Actif</h2>
-            <p class="text-slate-400 max-w-md mb-8 font-medium">Le Store nécessite une connexion internet pour parcourir les nouvelles applications et modules.</p>
-            <button (click)="hubService.toggleOfflineMode()" 
-                class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl transition-all shadow-xl shadow-blue-600/30 flex items-center gap-3">
-                <span class="material-symbols-outlined">wifi</span>
-                PASSER EN LIGNE
-            </button>
-        </div>
-    }
-
-    <!-- 1. IMMERSIVE HERO CAROUSEL / SKELETON -->
+    <!-- 1. IMMERSIVE HERO CAROUSEL -->
     @if (hubService.isLoading()) {
-        <div class="relative h-[60vh] w-full bg-slate-900 animate-pulse border-b border-white/10"></div>
+        <div class="relative h-[65vh] w-full bg-slate-900/50 animate-pulse border-b border-white/5">
+            <div class="absolute inset-0 shimmer"></div>
+        </div>
     } @else {
-        <div class="relative h-[60vh] w-full overflow-hidden mb-12 group">
+        <div class="relative h-[65vh] w-full overflow-hidden group">
             @let featured = hubService.storeFeatured()[0];
-            <div class="absolute inset-0 bg-cover bg-center animate-slow-zoom transition-transform group-hover:scale-105"
+            <div class="absolute inset-0 bg-cover bg-center animate-slow-zoom transition-transform duration-[2000ms]"
                 [style.backgroundImage]="featured ? 'url(' + featured.image + ')' : ''"
                 class="bg-[#0b1120]"></div>
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
-            <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent"></div>
+            
+            <!-- Ultra-smooth premium masks -->
+            <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#020617]/40 to-transparent"></div>
+            <div class="absolute inset-0 shadow-[inset_0_0_150px_rgba(2,6,23,1)]"></div>
 
             @if (featured) {
-                <div class="absolute bottom-0 left-0 p-8 md:p-16 max-w-3xl">
-                    <span class="inline-block py-1 px-3 rounded bg-yellow-500 text-black font-black text-xs uppercase tracking-widest mb-4 animate-bounce">Featured</span>
-                    <h1 class="text-5xl md:text-7xl font-black text-white mb-4 leading-tight drop-shadow-2xl">{{ featured.title }}</h1>
-                    <p class="text-xl text-slate-200 mb-8 font-light leading-relaxed drop-shadow-md">{{ featured.description }}</p>
-                    <div class="flex items-center gap-4">
-                        <button class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-none skew-x-[-10deg] shadow-lg shadow-blue-600/30 transition-all hover:-translate-y-1">
-                            <span class="block skew-x-[10deg]">{{ featured.action }} <span class="text-blue-200 ml-2">{{ featured.price }}</span></span>
+                <div class="absolute bottom-0 left-0 p-10 md:p-20 max-w-4xl z-10">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="py-1 px-3 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(59,130,246,0.3)]">Selection EtherNanos</span>
+                        <span class="py-1 px-3 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 font-black text-[10px] uppercase tracking-[0.2em]">Featured</span>
+                    </div>
+                    <h1 class="text-6xl md:text-8xl font-black text-white mb-6 leading-tight tracking-tighter drop-shadow-2xl selection:bg-blue-500">{{ featured.title }}</h1>
+                    <p class="text-xl text-slate-300 mb-10 font-medium leading-relaxed drop-shadow-md max-w-2xl">{{ featured.description }}</p>
+                    <div class="flex items-center gap-6">
+                        <button class="px-10 py-5 bg-white text-black font-black text-lg rounded-xl hover:bg-blue-500 hover:text-white transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-blue-500/20 flex items-center gap-3">
+                            {{ featured.action }} 
+                            <span class="opacity-40">|</span>
+                            <span class="font-mono">{{ featured.price }}</span>
                         </button>
                     </div>
                 </div>
@@ -43,102 +37,109 @@
         </div>
     }
 
-    <!-- 2. CATEGORIES / FILTERS -->
-    <div class="max-w-[1920px] mx-auto px-8 mb-16 space-y-8 flex flex-col items-center">
-        <!-- Search bar (Now on top & Centered) -->
-        <div class="relative w-full max-w-2xl mx-auto group">
-            <input type="text" placeholder="Rechercher des applications, modules..."
-                class="w-full bg-white/5 border border-white/10 rounded-full py-4 pl-14 pr-8 text-slate-200 focus:outline-none focus:bg-white/10 focus:border-blue-500/50 transition-all shadow-2xl text-lg">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6 text-slate-500 absolute left-5 top-4 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-        </div>
+    <!-- 2. SEARCH & NAVIGATION -->
+    <div class="max-w-[1600px] mx-auto px-8 -mt-12 relative z-20 mb-20">
+        <div class="glass-card p-6 rounded-2xl flex flex-col md:flex-row items-center gap-8 shadow-2xl">
+            <!-- Search field -->
+            <div class="relative flex-1 w-full group">
+                <input type="text" placeholder="Rechercher une application ou une extension..."
+                    class="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-14 pr-8 text-slate-200 focus:outline-none focus:bg-white/10 focus:border-blue-500/50 transition-all text-lg placeholder:text-slate-500">
+                <span class="material-symbols-outlined absolute left-5 top-4 text-slate-500 group-focus-within:text-blue-500 transition-colors text-2xl">search</span>
+            </div>
 
-        <!-- Filter Buttons (Centered) -->
-        <div class="flex items-center justify-center gap-3 flex-wrap scrollbar-hide">
-            <button class="px-8 py-3 rounded-full bg-white text-black font-black text-sm whitespace-nowrap shadow-xl hover:scale-105 transition-transform">Tout</button>
-            <button class="px-8 py-3 rounded-full bg-white/5 text-slate-300 font-bold text-sm hover:bg-white/10 hover:text-white transition-all whitespace-nowrap">Meilleures Ventes</button>
-            <button class="px-8 py-3 rounded-full bg-white/5 text-slate-300 font-bold text-sm hover:bg-white/10 hover:text-white transition-all whitespace-nowrap">Nouveautés</button>
-            <button class="px-8 py-3 rounded-full bg-white/5 text-slate-300 font-bold text-sm hover:bg-white/10 hover:text-white transition-all whitespace-nowrap">Offres Spéciales</button>
-            <button class="px-8 py-3 rounded-full bg-white/5 text-slate-300 font-bold text-sm hover:bg-white/10 hover:text-white transition-all whitespace-nowrap">Modules & Extensions</button>
+            <!-- Categories -->
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                <button class="px-6 py-3 rounded-xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/30 transition-all whitespace-nowrap">Tout</button>
+                <button class="px-6 py-3 rounded-xl bg-white/5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all whitespace-nowrap">Nouveautés</button>
+                <button class="px-6 py-3 rounded-xl bg-white/5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all whitespace-nowrap">Modules</button>
+            </div>
         </div>
     </div>
 
     <!-- 3. DEALS OF THE WEEK -->
-    <section class="max-w-[1920px] mx-auto px-8 mb-16">
-        <h2 class="text-2xl font-black text-white mb-6 uppercase tracking-wider flex items-center gap-3">
-            <span class="text-yellow-500">⚡</span> Offres de la semaine
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <section class="max-w-[1600px] mx-auto px-8 mb-24">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                <span class="w-1.5 h-8 bg-yellow-500 rounded-full"></span>
+                Offres de la semaine
+            </h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             @if (hubService.isLoading()) {
                 @for (i of [1,2,3,4]; track i) {
-                    <div class="aspect-[16/9] bg-slate-900 rounded-lg animate-pulse"></div>
+                    <div class="aspect-[16/9] bg-slate-900/50 rounded-2xl animate-pulse shimmer border border-white/5"></div>
                 }
             } @else {
                 @for (app of hubService.storeDeals(); track app.id) {
-                <div (click)="openAppDetails(app)" class="group cursor-pointer relative">
-                    <div class="relative aspect-[16/9] overflow-hidden rounded-lg mb-3 shadow-lg group-hover:shadow-yellow-500/10 transition-all duration-300 border border-white/5 group-hover:border-yellow-500/50">
-                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-                            [style.backgroundImage]="app.banner ? 'url(' + app.banner + ')' : ''"
-                            [class.bg-gradient-to-br]="!app.banner"
-                            [class.from-slate-800]="!app.banner"
-                            [class.to-slate-900]="!app.banner"></div>
-                        <div class="absolute top-2 right-2 bg-green-500 text-black text-xs font-black px-2 py-1 rounded skew-x-[-10deg] shadow-lg">{{ app.discount }}</div>
+                    <div (click)="openAppDetails(app)" class="group cursor-pointer">
+                        <div class="relative aspect-[16/10] overflow-hidden rounded-2xl mb-4 border border-white/5 group-hover:border-yellow-500/30 transition-all duration-500 shadow-xl group-hover:shadow-yellow-500/5 group-hover:-translate-y-2">
+                            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                                [style.backgroundImage]="app.banner ? 'url(' + app.banner + ')' : ''"
+                                class="bg-slate-800"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent"></div>
+                            <div class="absolute top-3 right-3 bg-yellow-500 text-black text-[10px] font-black px-2 py-1 rounded shadow-xl uppercase tracking-tighter">{{ app.discount }}</div>
+                        </div>
+                        <h3 class="font-bold text-white text-lg group-hover:text-yellow-500 transition-colors truncate px-1">{{ app.name }}</h3>
+                        <div class="flex items-center gap-3 mt-1 px-1">
+                            <span class="text-white font-black text-xl">{{ app.price }}</span>
+                            <span class="text-slate-500 line-through text-xs">{{ app.oldPrice }}</span>
+                        </div>
                     </div>
-                    <h3 class="font-bold text-white text-lg group-hover:text-yellow-400 transition-colors truncate">{{ app.name }}</h3>
-                    <div class="flex items-baseline gap-2 mt-1">
-                        <span class="text-slate-500 line-through text-sm">{{ app.oldPrice }}</span>
-                        <span class="text-white font-bold">{{ app.price }}</span>
-                    </div>
-                </div>
                 }
             }
         </div>
     </section>
 
-    <!-- 4. NEW RELEASES -->
-    <section class="mb-16 bg-gradient-to-r from-slate-900 via-slate-900/50 to-transparent py-12 border-y border-white/5">
-        <div class="max-w-[1920px] mx-auto px-8">
-            <h2 class="text-2xl font-black text-white mb-8 uppercase tracking-wider">Nouveautés</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <!-- 4. NEW RELEASES (CORRECTED OVERFLOW & PREMIUM UI) -->
+    <section class="mb-24 py-20 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent border-t border-white/5">
+        <div class="max-w-[1600px] mx-auto px-8">
+            <h2 class="text-3xl font-black text-white mb-12 uppercase tracking-tighter flex items-center gap-4">
+                <span class="w-1.5 h-8 bg-blue-500 rounded-full"></span>
+                Nouveautés
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                 @if (hubService.isLoading()) {
                     @for (i of [1,2,3]; track i) {
-                        <div class="h-40 bg-slate-900/50 rounded-xl animate-pulse"></div>
+                        <div class="h-44 glass-card rounded-2xl animate-pulse shimmer"></div>
                     }
                 } @else {
                     @for (app of hubService.storeNewReleases(); track app.id) {
                     <div (click)="openAppDetails(app)"
-                        class="flex gap-4 group cursor-pointer hover:bg-white/5 p-4 rounded-xl transition-colors">
-                        <div class="w-32 aspect-[3/4] bg-slate-800 rounded-lg overflow-hidden shrink-0 shadow-xl border border-white/10 group-hover:border-white/30 transition-all relative">
-                            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                        class="glass-card p-4 rounded-2xl flex gap-6 items-center group cursor-pointer overflow-hidden">
+                        
+                        <!-- Image Container -->
+                        <div class="w-28 aspect-[3/4] rounded-xl overflow-hidden shrink-0 shadow-2xl border border-white/5 group-hover:border-blue-500/30 transition-all duration-500">
+                            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                                 [style.backgroundImage]="app.banner ? 'url(' + app.banner + ')' : ''"
-                                [class.bg-gradient-to-br]="!app.banner"
-                                [class.from-slate-700]="!app.banner"
-                                [class.to-slate-800]="!app.banner"></div>
+                                class="bg-slate-800"></div>
                         </div>
-                        <div class="flex flex-col justify-center flex-1">
-                            <h3 class="font-bold text-white text-xl mb-1 group-hover:text-blue-400 transition-colors">{{ app.name }}</h3>
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="px-2 py-0.5 rounded bg-white/10 text-slate-300 text-[10px] font-bold border border-white/10 italic tracking-tighter uppercase">BASE APP</span>
+
+                        <!-- Content Container (min-w-0 targets the overflow) -->
+                        <div class="flex flex-col min-w-0 flex-1 py-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase tracking-widest border border-blue-500/20">Base App</span>
                                 @if (app.hasDiscount) {
-                                    <span class="px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-black italic shadow-lg shadow-red-600/10">PROMO</span>
+                                    <span class="px-2 py-0.5 rounded bg-red-500/10 text-red-500 text-[8px] font-black uppercase tracking-widest border border-red-500/20">Promo</span>
                                 }
                             </div>
-                            <p class="text-slate-400 text-sm line-clamp-1 mb-3">{{ app.description }}</p>
                             
-                            <div class="flex items-center gap-4">
+                            <h3 class="font-black text-white text-xl mb-1 group-hover:text-blue-400 transition-colors truncate">{{ app.name }}</h3>
+                            <p class="text-slate-400 text-xs line-clamp-2 mb-4 leading-relaxed">{{ app.description }}</p>
+                            
+                            <div class="flex items-center justify-between mt-auto">
                                 <div class="flex flex-col">
                                     @if (app.hasDiscount) {
                                         <span class="text-[10px] text-slate-500 line-through leading-none mb-1">{{ app.oldPrice }}</span>
-                                        <span class="text-lg font-black text-white leading-none">{{ app.price }}</span>
+                                        <span class="text-xl font-black text-white tracking-tighter">{{ app.price }}</span>
                                     } @else {
-                                        <span class="text-lg font-black text-slate-300 leading-none">{{ app.base_price ? app.base_price.toFixed(2) + '€' : 'Gratuit' }}</span>
+                                        <span class="text-xl font-black text-slate-200 tracking-tighter">{{ app.base_price ? app.base_price.toFixed(2) + '€' : 'Gratuit' }}</span>
                                     }
                                 </div>
-                                <button class="ml-auto px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-black text-white uppercase tracking-widest transition-all">Consulter</button>
+                                <button class="px-5 py-2 bg-white/5 hover:bg-blue-600 border border-white/10 hover:border-transparent rounded-lg text-[10px] font-black text-white uppercase tracking-widest transition-all">
+                                    Consulter
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -149,16 +150,21 @@
     </section>
 
     <!-- 5. MODULES & EXTENSIONS -->
-    <section class="max-w-[1920px] mx-auto px-8 mb-20">
-        <h2 class="text-2xl font-black text-white mb-8 uppercase tracking-wider">Modules & Extensions</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <section class="max-w-[1600px] mx-auto px-8 mb-20 pb-20">
+        <div class="flex items-center justify-between mb-10">
+            <h2 class="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                <span class="w-1.5 h-8 bg-purple-500 rounded-full"></span>
+                Modules & Extensions
+            </h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             @if (hubService.isLoading()) {
                 @for (i of [1,2,3,4]; track i) {
-                    <div class="h-32 bg-slate-900/50 rounded-xl animate-pulse"></div>
+                    <div class="h-40 glass-card rounded-2xl animate-pulse shimmer"></div>
                 }
             } @else {
                 @for (module of hubService.storeModules(); track module.id) {
-                    <app-module-card [module]="module" (clicked)="hubService.navigateToModuleApp(module)"></app-module-card>
+                    <app-module-card [module]="module" (clicked)="hubService.navigateToModuleApp(module)" class="hover:-translate-y-2 transition-transform duration-500"></app-module-card>
                 }
             }
         </div>

@@ -2,7 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs'; // <--- AJOUTé Subject
 import { ToastService } from './toast.service';
 import { MOCK_APPS } from '../models/app-manifest.mock';
 import { TerminalService } from './terminal.service';
@@ -92,6 +92,15 @@ export class HubService {
     hubUpdateProgress = signal<number>(0);
     isUpdatingHub = signal<boolean>(false);
     downloadHistory = signal<any[]>([]);
+
+    // REFRESH ENGINE (v13.1)
+    private refreshTabRequestedSource = new Subject<string>();
+    refreshTabRequested$ = this.refreshTabRequestedSource.asObservable();
+
+    refreshTab(appId: string) {
+        console.log(`[REFRESH_REQUEST] Triggering for ${appId}`);
+        this.refreshTabRequestedSource.next(appId);
+    }
 
     // Global Navigation & Selection State
     selectedApp = signal<any | null>(null);

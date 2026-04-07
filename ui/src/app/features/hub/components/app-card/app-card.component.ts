@@ -26,4 +26,9 @@ export class AppCardComponent {
     event.stopPropagation();
     this.hubService.launchApp(app);
   }
+
+  installApp(event: Event, app: any) {
+    event.stopPropagation();
+    this.hubService.installApp(app.id);
+  }
 }

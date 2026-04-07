@@ -166,7 +166,7 @@ async fn execute_app<R: Runtime>(
     cmd = cmd.env("ETHER_SESSION_TOKEN", &session_token)
         .env("ETHER_HUB_PID", hub_pid.to_string())
         .env("ETHER_APP_PORT", actual_port.to_string())
-        .env("ETHER_HUB_API_KEY", "ethernanos-hub-secret-2026")
+        .env("ETHER_HUB_SECRET_KEY", "ethernanos-hub-secret-2026")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped()); // Use stdin for sensitive config

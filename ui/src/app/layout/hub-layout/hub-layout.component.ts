@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal, effect, OnInit, OnDestroy } from '@angular/core';
+import { Component, computed, inject, signal, OnInit, OnDestroy, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import { Subscription } from 'rxjs'; // <--- AJOUTé Subscription
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HubService } from '../../core/services/hub.service';
@@ -40,9 +41,39 @@ export class HubLayoutComponent {
     supabase = inject(SupabaseService);
     sanitizer = inject(DomSanitizer);
     router = inject(Router);
+    private sub = new Subscription();
+
+    @ViewChildren('appIframe') iframes!: QueryList<ElementRef<HTMLIFrameElement>>;
 
     user = toSignal(this.supabase.currentUser$);
     isSidebarOpen = signal<boolean>(true);
+
+    constructor() {
+        this.sub.add(
+            this.hubService.refreshTabRequested$.subscribe(appId => {
+                this.refreshIframe(appId);
+            })
+        );
+    }
+
+    ngOnDestroy() {
+        this.sub.unsubscribe();
+    }
+
+    private refreshIframe(appId: string) {
+        const tabs = this.hubService.activeTabs();
+        const index = tabs.findIndex(t => t.id === appId);
+
+        if (index !== -1 && this.iframes) {
+            const iframeArray = this.iframes.toArray();
+            const iframeEl = iframeArray[index];
+            
+            if (iframeEl && iframeEl.nativeElement.contentWindow) {
+                console.log(`[LAYOUT] Refreshing iframe for ${appId}`);
+                iframeEl.nativeElement.contentWindow.location.reload();
+            }
+        }
+    }
 
     toggleSidebar() {
         this.isSidebarOpen.update(v => !v);
