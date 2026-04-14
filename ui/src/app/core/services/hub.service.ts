@@ -135,6 +135,14 @@ export class HubService {
                 existing.isActive = true;
                 return newTabs;
             }
+
+            if (!url) {
+                const port = this.appPorts()[appId];
+                if (port) {
+                    url = `http://127.0.0.1:${port}`;
+                }
+            }
+
             return [...newTabs, { id: appId, name, url, isActive: true }];
         });
     }
@@ -853,7 +861,9 @@ export class HubService {
             // 2. Check if already running
             if (this.runningAppIds().has(app.id)) {
                 console.log(`App ${app.id} is already running, switching to tab.`);
-                this.openTab(app.id, app.name, ""); 
+                const existingTab = this.activeTabs().find(t => t.id === app.id);
+                const currentUrl = existingTab?.url || (this.appPorts()[app.id] ? `http://127.0.0.1:${this.appPorts()[app.id]}` : '');
+                this.openTab(app.id, app.name, currentUrl);
                 return;
             }
 
