@@ -90,7 +90,12 @@ export class HubHeaderComponent implements OnInit {
   async openDevTools() {
     try {
       const appWindow = getCurrentWindow();
-      await appWindow.openDevTools();
+      const win = appWindow as unknown as { openDevTools?: () => Promise<void> };
+      if (typeof win.openDevTools === 'function') {
+        await win.openDevTools();
+      } else {
+        console.warn('DevTools API unavailable on this platform.');
+      }
     } catch (e) {
       console.warn('Failed to open DevTools', e);
     }
