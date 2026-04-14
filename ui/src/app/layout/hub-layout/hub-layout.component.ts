@@ -61,18 +61,22 @@ export class HubLayoutComponent {
     }
 
     private refreshIframe(appId: string) {
-        const tabs = this.hubService.activeTabs();
-        const index = tabs.findIndex(t => t.id === appId);
+        const iframeArray = this.iframes?.toArray() || [];
+        const iframeEl = iframeArray.find(el => el.nativeElement.dataset.appId === appId);
 
-        if (index !== -1 && this.iframes) {
-            const iframeArray = this.iframes.toArray();
-            const iframeEl = iframeArray[index];
-            
-            if (iframeEl && iframeEl.nativeElement.contentWindow) {
-                console.log(`[LAYOUT] Refreshing iframe for ${appId}`);
-                iframeEl.nativeElement.contentWindow.location.reload();
-            }
+        if (!iframeEl) {
+            console.warn(`[LAYOUT] No iframe found to refresh for ${appId}`);
+            return;
         }
+
+        const iframeWindow = iframeEl.nativeElement.contentWindow;
+        if (!iframeWindow) {
+            console.warn(`[LAYOUT] Iframe window not available yet for ${appId}`);
+            return;
+        }
+
+        console.log(`[LAYOUT] Refreshing iframe for ${appId}`);
+        iframeWindow.location.reload();
     }
 
     toggleSidebar() {

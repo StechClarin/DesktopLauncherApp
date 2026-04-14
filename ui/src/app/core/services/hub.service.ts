@@ -129,6 +129,9 @@ export class HubService {
             // Check if exists
             const existing = newTabs.find(t => t.id === appId);
             if (existing) {
+                if (url && existing.url !== url) {
+                    existing.url = url;
+                }
                 existing.isActive = true;
                 return newTabs;
             }
