@@ -62,7 +62,7 @@ export class HubLayoutComponent {
 
     private refreshIframe(appId: string) {
         const iframeArray = this.iframes?.toArray() || [];
-        const iframeEl = iframeArray.find(el => el.nativeElement.dataset.appId === appId);
+        const iframeEl = iframeArray.find(el => el.nativeElement.dataset['appId'] === appId);
 
         if (!iframeEl) {
             console.warn(`[LAYOUT] No iframe found to refresh for ${appId}`);
