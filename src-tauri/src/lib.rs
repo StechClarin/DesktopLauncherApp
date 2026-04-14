@@ -604,9 +604,11 @@ async fn run_app_setup<R: Runtime>(
     
     // Handshake Security v3.4
     let hub_pid = std::process::id();
+    let admin_password = std::env::var("ADMIN_DEFAULT_PASSWORD").unwrap_or_else(|_| "admin1234".to_string());
     cmd.env("ETHER_HUB_PID", hub_pid.to_string())
        .env("ETHER_SESSION_TOKEN", "setup-handshake-v3.4")
-       .env("ETHER_HUB_API_KEY", "ethernanos-hub-secret-2026");
+       .env("ETHER_HUB_API_KEY", "ethernanos-hub-secret-2026")
+       .env("ADMIN_DEFAULT_PASSWORD", admin_password);
     
     #[cfg(target_os = "windows")]
     cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
