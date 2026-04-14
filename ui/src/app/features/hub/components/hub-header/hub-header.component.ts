@@ -87,6 +87,15 @@ export class HubHeaderComponent implements OnInit {
     }
   }
 
+  async openDevTools() {
+    try {
+      const appWindow = getCurrentWindow();
+      await appWindow.openDevTools();
+    } catch (e) {
+      console.warn('Failed to open DevTools', e);
+    }
+  }
+
   // CONTEXT MENU (v13.2)
   contextMenuVisible = signal(false);
   contextMenuX = signal(0);

@@ -132,6 +132,12 @@
                     </svg>
                 }
             </button>
+            <button (click)="openDevTools()"
+                class="p-2 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors" title="Ouvrir DevTools">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6-4h6m-6 8h6M4 6h16M4 18h16" />
+                </svg>
+            </button>
             <button (click)="closeWindow()"
                 class="p-2 hover:bg-red-500 hover:text-white rounded-md text-slate-400 transition-colors" title="Fermer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
