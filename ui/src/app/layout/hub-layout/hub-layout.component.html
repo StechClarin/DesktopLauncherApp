@@ -22,22 +22,6 @@
         <!-- 2. CONTENT AREA (Switchable) -->
         <div class="flex-1 relative overflow-hidden bg-black/20">
             
-            <!-- TAB BAR FOR OPENED APPS -->
-            <div *ngIf="hubService.activeTabs().length > 0" class="tab-strip">
-                <div class="tab-list">
-                    <button class="tab-item hub-button" (click)="hubService.setActiveTab('home')">
-                        Hub
-                    </button>
-                    <button *ngFor="let tab of hubService.activeTabs()"
-                            class="tab-item"
-                            [class.active]="tab.isActive"
-                            (click)="hubService.selectTab(tab.id)">
-                        {{ tab.name }}
-                        <span class="close-btn" (click)="hubService.closeTab(tab.id); $event.stopPropagation()">×</span>
-                    </button>
-                </div>
-            </div>
-
             <!-- HUB CONTENT (Home, Library, Store, etc.) -->
             <div class="hub-content absolute inset-0 overflow-y-auto custom-scrollbar" 
                  [class.hidden]="!hubService.isHubActive()">
