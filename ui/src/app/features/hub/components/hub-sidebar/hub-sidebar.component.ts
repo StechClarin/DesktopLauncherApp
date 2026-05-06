@@ -20,6 +20,7 @@ export class HubSidebarComponent {
   tabChange = output<'home' | 'library' | 'store' | 'downloads' | 'settings'>();
 
   setActiveTab(tab: 'home' | 'library' | 'store' | 'downloads' | 'settings') {
+    this.hubService.selectTab('hub'); // Focus back to Hub (Point Nav v15.0)
     this.tabChange.emit(tab);
   }
 }

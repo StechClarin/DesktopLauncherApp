@@ -1,0 +1,11 @@
+# 🎵 Dossier Audio Ambiant
+Placez ici vos fichiers MP3 pour le mode hors-ligne du Hub.
+
+### Fichiers requis :
+- zen.mp3       -> (Samurai Zen)
+- focus.mp3     -> (Énergie Industrielle)
+- jazz.mp3      -> (Gangster Jazz)
+- cyber.mp3     -> (Cyberpunk Night)
+- rain.mp3      -> (Fenêtre de Pluie)
+
+*Note : Si les fichiers sont absents, l'ambiance restera silencieuse, mais les sons de clavier (Tac/Click/Thump) fonctionneront toujours car ils sont générés procéduralement.*

@@ -50,9 +50,15 @@
                     }">
                     
                     <div class="flex items-center gap-2 truncate">
-                        <div class="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[14px] text-blue-400">rocket_launch</span>
-                        </div>
+                        @if (tab.logo) {
+                            <div class="w-5 h-5 rounded overflow-hidden flex items-center justify-center shrink-0 bg-white/5">
+                                <img [src]="tab.logo" class="w-full h-full object-contain" [alt]="tab.name" />
+                            </div>
+                        } @else {
+                            <div class="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[14px] text-blue-400">rocket_launch</span>
+                            </div>
+                        }
                         <span class="text-[11px] font-medium truncate uppercase tracking-tight">{{ tab.name }}</span>
                     </div>
 
@@ -94,6 +100,22 @@
 
     <!-- Right: System Controls -->
     <div class="flex items-center gap-3 no-drag">
+        <!-- Audio Status Toggle -->
+        <button (click)="audioService.ambientSoundEnabled.set(!audioService.ambientSoundEnabled())"
+            class="p-2 rounded-lg transition-all relative group flex items-center justify-center overflow-hidden"
+            [ngClass]="audioService.ambientSoundEnabled() ? 'text-purple-400 hover:bg-purple-500/10' : 'text-slate-500 hover:bg-white/5'">
+            
+            <span class="material-symbols-outlined text-[20px]" 
+                [class.animate-pulse]="audioService.ambientSoundEnabled()">
+                {{ audioService.ambientSoundEnabled() ? 'graphic_eq' : 'volume_off' }}
+            </span>
+
+            <!-- Tooltip -->
+            <div class="absolute top-full mt-2 px-2 py-1 bg-slate-800 text-[9px] font-bold text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100] border border-white/5 shadow-xl pointer-events-none">
+                {{ audioService.ambientSoundEnabled() ? 'Ambiance Active' : 'Ambiance Muette' }}
+            </div>
+        </button>
+
         <!-- User Profile -->
         <div class="flex items-center gap-2 px-2 py-1 hover:bg-white/5 rounded-md cursor-pointer transition-colors group relative">
             <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-500 flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-blue-500/20 uppercase">

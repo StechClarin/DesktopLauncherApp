@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
+import { AudioService } from '../../../../core/services/audio.service';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -12,9 +13,10 @@ import { FormsModule } from '@angular/forms';
 })
 export class SettingsViewComponent {
   hubService = inject(HubService);
+  audioService = inject(AudioService);
   
   // Navigation
-  activeSection = signal<'db' | 'update' | 'about'>('db');
+  activeSection = signal<'db' | 'update' | 'about' | 'experience'>('db');
 
   dbHost = this.hubService.dbHost;
   dbPort = this.hubService.dbPort;
@@ -29,7 +31,7 @@ export class SettingsViewComponent {
     this.hubService.saveDbConfig();
   }
 
-  setSection(section: 'db' | 'update' | 'about') {
+  setSection(section: 'db' | 'update' | 'about' | 'experience') {
     this.activeSection.set(section);
   }
 }

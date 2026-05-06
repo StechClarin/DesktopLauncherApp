@@ -46,6 +46,22 @@ export class AppDetailViewComponent {
     return this.hubService.installingApps().some(a => a.id === appId);
   }
 
+  pauseDownload(appId: string) {
+    this.hubService.pauseDownload(appId);
+  }
+
+  resumeDownload(appId: string) {
+    this.hubService.resumeDownload(appId);
+  }
+
+  cancelDownload(appId: string) {
+    this.hubService.cancelDownload(appId);
+  }
+
+  deepSync(appId: string) {
+    this.hubService.executeDeepSync(appId);
+  }
+
   pullSync() {
     this.hubService.pullSync();
   }

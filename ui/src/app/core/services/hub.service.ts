@@ -52,6 +52,11 @@ export class HubService {
             this.hubUpdateProgress.set(event.payload as number);
         });
 
+        await listen('download-status-changed', async (event: any) => {
+            console.log(`[DOWNLOAD_STATUS]`, event.payload);
+            await this.syncDownloadTasks();
+        });
+
         // REACTIVITY ENGINE (v11.2)
         await listen('hub-app-status-changed', async (event: any) => {
             const { app_id, status } = event.payload;
@@ -115,14 +120,29 @@ export class HubService {
     dbConfigStatus = signal<'checking' | 'connected' | 'error' | null>(null);
     dbConfigError = signal<string | null>(null);
     isSyncing = signal<boolean>(false);
+    downloadTasks = signal<any[]>([]); // New tracked tasks
+
+    isDownloadPaused(appId: string): boolean {
+        const task = this.downloadTasks().find(t => t.app_id === appId);
+        return task?.status === 'Paused';
+    }
+
+    async syncDownloadTasks() {
+        try {
+            const tasks = await invoke<any[]>('get_download_tasks');
+            this.downloadTasks.set(tasks);
+        } catch (e) {
+            console.error('Failed to sync download tasks', e);
+        }
+    }
 
     // Tab Manager (EtherNanos OS)
-    activeTabs = signal<{id: string, name: string, url: string, isActive: boolean}[]>([]);
+    activeTabs = signal<{id: string, name: string, url: string, logo?: string, isActive: boolean}[]>([]);
     appPorts = signal<Record<string, number>>({}); // Track which app is on which port
     isHubActive = computed(() => !this.activeTabs().some(t => t.isActive));
     runningAppIds = computed(() => new Set(this.activeTabs().map(t => t.id)));
 
-    openTab(appId: string, name: string, url: string) {
+    openTab(appId: string, name: string, url: string, logo?: string) {
         this.activeTabs.update(tabs => {
             // Defocus all
             const newTabs = tabs.map(t => ({ ...t, isActive: false }));
@@ -132,6 +152,7 @@ export class HubService {
                 if (url && existing.url !== url) {
                     existing.url = url;
                 }
+                if (logo) existing.logo = logo; // Point Logo v14.0
                 existing.isActive = true;
                 return newTabs;
             }
@@ -143,27 +164,35 @@ export class HubService {
                 }
             }
 
-            return [...newTabs, { id: appId, name, url, isActive: true }];
+            return [...newTabs, { id: appId, name, url, logo, isActive: true }];
         });
     }
 
+
     async closeTab(appId: string) {
-        // 1. Kill the process in Rust
+        // 1. Trigger Deep Sync before closing (Point Industrial v5.0 - Pull then Push)
+        try {
+            this.toast.info(`Synchronisation finale pour ${appId}...`);
+            await this.pullSync(appId);
+            await this.pushSync(appId);
+        } catch (e) {
+            console.warn(`[HUB] Auto-Sync failed for ${appId}, proceeding with close.`, e);
+        }
+
+        // 2. Kill the process in Rust
         try {
             await invoke('kill_app', { appId });
         } catch (e) {
             console.error('Failed to kill app process', e);
         }
 
-        // 2. Remove from tabs and manage focus
+        // 3. Remove from tabs and manage focus
         this.activeTabs.update(tabs => {
             const closingTab = tabs.find(t => t.id === appId);
             const newTabs = tabs.filter(t => t.id !== appId);
             
-            // If the closing tab was active, we need to pick a new one
             if (closingTab?.isActive) {
                 if (newTabs.length > 0) {
-                    // Activate the last one
                     newTabs[newTabs.length - 1].isActive = true;
                 }
             }
@@ -562,6 +591,7 @@ export class HubService {
         this.isInitializing = true;
 
         await this.loadDbConfig();
+        await this.syncDownloadTasks(); // Restore tasks (Point Persist v16.0)
         
         // Use a more robust subscription to avoid redundant calls during auth stabilization
         this.supabase.currentUser$.subscribe(async user => {
@@ -898,7 +928,7 @@ export class HubService {
             
             if (isReady) {
                 const localAppUrl = `http://127.0.0.1:${actualPort}`;
-                this.openTab(app.id, app.name, localAppUrl);
+                this.openTab(app.id, app.name, localAppUrl, app.icon_svg || app.icon);
                 
                 // Trigger initial sync
                 this.pullSync(app.id); 
@@ -1047,23 +1077,20 @@ export class HubService {
                     appId: appId 
                 });
             } else {
-                // Secondary attempt to just wipe files if no DB config
                 console.warn("No DB config to drop database, trying file wipe only.");
-                /* In reality, Rust uninstall_app handles missing db.json gracefully */
                 await invoke('uninstall_app', { 
                     config: { host:'', port:0, user:'', pass:'' }, 
                     appId: appId 
                 });
             }
 
-            // 3. Update Local State
-            this.installedApps.update(apps => apps.filter(a => a.id !== appId));
-            this.availableApps.update(apps => {
-                const alreadyExists = apps.some(a => a.id === appId);
-                if (alreadyExists) return apps;
-                return [...apps, { ...app, status: 'available' }];
-            });
-            
+            // 3. STATUS FIX (User Point 2): Refresh library immediately
+            if (this.hubId()) {
+                await this.loadHomeSections(this.hubId()!);
+            } else {
+                this.loadOfflineData();
+            }
+
             this.downloadHistory.update(history => [
                 {
                     id: `del-${appId}-${Date.now()}`,
@@ -1075,12 +1102,60 @@ export class HubService {
                 ...history
             ]);
 
-            this.toast.success(`L'application ${app.name} a été intégralement supprimée (Fichiers & Base de données).`);
+            this.toast.success(`L'application ${app.name} a été intégralement supprimée.`);
         } catch (e) {
             console.error('Uninstallation failed:', e);
             this.toast.error(`Erreur lors de la désinstallation : ${e}`);
         } finally {
             this.isLoading.set(false);
+        }
+    }
+
+    async executeDeepSync(appId?: string) {
+        const id = appId || this.selectedApp()?.id;
+        if (!id) return;
+
+        this.toast.info("Début de la synchronisation profonde (Pull then Push)...");
+        try {
+            // Step 1: Pull (Always first - User Point 1)
+            await this.pullSync(id);
+            
+            // Step 2: Push
+            await this.pushSync(id);
+            
+            this.toast.success("Synchronisation complète terminée !");
+        } catch (e) {
+            console.error("Deep Sync Failed:", e);
+            this.toast.error("Échec de la synchronisation profonde.");
+        }
+    }
+
+    async pauseDownload(appId: string) {
+        try {
+            await invoke('pause_download', { appId });
+            this.toast.info("Téléchargement mis en pause.");
+        } catch (e) {
+            this.toast.error("Erreur lors de la mise en pause.");
+        }
+    }
+
+    async resumeDownload(appId: string) {
+        try {
+            this.toast.info("Reprise du téléchargement...");
+            await invoke('resume_download', { appId });
+        } catch (e) {
+            this.toast.error("Erreur lors de la reprise.");
+        }
+    }
+
+    async cancelDownload(appId: string) {
+        try {
+            await invoke('cancel_download', { appId });
+            this.downloadingAppId.set(null);
+            this.installProgress.set(0);
+            this.toast.info("Téléchargement annulé.");
+        } catch (e) {
+            this.toast.error("Erreur lors de l'annulation.");
         }
     }
 
