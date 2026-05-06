@@ -126,127 +126,130 @@ pub async fn download_app<R: Runtime>(
     url: String,
     checksum: Option<String>,
 ) -> Result<String, String> {
-    let mut tasks = dm.tasks.lock().map_err(|_| "Lock error")?;
-    
-    let task = tasks.entry(app_id.clone()).or_insert(DownloadTask {
-        app_id: app_id.clone(),
-        url: url.clone(),
-        total_size: 0,
-        downloaded: 0,
-        status: DownloadStatus::Pending,
-        checksum: checksum.clone(),
-    });
+    let (downloaded_initial, total_size_initial) = {
+        let mut tasks = dm.tasks.lock().map_err(|_| "Lock error")?;
+        
+        let task = tasks.entry(app_id.clone()).or_insert(DownloadTask {
+            app_id: app_id.clone(),
+            url: url.clone(),
+            total_size: 0,
+            downloaded: 0,
+            status: DownloadStatus::Pending,
+            checksum: checksum.clone(),
+        });
 
-    if task.status == DownloadStatus::Downloading {
-        return Ok("Already downloading".to_string());
-    }
+        if task.status == DownloadStatus::Downloading {
+            return Ok("Already downloading".to_string());
+        }
 
-    task.status = DownloadStatus::Downloading;
-    let downloaded_initial = task.downloaded;
-    let mut total_size = task.total_size;
-    let checksum_clone = task.checksum.clone();
-    
-    dm.save_to_disk(&app_handle);
-    drop(tasks);
+        task.status = DownloadStatus::Downloading;
+        let d = task.downloaded;
+        let t = task.total_size;
+        
+        dm.save_to_disk(&app_handle);
+        (d, t)
+    };
 
     let _ = app_handle.emit("download-status-changed", serde_json::json!({
         "app_id": app_id.clone(),
         "status": "Downloading"
     }));
 
-    let app_handle_clone = app_handle.clone();
-    let window_clone = window.clone();
-    let app_id_clone = app_id.clone();
-    let url_clone = url.clone();
-    let dm_clone = dm.inner().clone();
+    let client = reqwest::Client::new();
+    let mut downloaded = downloaded_initial;
+    let mut total_size = total_size_initial;
     
-    let handle = tokio::spawn(async move {
-        let client = reqwest::Client::new();
-        let mut downloaded = downloaded_initial;
-        
-        let mut request = client.get(&url_clone);
-        if downloaded > 0 {
-            request = request.header("Range", format!("bytes={}-", downloaded));
+    let mut request = client.get(&url);
+    if downloaded > 0 {
+        request = request.header("Range", format!("bytes={}-", downloaded));
+    }
+
+    let response = match request.send().await {
+        Ok(res) => res,
+        Err(e) => {
+            let mut tasks = dm.tasks.lock().unwrap();
+            if let Some(t) = tasks.get_mut(&app_id) {
+                t.status = DownloadStatus::Error(e.to_string());
+            }
+            let _ = window.emit("download-status-changed", serde_json::json!({
+                "app_id": app_id,
+                "status": "Error",
+                "message": e.to_string()
+            }));
+            return Err(e.to_string());
+        }
+    };
+
+    if total_size == 0 {
+        total_size = response.content_length().unwrap_or(0) + downloaded;
+        let mut tasks = dm.tasks.lock().unwrap();
+        if let Some(t) = tasks.get_mut(&app_id) {
+            t.total_size = total_size;
+        }
+    }
+
+    let mut app_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    app_dir.push("apps");
+    app_dir.push(&app_id);
+    let _ = fs::create_dir_all(&app_dir);
+    let temp_tar_gz = app_dir.join("temp.tar.gz");
+
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&temp_tar_gz)
+        .map_err(|e| format!("Failed to open temp file: {}", e))?;
+
+    let mut stream = response.bytes_stream();
+    while let Some(item) = stream.next().await {
+        // --- CHECK FOR INTERRUPTION ---
+        let status = {
+            let tasks = dm.tasks.lock().unwrap();
+            tasks.get(&app_id).map(|t| t.status.clone())
+        };
+
+        match status {
+            Some(DownloadStatus::Paused) => return Ok("Download paused".to_string()),
+            None => return Ok("Download cancelled".to_string()),
+            _ => {}
         }
 
-        let response = match request.send().await {
-            Ok(res) => res,
+        match item {
+            Ok(chunk) => {
+                use std::io::Write;
+                file.write_all(&chunk).map_err(|e| e.to_string())?;
+                downloaded += chunk.len() as u64;
+                
+                let mut tasks = dm.tasks.lock().unwrap();
+                if let Some(t) = tasks.get_mut(&app_id) {
+                    t.downloaded = downloaded;
+                    if total_size > 0 {
+                        let progress = (downloaded * 100) / total_size;
+                        let _ = window.emit("download-progress", ProgressPayload { 
+                            app_id: app_id.clone(), 
+                            progress 
+                        });
+                    }
+                }
+            },
             Err(e) => {
-                let mut tasks = dm_clone.tasks.lock().unwrap();
-                if let Some(t) = tasks.get_mut(&app_id_clone) {
+                let mut tasks = dm.tasks.lock().unwrap();
+                if let Some(t) = tasks.get_mut(&app_id) {
                     t.status = DownloadStatus::Error(e.to_string());
                 }
-                let _ = window_clone.emit("download-status-changed", serde_json::json!({
-                    "app_id": app_id_clone,
+                let _ = window.emit("download-status-changed", serde_json::json!({
+                    "app_id": app_id,
                     "status": "Error",
                     "message": e.to_string()
                 }));
-                return;
-            }
-        };
-
-        if total_size == 0 {
-            total_size = response.content_length().unwrap_or(0) + downloaded;
-            let mut tasks = dm_clone.tasks.lock().unwrap();
-            if let Some(t) = tasks.get_mut(&app_id_clone) {
-                t.total_size = total_size;
+                return Err(e.to_string());
             }
         }
+    }
 
-        let mut app_dir = app_handle_clone.path().app_data_dir().unwrap();
-        app_dir.push("apps");
-        app_dir.push(&app_id_clone);
-        let _ = fs::create_dir_all(&app_dir);
-        let temp_tar_gz = app_dir.join("temp.tar.gz");
-
-        let mut file = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&temp_tar_gz)
-            .unwrap();
-
-        let mut stream = response.bytes_stream();
-        while let Some(item) = stream.next().await {
-            match item {
-                Ok(chunk) => {
-                    use std::io::Write;
-                    let _ = file.write_all(&chunk);
-                    downloaded += chunk.len() as u64;
-                    
-                    let mut tasks = dm_clone.tasks.lock().unwrap();
-                    if let Some(t) = tasks.get_mut(&app_id_clone) {
-                        t.downloaded = downloaded;
-                        if total_size > 0 {
-                            let progress = (downloaded * 100) / total_size;
-                            let _ = window_clone.emit("download-progress", ProgressPayload { 
-                                app_id: app_id_clone.clone(), 
-                                progress 
-                            });
-                        }
-                    }
-                },
-                Err(e) => {
-                    let mut tasks = dm_clone.tasks.lock().unwrap();
-                    if let Some(t) = tasks.get_mut(&app_id_clone) {
-                        t.status = DownloadStatus::Error(e.to_string());
-                    }
-                    let _ = window_clone.emit("download-status-changed", serde_json::json!({
-                        "app_id": app_id_clone,
-                        "status": "Error",
-                        "message": e.to_string()
-                    }));
-                    return;
-                }
-            }
-        }
-
-        let _ = finalize_installation(app_handle_clone, window_clone, dm_clone, app_id_clone, checksum_clone);
-    });
-
-    let mut abort_handles = dm.abort_handles.lock().map_err(|_| "Lock error")?;
-    abort_handles.insert(app_id, handle);
+    finalize_installation(app_handle, window, dm.inner().clone(), app_id, checksum)?;
     
-    Ok("Download started".to_string())
+    Ok("Installation complete".to_string())
 }
 
 pub fn finalize_installation<R: Runtime>(

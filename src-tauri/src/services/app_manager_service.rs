@@ -259,6 +259,37 @@ pub async fn run_app_setup<R: Runtime>(
     if !app_path.exists() {
         return Err("Application non installée".to_string());
     }
+
+    // --- EXECUTE hub_setup.sh ---
+    let mut setup_cmd = if cfg!(target_os = "windows") {
+        let mut c = Command::new("cmd");
+        c.arg("/C").arg("hub_setup.bat");
+        c
+    } else {
+        let mut c = Command::new("sh");
+        c.arg("-c").arg("./hub_setup.sh");
+        c
+    };
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let script_path = app_path.join("hub_setup.sh");
+        if script_path.exists() {
+            let mut perms = fs::metadata(&script_path).map_err(|e| e.to_string())?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&script_path, perms).map_err(|e| e.to_string())?;
+        }
+    }
+
+    let status = setup_cmd.current_dir(&app_path)
+        .status()
+        .map_err(|e| format!("Échec du lancement du setup : {}", e))?;
+
+    if !status.success() {
+        return Err("Le script de configuration a échoué.".to_string());
+    }
+
     Ok(())
 }
 
