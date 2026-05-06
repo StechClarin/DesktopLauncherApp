@@ -261,3 +261,70 @@ pub async fn run_app_setup<R: Runtime>(
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn uninstall_app<R: Runtime>(
+    app_handle: AppHandle<R>,
+    process_manager: tauri::State<'_, ProcessManager>,
+    app_id: String,
+) -> Result<(), String> {
+    // 1. Kill the process if running
+    {
+        let mut lock = process_manager.processes.lock().map_err(|_| "Impossible de verrouiller le gestionnaire de processus")?;
+        if let Some(mut app) = lock.remove(&app_id) {
+            let _ = app.child.kill();
+        }
+    }
+
+    // 2. Get the path
+    let mut app_path = app_handle.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
+    app_path.push("apps");
+    app_path.push(&app_id);
+
+    // 3. Delete directory
+    if app_path.exists() {
+        fs::remove_dir_all(&app_path).map_err(|e| format!("Échec de la suppression des fichiers : {}", e))?;
+    }
+
+    // 4. Notify UI
+    let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
+        "app_id": app_id,
+        "status": "uninstalled"
+    }));
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn kill_app<R: Runtime>(
+    app_handle: AppHandle<R>,
+    process_manager: tauri::State<'_, ProcessManager>,
+    app_id: String,
+) -> Result<(), String> {
+    let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
+    if let Some(mut app) = lock.remove(&app_id) {
+        let _ = app.child.kill();
+        
+        let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
+            "app_id": app_id,
+            "status": "stopped"
+        }));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_active_apps(
+    process_manager: tauri::State<'_, ProcessManager>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
+    let mut active = Vec::new();
+    for (id, app) in lock.iter() {
+        active.push(serde_json::json!({
+            "id": id,
+            "name": app.name,
+            "port": app.port
+        }));
+    }
+    Ok(active)
+}

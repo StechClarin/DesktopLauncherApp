@@ -1,8 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HubService } from '../../../../core/services/hub.service';
 import { AudioService } from '../../../../core/services/audio.service';
-import { FormsModule } from '@angular/forms';
+import { AppearanceService, AccentColor } from '../../../../core/services/appearance.service';
 
 @Component({
   selector: 'app-settings-view',
@@ -14,24 +15,15 @@ import { FormsModule } from '@angular/forms';
 export class SettingsViewComponent {
   hubService = inject(HubService);
   audioService = inject(AudioService);
+  appearanceService = inject(AppearanceService);
   
+  // Typed colors for the template
+  accentColors: AccentColor[] = ['purple', 'blue', 'emerald', 'amber', 'rose', 'cyan'];
+
   // Navigation
-  activeSection = signal<'db' | 'update' | 'about' | 'experience'>('db');
+  activeSection = signal<'update' | 'about' | 'experience' | 'appearance'>('appearance');
 
-  dbHost = this.hubService.dbHost;
-  dbPort = this.hubService.dbPort;
-  dbUser = this.hubService.dbUser;
-  dbPass = this.hubService.dbPass;
-
-  testDbConnection() {
-    this.hubService.testDbConnection();
-  }
-
-  saveDbConfig() {
-    this.hubService.saveDbConfig();
-  }
-
-  setSection(section: 'db' | 'update' | 'about' | 'experience') {
+  setSection(section: 'update' | 'about' | 'experience' | 'appearance') {
     this.activeSection.set(section);
   }
 }

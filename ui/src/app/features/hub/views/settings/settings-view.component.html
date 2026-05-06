@@ -3,20 +3,20 @@
     <div class="w-64 flex flex-col gap-2 no-drag">
         <h2 class="px-4 text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Paramètres Hub</h2>
         
-        <button (click)="setSection('db')" 
-            class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group overflow-hidden relative"
-            [ngClass]="activeSection() === 'db' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:bg-white/5'">
-            <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">database</span>
-            <span class="text-sm font-bold">Base de Données</span>
-            <div *ngIf="activeSection() === 'db'" class="absolute left-0 w-1 h-6 bg-emerald-500 rounded-r-full shadow-[0_0_12px_#10b981]"></div>
-        </button>
-
         <button (click)="setSection('experience')" 
             class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative"
             [ngClass]="activeSection() === 'experience' ? 'bg-purple-500/10 border border-purple-500/20 text-purple-400' : 'text-slate-400 hover:bg-white/5'">
             <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">graphic_eq</span>
             <span class="text-sm font-bold">Expérience Sonore</span>
             <div *ngIf="activeSection() === 'experience'" class="absolute left-0 w-1 h-6 bg-purple-500 rounded-r-full shadow-[0_0_12px_#a855f7]"></div>
+        </button>
+
+        <button (click)="setSection('appearance')" 
+            class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative"
+            [ngClass]="activeSection() === 'appearance' ? 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">palette</span>
+            <span class="text-sm font-bold">Apparence</span>
+            <div *ngIf="activeSection() === 'appearance'" class="absolute left-0 w-1 h-6 bg-indigo-500 rounded-r-full shadow-[0_0_12px_#6366f1]"></div>
         </button>
 
         <button (click)="setSection('update')" 
@@ -41,80 +41,6 @@
     <!-- Settings Content Area -->
     <div class="flex-1 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-10 overflow-y-auto no-scrollbar shadow-2xl">
         
-        <!-- SECTION: DATABASE -->
-        @if (activeSection() === 'db') {
-            <div class="animate-in fade-in slide-in-from-right-4 duration-500">
-                <div class="mb-10">
-                    <h2 class="text-2xl font-black text-white mb-2 flex items-center gap-3">
-                        <span class="material-symbols-outlined text-emerald-400">database</span>
-                        Base de Données
-                    </h2>
-                    <p class="text-slate-400 text-sm">Configurez l'orchestrateur PostgreSQL local (BYODB).</p>
-                </div>
-
-                <div class="grid grid-cols-2 gap-8 mb-10">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Hôte (Docker/Local)</label>
-                        <div class="relative group">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">dns</span>
-                            <input type="text" [ngModel]="dbHost()" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-slate-500 font-medium cursor-not-allowed" readonly>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Port</label>
-                        <div class="relative group">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">tag</span>
-                            <input type="number" [ngModel]="dbPort()" (ngModelChange)="dbPort.set($event)" class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-medium focus:outline-none focus:border-emerald-500/30 transition-all placeholder:text-slate-700">
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Utilisateur SuperAdmin PostgreSQL</label>
-                        <div class="relative group">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">admin_panel_settings</span>
-                            <input type="text" [ngModel]="dbUser()" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-slate-500 font-medium cursor-not-allowed" readonly>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Mot de Passe</label>
-                        <div class="relative group">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-slate-500 group-focus-within:text-emerald-400 transition-colors">lock</span>
-                            <input type="password" [ngModel]="dbPass()" (ngModelChange)="dbPass.set($event)" class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-medium focus:outline-none focus:border-emerald-500/30 transition-all">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4 pt-6">
-                    <button (click)="testDbConnection()" class="flex-1 bg-slate-800/50 hover:bg-slate-700/50 text-white font-bold py-4 px-6 rounded-2xl transition-all border border-white/5 active:scale-95 disabled:opacity-50" [disabled]="hubService.dbConfigStatus() === 'checking'">
-                        Test Connexion
-                    </button>
-                    <button (click)="saveDbConfig()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95">
-                        Sauvegarder Configuration
-                    </button>
-                </div>
-
-                <!-- Status Feedback -->
-                <div *ngIf="hubService.dbConfigStatus() === 'connected'" class="mt-8 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4 animate-in zoom-in-95 duration-300">
-                    <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
-                        <span class="material-symbols-outlined">check_circle</span>
-                    </div>
-                    <div>
-                        <p class="text-white text-sm font-bold">Connexion Opérationnelle</p>
-                        <p class="text-emerald-400/70 text-xs">Le Hub peut désormais orchestrer les bases de données applicatives.</p>
-                    </div>
-                </div>
-
-                <div class="mt-12 p-6 bg-white/5 border border-white/10 rounded-3xl">
-                    <h4 class="text-slate-300 font-bold mb-3 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-blue-400 text-[20px]">verified_user</span>
-                        Isolation Zero-Leak
-                    </h4>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Le Hub utilise ces identifiants pour créer automatiquement des sous-bases de données isolées. Chaque application possède son propre utilisateur cryptographique unique. Vos données restent étanches.
-                    </p>
-                </div>
-            </div>
-        }
-
         <!-- SECTION: UPDATE -->
         @if (activeSection() === 'update') {
             <div class="animate-in fade-in slide-in-from-right-4 duration-500 h-full flex flex-col">
@@ -413,6 +339,147 @@
                     <p class="text-purple-400/60 text-xs leading-relaxed italic">
                         "L'immersion sonore est conçue pour rester active tant que vous interagissez avec le Hub ou ses applications intégrées."
                     </p>
+                </div>
+            </div>
+        }
+
+        <!-- SECTION: APPEARANCE -->
+        @if (activeSection() === 'appearance') {
+            <div class="animate-in fade-in slide-in-from-right-4 duration-500 h-full">
+                <div class="mb-10">
+                    <h2 class="text-2xl font-black text-white mb-2 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-indigo-400">palette</span>
+                        Apparence & Identité
+                    </h2>
+                    <p class="text-slate-400 text-sm">Personnalisez l'esthétique visuelle de votre environnement de travail.</p>
+                </div>
+
+                <div class="space-y-8">
+                    <!-- Theme Selection -->
+                    <div>
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Thème Visuel</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button (click)="appearanceService.theme.set('onyx')" 
+                                class="p-4 rounded-3xl border transition-all text-left relative overflow-hidden group"
+                                [ngClass]="appearanceService.theme() === 'onyx' ? 'bg-[var(--accent-glow)] border-[var(--accent-primary)]/40 shadow-lg' : 'bg-slate-950/40 border-white/5 hover:bg-white/5'">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-slate-400">
+                                        <span class="material-symbols-outlined">dark_mode</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-bold">Onyx Stealth</p>
+                                        <p class="text-[10px] text-slate-500">Noir industriel profond</p>
+                                    </div>
+                                </div>
+                                <div *ngIf="appearanceService.theme() === 'onyx'" class="absolute top-4 right-4">
+                                    <div class="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]"></div>
+                                </div>
+                            </button>
+
+                            <button (click)="appearanceService.theme.set('midnight')" 
+                                class="p-4 rounded-3xl border transition-all text-left relative overflow-hidden group"
+                                [ngClass]="appearanceService.theme() === 'midnight' ? 'bg-[var(--accent-glow)] border-[var(--accent-primary)]/40 shadow-lg' : 'bg-slate-950/40 border-white/5 hover:bg-white/5'">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-2xl bg-slate-900 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                                        <span class="material-symbols-outlined">nightlight</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-bold">Midnight Deep</p>
+                                        <p class="text-[10px] text-slate-500">Bleu nuit cosmique</p>
+                                    </div>
+                                </div>
+                                <div *ngIf="appearanceService.theme() === 'midnight'" class="absolute top-4 right-4">
+                                    <div class="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]"></div>
+                                </div>
+                            </button>
+
+                            <button (click)="appearanceService.theme.set('cyberpunk')" 
+                                class="p-4 rounded-3xl border transition-all text-left relative overflow-hidden group"
+                                [ngClass]="appearanceService.theme() === 'cyberpunk' ? 'bg-[var(--accent-glow)] border-[var(--accent-primary)]/40 shadow-lg' : 'bg-slate-950/40 border-white/5 hover:bg-white/5'">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-2xl bg-indigo-950 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                                        <span class="material-symbols-outlined">bolt</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-bold">Neon Pulse</p>
+                                        <p class="text-[10px] text-slate-500">Futuriste & Contrasté</p>
+                                    </div>
+                                </div>
+                                <div *ngIf="appearanceService.theme() === 'cyberpunk'" class="absolute top-4 right-4">
+                                    <div class="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]"></div>
+                                </div>
+                            </button>
+
+                            <button (click)="appearanceService.theme.set('snow')" 
+                                class="p-4 rounded-3xl border transition-all text-left relative overflow-hidden group"
+                                [ngClass]="appearanceService.theme() === 'snow' ? 'bg-[var(--accent-glow)] border-[var(--accent-primary)]/40 shadow-lg' : 'bg-slate-950/40 border-white/5 hover:bg-white/5'">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 border border-white/20 flex items-center justify-center text-slate-600">
+                                        <span class="material-symbols-outlined">light_mode</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-bold">Snow Frost</p>
+                                        <p class="text-[10px] text-slate-500">Épuré & Lumineux</p>
+                                    </div>
+                                </div>
+                                <div *ngIf="appearanceService.theme() === 'snow'" class="absolute top-4 right-4">
+                                    <div class="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]"></div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Accent Color Selection -->
+                    <div>
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Couleur d'Accentuation</h4>
+                        <div class="flex flex-wrap gap-4">
+                            <button *ngFor="let color of accentColors"
+                                (click)="appearanceService.accentColor.set(color)"
+                                class="w-10 h-10 rounded-full border-2 transition-all active:scale-90 relative group"
+                                [style.background-color]="appearanceService.accents[color]"
+                                [ngClass]="appearanceService.accentColor() === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105 opacity-70 hover:opacity-100'">
+                                <span *ngIf="appearanceService.accentColor() === color" class="absolute inset-0 flex items-center justify-center text-white">
+                                    <span class="material-symbols-outlined text-[18px]">check</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Glassmorphism Intensity -->
+                    <div class="p-6 bg-slate-950/40 border border-white/5 rounded-3xl space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                                    <span class="material-symbols-outlined text-[24px]">blur_on</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-bold">Intensité du Verre</h4>
+                                    <p class="text-slate-500 text-xs">Ajustez le flou d'arrière-plan (Glassmorphism).</p>
+                                </div>
+                            </div>
+                            <span class="text-xl font-black text-white">{{ appearanceService.glassIntensity() }}px</span>
+                        </div>
+                        <input type="range" min="0" max="40" [ngModel]="appearanceService.glassIntensity()" (ngModelChange)="appearanceService.glassIntensity.set($event)" 
+                            class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                            [style.accent-color]="appearanceService.accents[appearanceService.accentColor()]">
+                    </div>
+
+                    <!-- Animations Toggle -->
+                    <div class="p-6 bg-white/5 border border-white/5 rounded-3xl flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                                <span class="material-symbols-outlined text-[24px]">auto_awesome</span>
+                            </div>
+                            <div>
+                                <h4 class="text-white font-bold">Effets Visuels Avancés</h4>
+                                <p class="text-slate-500 text-xs">Particules, lueurs et transitions fluides.</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" [ngModel]="appearanceService.animationsEnabled()" (ngModelChange)="appearanceService.animationsEnabled.set($event)" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
         }

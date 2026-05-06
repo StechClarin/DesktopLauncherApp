@@ -7,9 +7,53 @@
 
     /* TAURI APP SCOPED STYLES */
     /* These only apply when running in Tauri (or globally if you prefer) */
+    /* THEME SYSTEM VARIABLES */
+    :root {
+        --accent-primary: #a855f7;
+        --accent-glow: rgba(168, 85, 247, 0.2);
+        --glass-blur: 12px;
+        --bg-main: #020617; /* Default Onyx */
+        --text-main: #f8fafc;
+        --text-muted: #64748b;
+    }
+
+    body.theme-onyx {
+        --bg-main: #020617;
+        --bg-card: rgba(15, 23, 42, 0.4);
+        --text-main: #f8fafc;
+        --text-muted: #64748b;
+        background-color: var(--bg-main);
+    }
+
+    body.theme-midnight {
+        --bg-main: #0a0a20;
+        --bg-card: rgba(16, 16, 44, 0.5);
+        --text-main: #e2e8f0;
+        --text-muted: #94a3b8;
+        background-color: var(--bg-main);
+    }
+
+    body.theme-cyberpunk {
+        --bg-main: #05011a;
+        --bg-card: rgba(13, 1, 45, 0.6);
+        --text-main: #ffffff;
+        --text-muted: #8b5cf6;
+        background-color: var(--bg-main);
+    }
+
+    body.theme-snow {
+        --bg-main: #f8fafc;
+        --bg-card: rgba(255, 255, 255, 0.8);
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+    }
+
     body {
-        @apply antialiased text-slate-200 bg-slate-950 overflow-hidden select-none;
-        /* Default cursor, disable text selection */
+        @apply antialiased overflow-hidden select-none transition-colors duration-500;
+        color: var(--text-main);
+        background-color: var(--bg-main);
         cursor: default;
     }
 
@@ -59,6 +103,11 @@
 
     .scrollbar-hide::-webkit-scrollbar {
         display: none;
+    }
+
+    .disable-animations * {
+        animation: none !important;
+        transition: none !important;
     }
 }
 
