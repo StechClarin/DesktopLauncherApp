@@ -1,5 +1,6 @@
 use std::fs;
 use std::sync::Arc;
+use std::process::Command;
 use tauri::{AppHandle, Runtime, Window, Emitter, Manager};
 use futures_util::StreamExt;
 use flate2::read::GzDecoder;
