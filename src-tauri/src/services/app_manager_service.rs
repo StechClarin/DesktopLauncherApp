@@ -115,12 +115,20 @@ pub async fn execute_app<R: Runtime>(
         .map_err(|e| format!("Échec du lancement ({}): {}", exec_cmd, e))?;
 
     // --- CONFIG INJECTION VIA STDIN ---
+    let app_db_path = app_path.join("db.json");
+    let app_db_creds: Option<serde_json::Value> = if app_db_path.exists() {
+        let json = fs::read_to_string(&app_db_path).unwrap_or_default();
+        serde_json::from_str(&json).ok()
+    } else {
+        None
+    };
+
     let mut stdin = child.stdin.take().expect("Failed to open stdin");
     let config_payload = serde_json::json!({
         "session_token": session_token,
         "tenant_id": tenant_id,
         "app_port": actual_port,
-        "db_config": null,
+        "db_config": app_db_creds,
         "hub_api_key": hub_api_key,
         "url_prefix": format!("/schoolmanage/{}/", tenant_id)
     });

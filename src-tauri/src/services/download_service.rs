@@ -155,101 +155,119 @@ pub async fn download_app<R: Runtime>(
         "status": "Downloading"
     }));
 
-    let client = reqwest::Client::new();
-    let mut downloaded = downloaded_initial;
-    let mut total_size = total_size_initial;
+    let client = reqwest::Client::builder()
+        .no_gzip()
+        .no_brotli()
+        .no_deflate()
+        .user_agent("EtherNanos-Hub/1.0")
+        .build()
+        .map_err(|e| format!("Échec création client réseau : {}", e))?;
+
+    let mut downloaded = 0;
+    println!("[DOWNLOAD] Starting download for {} from {}", app_id, url);
     
-    let mut request = client.get(&url);
-    if downloaded > 0 {
-        request = request.header("Range", format!("bytes={}-", downloaded));
+    let response = client.get(&url).send().await.map_err(|e| format!("Échec du téléchargement réseau : {}", e))?;
+    if !response.status().is_success() {
+        return Err(format!("Server returned error: {}", response.status()));
     }
 
-    let response = match request.send().await {
-        Ok(res) => res,
-        Err(e) => {
-            let mut tasks = dm.tasks.lock().unwrap();
-            if let Some(t) = tasks.get_mut(&app_id) {
-                t.status = DownloadStatus::Error(e.to_string());
-            }
-            let _ = window.emit("download-status-changed", serde_json::json!({
-                "app_id": app_id,
-                "status": "Error",
-                "message": e.to_string()
-            }));
-            return Err(e.to_string());
-        }
-    };
-
-    if total_size == 0 {
-        total_size = response.content_length().unwrap_or(0) + downloaded;
-        let mut tasks = dm.tasks.lock().unwrap();
-        if let Some(t) = tasks.get_mut(&app_id) {
-            t.total_size = total_size;
-        }
-    }
+    let total_size = response.content_length().unwrap_or(0);
+    let mut stream = response.bytes_stream();
 
     let mut app_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
     app_dir.push("apps");
     app_dir.push(&app_id);
-    let _ = fs::create_dir_all(&app_dir);
+    fs::create_dir_all(&app_dir).map_err(|e| format!("Impossible de créer le dossier de l'app : {}", e))?;
+
     let temp_tar_gz = app_dir.join("temp.tar.gz");
-
-    let mut file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&temp_tar_gz)
-        .map_err(|e| format!("Failed to open temp file: {}", e))?;
-
-    let mut stream = response.bytes_stream();
+    let mut file = fs::File::create(&temp_tar_gz).map_err(|e| format!("Impossible de créer l'archive temporaire : {}", e))?;
+    
+    println!("[DOWNLOAD] Streaming chunks...");
     while let Some(item) = stream.next().await {
-        // --- CHECK FOR INTERRUPTION ---
-        let status = {
-            let tasks = dm.tasks.lock().unwrap();
-            tasks.get(&app_id).map(|t| t.status.clone())
-        };
-
-        match status {
-            Some(DownloadStatus::Paused) => return Ok("Download paused".to_string()),
-            None => return Ok("Download cancelled".to_string()),
-            _ => {}
-        }
-
-        match item {
-            Ok(chunk) => {
-                use std::io::Write;
-                file.write_all(&chunk).map_err(|e| e.to_string())?;
-                downloaded += chunk.len() as u64;
-                
-                let mut tasks = dm.tasks.lock().unwrap();
-                if let Some(t) = tasks.get_mut(&app_id) {
-                    t.downloaded = downloaded;
-                    if total_size > 0 {
-                        let progress = (downloaded * 100) / total_size;
-                        let _ = window.emit("download-progress", ProgressPayload { 
-                            app_id: app_id.clone(), 
-                            progress 
-                        });
-                    }
-                }
-            },
-            Err(e) => {
-                let mut tasks = dm.tasks.lock().unwrap();
-                if let Some(t) = tasks.get_mut(&app_id) {
-                    t.status = DownloadStatus::Error(e.to_string());
-                }
-                let _ = window.emit("download-status-changed", serde_json::json!({
-                    "app_id": app_id,
-                    "status": "Error",
-                    "message": e.to_string()
-                }));
-                return Err(e.to_string());
-            }
+        let chunk = item.map_err(|e| e.to_string())?;
+        std::io::copy(&mut &*chunk, &mut file).map_err(|e| e.to_string())?;
+        
+        downloaded += chunk.len() as u64;
+        if total_size > 0 {
+            let progress = (downloaded * 100) / total_size;
+            let _ = window.emit("download-progress", ProgressPayload { 
+                app_id: app_id.clone(), 
+                progress 
+            });
         }
     }
 
-    finalize_installation(app_handle, window, dm.inner().clone(), app_id, checksum)?;
+    println!("[DOWNLOAD] Finished downloading. Finalizing installation...");
     
-    Ok("Installation complete".to_string())
+    // Checksum verification
+    if let Some(expected_checksum) = checksum {
+        println!("[INSTALL] Verifying checksum...");
+        use sha2::{Sha256, Digest};
+        let mut hasher = Sha256::new();
+        let mut file_to_check = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
+        std::io::copy(&mut file_to_check, &mut hasher).map_err(|e| e.to_string())?;
+        let hash = format!("{:x}", hasher.finalize());
+        
+        if hash != expected_checksum.to_lowercase() {
+            println!("[INSTALL] Checksum mismatch! Expected: {}, Got: {}", expected_checksum, hash);
+            fs::remove_file(&temp_tar_gz).ok();
+            return Err(format!("Security Alert: Checksum mismatch! Expected: {}, Found: {}", expected_checksum, hash));
+        }
+        println!("[INSTALL] Checksum OK");
+    }
+
+    let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| format!("Impossible de rouvrir l'archive pour extraction : {}", e))?;
+    let tar = GzDecoder::new(tar_gz);
+    let mut archive = Archive::new(tar);
+    println!("[INSTALL] Unpacking archive into {:?}", app_dir);
+    archive.unpack(&app_dir).map_err(|e| format!("Le désarchivage du tar.gz a échoué (corrompue ?) : {}", e))?;
+
+    fs::remove_file(temp_tar_gz).ok();
+
+    // 5. Native Initialization (Signal 101)
+    println!("[INSTALL] Starting native initialization...");
+    let _ = window.emit("download-progress", ProgressPayload { 
+        app_id: app_id.clone(), 
+        progress: 101 
+    });
+
+    #[cfg(target_os = "windows")]
+    let exe_path = app_dir.join("schoolmanage.exe");
+    #[cfg(not(target_os = "windows"))]
+    let exe_path = app_dir.join("schoolmanage");
+
+    if exe_path.exists() {
+        println!("[INSTALL] Executing setup: {:?}", exe_path);
+        let mut cmd = Command::new(&exe_path);
+        cmd.arg("--ether-setup");
+        cmd.current_dir(&app_dir);
+        
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
+
+        let output = cmd.output().map_err(|e| format!("Failed to launch setup: {}", e))?;
+        
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            println!("[INSTALL] Setup failed. STDOUT: {} STDERR: {}", stdout, stderr);
+            return Err(format!("Installation failed during database initialization.\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
+        }
+        println!("[INSTALL] Setup successful");
+    } else {
+        println!("[INSTALL] Warning: Setup binary not found at {:?}", exe_path);
+    }
+
+    // Notify UI of completion
+    let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
+        "app_id": app_id,
+        "status": "installed"
+    }));
+
+    Ok(format!("App {} installed and verified", app_id))
 }
 
 pub fn finalize_installation<R: Runtime>(
@@ -266,6 +284,7 @@ pub fn finalize_installation<R: Runtime>(
 
     let result: Result<(), String> = (|| {
         if let Some(checksum) = expected_checksum {
+            println!("[INSTALL] Verifying checksum...");
             use sha2::{Sha256, Digest};
             let mut hasher = Sha256::new();
             let mut file_to_check = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
@@ -273,15 +292,22 @@ pub fn finalize_installation<R: Runtime>(
             let hash = format!("{:x}", hasher.finalize());
             
             if hash != checksum.to_lowercase() {
+                println!("[INSTALL] Checksum mismatch! Expected: {}, Got: {}", checksum, hash);
                 fs::remove_file(&temp_tar_gz).ok();
                 return Err("Checksum mismatch".to_string());
             }
+            println!("[INSTALL] Checksum OK");
         }
 
+        println!("[INSTALL] Unpacking archive into {:?}", app_dir);
         let tar_gz = fs::File::open(&temp_tar_gz).map_err(|e| e.to_string())?;
         let tar = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(tar);
-        archive.unpack(&app_dir).map_err(|e| e.to_string())?;
+        archive.unpack(&app_dir).map_err(|e| {
+            println!("[INSTALL] Unpack error: {}", e);
+            e.to_string()
+        })?;
+        println!("[INSTALL] Unpack successful");
         Ok(())
     })();
 
