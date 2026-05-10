@@ -164,16 +164,14 @@ pub async fn download_app<R: Runtime>(
 
     let handle = tokio::spawn(async move {
         let result = async move {
-            let task_state = {
-                let tasks = dm_task.tasks.lock().map_err(|_| "Lock error")?;
-                tasks.get(&app_id_task)
-                    .cloned()
-                    .ok_or_else(|| "Download task missing".to_string())?
-            };
+            let mut app_dir = app_handle_task.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
+            app_dir.push("apps");
+            app_dir.push(&app_id_task);
+            fs::create_dir_all(&app_dir).map_err(|e| format!("Impossible de créer le dossier de l'app : {}", e))?;
+            let temp_tar_gz = app_dir.join("temp.tar.gz");
 
-            let mut downloaded = task_state.downloaded;
-            let mut progress: u64 = if task_state.total_size > 0 && downloaded > 0 {
-                std::cmp::min(100, downloaded * 100 / task_state.total_size)
+            let mut downloaded = if temp_tar_gz.exists() {
+                fs::metadata(&temp_tar_gz).map(|m| m.len()).unwrap_or(0)
             } else {
                 0
             };
@@ -192,19 +190,35 @@ pub async fn download_app<R: Runtime>(
             }
 
             let response = request.send().await.map_err(|e| format!("Échec du téléchargement réseau : {}", e))?;
+
+            if response.status() == reqwest::StatusCode::RANGE_NOT_SATISFIABLE {
+                let _ = fs::remove_file(&temp_tar_gz);
+                return Err("Fichier distant modifié (Erreur 416). Nettoyage local effectué, veuillez relancer l'installation.".to_string());
+            }
+
             if !(response.status().is_success() || response.status() == reqwest::StatusCode::PARTIAL_CONTENT) {
                 return Err(format!("Server returned error: {}", response.status()));
             }
 
-            let total_size = response.content_length().unwrap_or(0);
             let supports_range = response.status() == reqwest::StatusCode::PARTIAL_CONTENT;
+            let content_length = response.content_length().unwrap_or(0);
+            
+            let mut total_size = if supports_range {
+                downloaded + content_length
+            } else {
+                content_length
+            };
 
-            let mut app_dir = app_handle_task.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
-            app_dir.push("apps");
-            app_dir.push(&app_id_task);
-            fs::create_dir_all(&app_dir).map_err(|e| format!("Impossible de créer le dossier de l'app : {}", e))?;
+            if downloaded > 0 && !supports_range {
+                downloaded = 0;
+            }
 
-            let temp_tar_gz = app_dir.join("temp.tar.gz");
+            let mut progress: u64 = if total_size > 0 && downloaded > 0 {
+                std::cmp::min(100, downloaded * 100 / total_size)
+            } else {
+                0
+            };
+
             let mut file = if downloaded > 0 && supports_range && temp_tar_gz.exists() {
                 OpenOptions::new()
                     .create(true)
@@ -212,10 +226,6 @@ pub async fn download_app<R: Runtime>(
                     .open(&temp_tar_gz)
                     .map_err(|e| format!("Impossible d'ouvrir le fichier temporaire : {}", e))?
             } else {
-                if temp_tar_gz.exists() {
-                    downloaded = 0;
-                    progress = 0;
-                }
                 fs::File::create(&temp_tar_gz).map_err(|e| format!("Impossible de créer l'archive temporaire : {}", e))?
             };
 
