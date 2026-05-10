@@ -270,14 +270,20 @@ pub async fn run_app_setup<R: Runtime>(
         return Err("Application non installée".to_string());
     }
 
+    let script_name = if cfg!(target_os = "windows") { "hub_setup.bat" } else { "hub_setup.sh" };
+    if !app_path.join(script_name).exists() {
+        // Optionnel : si l'application n'a pas de script de configuration, on considère que c'est un succès.
+        return Ok(());
+    }
+
     // --- EXECUTE hub_setup.sh ---
     let mut setup_cmd = if cfg!(target_os = "windows") {
         let mut c = Command::new("cmd");
-        c.arg("/C").arg("hub_setup.bat");
+        c.arg("/C").arg(script_name);
         c
     } else {
         let mut c = Command::new("sh");
-        c.arg("-c").arg("./hub_setup.sh");
+        c.arg("-c").arg(format!("./{}", script_name));
         c
     };
 
