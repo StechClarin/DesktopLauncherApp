@@ -255,9 +255,11 @@ pub async fn get_app_manifest<R: Runtime>(
 pub async fn run_app_setup<R: Runtime>(
     app_handle: AppHandle<R>,
     app_id: String,
-    _tenant_id: String,
-    _config: DbConfig
+    tenant_id: String,
+    config: DbConfig
 ) -> Result<(), String> {
+    let _ = tenant_id;
+    let _ = config;
     // Basic setup logic extracted
     let app_data_path = app_handle.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
     let mut app_path = app_data_path.clone();

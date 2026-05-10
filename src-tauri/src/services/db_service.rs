@@ -60,9 +60,10 @@ pub async fn test_db_connection(config: DbConfig) -> Result<String, String> {
 #[tauri::command]
 pub async fn initialize_database<R: Runtime>(
     app_handle: AppHandle<R>,
-    _config: DbConfig, 
+    config: DbConfig, 
     app_id: String
 ) -> Result<String, String> {
+    let _ = config;
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);

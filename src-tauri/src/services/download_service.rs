@@ -145,8 +145,8 @@ pub async fn download_app<R: Runtime>(
         task.status = DownloadStatus::Downloading;
         task.url = url.clone();
         task.checksum = checksum.clone();
-        dm.save_to_disk(&app_handle);
     }
+    dm.save_to_disk(&app_handle);
 
     let _ = app_handle.emit("download-status-changed", serde_json::json!({
         "app_id": app_id.clone(),
@@ -316,9 +316,11 @@ pub async fn download_app<R: Runtime>(
     abort_handles.remove(&app_id);
 
     if let Err(ref error) = result {
-        let mut tasks = dm.tasks.lock().map_err(|_| "Lock error")?;
-        if let Some(task) = tasks.get_mut(&app_id) {
-            task.status = DownloadStatus::Error(error.clone());
+        {
+            let mut tasks = dm.tasks.lock().map_err(|_| "Lock error")?;
+            if let Some(task) = tasks.get_mut(&app_id) {
+                task.status = DownloadStatus::Error(error.clone());
+            }
         }
         dm.save_to_disk(&app_handle);
     }
@@ -368,9 +370,11 @@ pub fn finalize_installation<R: Runtime>(
     })();
 
     if let Err(e) = result {
-        let mut tasks = dm.tasks.lock().unwrap();
-        if let Some(t) = tasks.get_mut(&app_id) {
-            t.status = DownloadStatus::Error(e.clone());
+        {
+            let mut tasks = dm.tasks.lock().unwrap();
+            if let Some(t) = tasks.get_mut(&app_id) {
+                t.status = DownloadStatus::Error(e.clone());
+            }
         }
         dm.save_to_disk(&app_handle);
         let _ = window.emit("download-status-changed", serde_json::json!({
