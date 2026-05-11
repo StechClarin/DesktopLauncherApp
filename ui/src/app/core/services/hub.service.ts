@@ -901,7 +901,8 @@ export class HubService {
             this.toast.info(`Démarrage de ${app.name}...`);
             const actualPort = await invoke<number>('execute_app', {
                 appId: app.id,
-                tenantId: this.hubId()
+                tenantId: this.hubId(),
+                cloudApiUrl: app.cloud_api_url || null
             });
 
             this.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
@@ -957,7 +958,9 @@ export class HubService {
             }
 
             // 1. Fetch from CLOUD (Django API)
-            const cloudApiUrl = this.getMetaEnv('VITE_CLOUD_API_URL', 'http://127.0.0.1:8000'); 
+            const app = this.installedApps().find(a => a.id === id) || this.availableApps().find(a => a.id === id);
+            const baseCloudUrl = (app?.cloud_api_url || this.getMetaEnv('VITE_CLOUD_API_URL', 'http://127.0.0.1:8000')).replace(/\/+$/, '');
+            const cloudApiUrl = baseCloudUrl.endsWith('/api') ? baseCloudUrl.slice(0, -4) : baseCloudUrl;
             const apiKey = this.getMetaEnv('VITE_HUB_API_KEY', 'ethernanos-hub-secret-2026');
 
             this.toast.info("Récupération des données distantes...");
@@ -1001,7 +1004,9 @@ export class HubService {
         try {
             const meta = import.meta as any;
             const apiKey = (meta.env && meta.env.VITE_HUB_API_KEY) || 'ethernanos-hub-secret-2026';
-            const cloudApiUrl = this.getMetaEnv('VITE_CLOUD_API_URL', 'http://127.0.0.1:8000');
+            const app = this.installedApps().find(a => a.id === id) || this.availableApps().find(a => a.id === id);
+            const baseCloudUrl = (app?.cloud_api_url || this.getMetaEnv('VITE_CLOUD_API_URL', 'http://127.0.0.1:8000')).replace(/\/+$/, '');
+            const cloudApiUrl = baseCloudUrl.endsWith('/api') ? baseCloudUrl.slice(0, -4) : baseCloudUrl;
 
             // 1. Fetch Deltas from LOCAL
             this.toast.info("Extraction des modifications locales...");

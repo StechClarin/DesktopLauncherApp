@@ -13,6 +13,7 @@ pub async fn execute_app<R: Runtime>(
     _window: Window<R>,
     app_id: String,
     tenant_id: String,
+    cloud_api_url: Option<String>,
 ) -> Result<u16, String> {
     let app_data_path = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     
@@ -130,7 +131,8 @@ pub async fn execute_app<R: Runtime>(
         "app_port": actual_port,
         "db_config": app_db_creds,
         "hub_api_key": hub_api_key,
-        "url_prefix": format!("/schoolmanage/{}/", tenant_id)
+        "url_prefix": format!("/schoolmanage/{}/", tenant_id),
+        "cloud_api_url": cloud_api_url
     });
 
     use std::io::Write;
