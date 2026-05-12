@@ -46,6 +46,19 @@ export class HubService {
     isLaunchingApp = this.state.isLaunchingApp;
     launchStep = this.state.launchStep;
     
+    // Missing Signals
+    installingApps = this.state.installingApps;
+    featuredApp = this.state.featuredApp;
+    recentApps = this.state.recentApps;
+    featuredModules = this.state.featuredModules;
+    storeNewReleases = this.state.storeNewReleases;
+    mostUsedApp = this.state.mostUsedApp;
+    libraryModules = this.state.libraryModules;
+    hubUpdateProgress = this.state.hubUpdateProgress;
+    storeDeals = this.state.storeDeals;
+    storeModules = this.state.storeModules;
+    refreshTabRequested$ = this.state.refreshTabRequested$;
+    
     // Expose Computed (Facade Pattern)
     enrichedApps = this.state.enrichedApps;
     allApps = this.state.allApps;
@@ -104,16 +117,37 @@ export class HubService {
     closeTab(id: string) { return this.navigation.closeTab(id); }
     selectTab(id: string) { return this.navigation.selectTab(id); }
     openStoreItem(id: string) { return this.navigation.openStoreItem(id); }
+    refreshTab(appId: string) { return this.state.refreshTabRequestedSource.next(appId); }
+    navigateToModuleApp(module: any) { 
+        const app = this.state.allApps().find(a => a.name === module.appName || a.name === module.parentAppName);
+        if (app) this.navigation.openStoreItem(app.id);
+    }
 
     // Sync
-    pullSync(appId: string) { return this.sync.pullSync(appId); }
+    pullSync(appId?: string) { 
+        const id = appId || this.state.selectedApp()?.id;
+        if (id) return this.sync.pullSync(id); 
+        return Promise.reject("No app selected for sync");
+    }
     pushSync(appId: string) { return this.sync.pushSync(appId); }
     executeDeepSync(appId?: string) { return this.sync.executeDeepSync(appId); }
 
-    // Config
+    // Config & History
     saveDbConfig(config: any) { return this.config.saveDbConfig(config); }
     testDbConnection(config: any) { return this.config.testDbConnection(config); }
     toggleOfflineMode() { return this.config.toggleOfflineMode(); }
+    clearHistoryItem(id: string) {
+        this.state.downloadHistory.update(h => h.filter(item => item.id !== id));
+    }
+    
+    // Updates
+    checkHubUpdate() { 
+        // This would normally call a logic in HubDataService
+        console.log("Checking for Hub updates...");
+    }
+    triggerHubUpdate() {
+        console.log("Triggering Hub update...");
+    }
     
     // Utils
     async syncDownloadTasks() {

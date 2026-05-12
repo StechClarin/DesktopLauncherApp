@@ -203,7 +203,7 @@ pub async fn download_app<R: Runtime>(
             let supports_range = response.status() == reqwest::StatusCode::PARTIAL_CONTENT;
             let content_length = response.content_length().unwrap_or(0);
             
-            let mut total_size = if supports_range {
+            let total_size = if supports_range {
                 downloaded + content_length
             } else {
                 content_length

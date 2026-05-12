@@ -39,11 +39,11 @@ export class AppDetailViewComponent {
   }
 
   isInstalled(appId: string): boolean {
-    return this.hubService.installedApps().some(a => a.id === appId);
+    return this.hubService.installedApps().some((a: any) => a.id === appId);
   }
 
   isInstalling(appId: string): boolean {
-    return this.hubService.installingApps().some(a => a.id === appId);
+    return this.hubService.installingApps().some((a: any) => a.id === appId);
   }
 
   pauseDownload(appId: string) {

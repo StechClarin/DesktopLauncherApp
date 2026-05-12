@@ -57,7 +57,7 @@ export class HubNavigationService {
         try {
             await invoke('kill_app', { appId });
             // Point Industrial v20.2: Fermeture du terminal associé
-            this.terminal.close(appId);
+            this.terminal.close(); // Correction: Pas d'argument selon l'erreur TS
         } catch (e) { console.error('Failed to kill app', e); }
 
         this.state.activeTabs.update(tabs => {

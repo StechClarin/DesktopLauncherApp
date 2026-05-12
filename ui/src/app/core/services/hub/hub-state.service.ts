@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { DbConfig } from '../../models/hub.models';
-import { MOCK_APPS } from '../models/app-manifest.mock';
+import { MOCK_APPS } from '../../models/app-manifest.mock';
 import { Subject } from 'rxjs';
 
 @Injectable({

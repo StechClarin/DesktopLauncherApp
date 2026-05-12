@@ -50,7 +50,7 @@ export class HubLayoutComponent {
 
     constructor() {
         this.sub.add(
-            this.hubService.refreshTabRequested$.subscribe(appId => {
+            this.hubService.refreshTabRequested$.subscribe((appId: string) => {
                 this.refreshIframe(appId);
             })
         );
