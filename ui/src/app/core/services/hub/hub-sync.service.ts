@@ -26,14 +26,16 @@ export class HubSyncService {
         }
     }
 
-    async pullSync(appId: string) {
-        const port = this.state.appPorts()[appId] || 8000;
+    async pullSync(appId?: string) {
+        const id = appId || this.state.selectedApp()?.id;
+        if (!id) return;
+        const port = this.state.appPorts()[id] || 8000;
         this.state.isSyncing.set(true);
         try {
             const hubId = this.state.hubId();
             if (!hubId) throw new Error("Hub ID manquant.");
 
-            const app = [...this.state.installedApps(), ...this.state.availableApps()].find(a => a.id === appId);
+            const app = [...this.state.installedApps(), ...this.state.availableApps()].find(a => a.id === id);
             const cloudApiUrl = (app?.cloud_api_url || this.state.cloudApiUrl()).replace(/\/+$/, '').replace(/\/api$/, '');
             const apiKey = this.state.hubApiKey();
 
@@ -62,11 +64,13 @@ export class HubSyncService {
         }
     }
 
-    async pushSync(appId: string): Promise<boolean> {
-        const port = this.state.appPorts()[appId] || 8000;
+    async pushSync(appId?: string): Promise<boolean> {
+        const id = appId || this.state.selectedApp()?.id;
+        if (!id) return true;
+        const port = this.state.appPorts()[id] || 8000;
         this.state.isSyncing.set(true);
         try {
-            const app = [...this.state.installedApps(), ...this.state.availableApps()].find(a => a.id === appId);
+            const app = [...this.state.installedApps(), ...this.state.availableApps()].find(a => a.id === id);
             const cloudApiUrl = (app?.cloud_api_url || this.state.cloudApiUrl()).replace(/\/+$/, '').replace(/\/api$/, '');
             const apiKey = this.state.hubApiKey();
 

@@ -5,6 +5,7 @@ import { HubNavigationService } from './hub-navigation.service';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../toast.service';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 @Injectable({
     providedIn: 'root'
@@ -16,6 +17,35 @@ export class HubInstallerService {
     private supabase = inject(SupabaseService);
     private toast = inject(ToastService);
 
+    constructor() {
+        this.initProgressListeners();
+    }
+
+    private async initProgressListeners() {
+        await listen('download-progress', (event: any) => {
+            const { app_id, progress } = event.payload;
+            if (this.state.downloadingAppId() === app_id) {
+                this.state.installProgress.set(progress);
+            }
+        });
+
+        await listen('hub-update-progress', (event: any) => {
+            this.state.hubUpdateProgress.set(event.payload as number);
+        });
+
+        await listen('hub-app-status-changed', async (event: any) => {
+            const { app_id, status } = event.payload;
+            console.log(`[HUB_EVENT] App ${app_id} changed to ${status}`);
+            if (status === 'installed' || status === 'uninstalled') {
+                await this.data.init(); // Refresh everything
+            }
+        });
+    }
+
+    private getOsKeyword(): string {
+        return navigator.userAgent.toLowerCase().includes('win') ? 'windows-latest' : 'ubuntu-latest';
+    }
+
     async installApp(appId: string) {
         if (this.state.downloadingAppId()) return;
 
@@ -23,7 +53,7 @@ export class HubInstallerService {
             this.state.downloadingAppId.set(appId);
             this.state.installProgress.set(0);
 
-            const platform = navigator.userAgent.toLowerCase().includes('win') ? 'windows-latest' : 'ubuntu-latest';
+            const platform = this.getOsKeyword();
             const { data: release, error } = await this.supabase.client
                 .from('app_releases')
                 .select('version, download_url, checksum')
@@ -34,7 +64,7 @@ export class HubInstallerService {
                 .single();
 
             if (error || !release) {
-                this.toast.error("Version introuvable pour cette plateforme.");
+                this.toast.error("Version introuvable pour votre plateforme.");
                 this.state.downloadingAppId.set(null);
                 return;
             }
@@ -66,25 +96,12 @@ export class HubInstallerService {
         }
     }
 
-    private finalizeInstallation(appId: string, version: string) {
-        const app = this.state.availableApps().find(a => a.id === appId);
-        if (app) {
-            this.state.availableApps.update(apps => apps.filter(a => a.id !== appId));
-            this.state.installedApps.update(apps => [...apps, { ...app, status: 'installed' }]);
-            this.state.downloadHistory.update(h => [{ id: appId, name: app.name, version, date: new Date().toISOString(), status: 'completed' }, ...h]);
-        }
-        this.state.downloadingAppId.set(null);
-        this.state.installProgress.set(0);
-    }
-
     async uninstallApp(appId: string) {
         const app = [...this.state.installedApps(), ...this.state.availableApps()].find(a => a.id === appId);
         if (!app) return;
 
         try {
             this.state.isLoading.set(true);
-            
-            // Point Industrial v20.1: Fermeture forcée de l'app et du terminal avant désinstallation
             this.toast.info(`Arrêt de ${app.name} avant désinstallation...`);
             await this.navigation.closeTab(appId); 
             
@@ -92,14 +109,70 @@ export class HubInstallerService {
             const config = this.state.dbConfig() || { host:'', port:0, user:'', pass:'' };
             await invoke('uninstall_app', { config, appId });
 
-            if (this.state.hubId()) {
-                await this.data.loadHomeSections(this.state.hubId()!);
-            }
+            await this.data.init(); // Refresh UI
             this.toast.success(`${app.name} a été supprimée.`);
         } catch (e) {
             this.toast.error(`Erreur de désinstallation : ${e}`);
         } finally {
             this.state.isLoading.set(false);
+        }
+    }
+
+    private finalizeInstallation(appId: string, version: string) {
+        const app = this.state.availableApps().find(a => a.id === appId);
+        if (app) {
+            this.state.availableApps.update(apps => apps.filter(a => a.id !== appId));
+            this.state.installedApps.update(apps => [...apps, { ...app, status: 'installed' }]);
+            
+            this.state.downloadHistory.update(history => [
+                { id: appId, name: app.name, version: version, date: new Date().toISOString(), status: 'completed' },
+                ...history
+            ]);
+        }
+        this.state.downloadingAppId.set(null);
+        this.state.installProgress.set(0);
+    }
+
+    async checkHubUpdate(hubAppId: string) {
+        try {
+            const { data, error } = await this.supabase.client
+                .from('app_releases')
+                .select('version, checksum')
+                .eq('app_id', hubAppId)
+                .order('released_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (!error && data?.version && data.version !== this.state.currentHubVersion()) {
+                this.state.latestHubVersion.set(data.version);
+            }
+        } catch (e) { console.error('Hub update check failed', e); }
+    }
+
+    async triggerHubUpdate() {
+        if (this.state.isUpdatingHub()) return;
+        // NOTE: In production this ID would be in env
+        const hubAppId = '00000000-0000-0000-0000-000000000000'; 
+
+        try {
+            this.state.isUpdatingHub.set(true);
+            const { data: release } = await this.supabase.client
+                .from('app_releases')
+                .select('download_url, checksum')
+                .eq('app_id', hubAppId)
+                .eq('platform', this.getOsKeyword())
+                .order('released_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (!release) throw new Error("Update not found");
+
+            await invoke('update_hub', { url: release.download_url, checksum: release.checksum });
+            this.toast.success("Mise à jour téléchargée !");
+        } catch (e) {
+            this.toast.error(`Échec MAJ : ${e}`);
+        } finally {
+            this.state.isUpdatingHub.set(false);
         }
     }
 

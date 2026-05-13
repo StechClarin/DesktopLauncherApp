@@ -14,24 +14,30 @@ export class HubDataService {
     private sub = new Subscription();
 
     async init() {
-        this.sub.unsubscribe(); // Nettoyage de l'ancien abonnement
+        console.log("[HUB_DATA] Initializing data service...");
+        this.sub.unsubscribe();
         this.sub = this.supabase.currentUser$.subscribe(async user => {
+            console.log("[HUB_DATA] User state changed:", user?.email);
             if (user) {
                 try {
                     this.clearData(false);
-                    const { data: tenant, error } = await this.supabase.getTenantByOwner(user.id);
+                    const { data: tenant, error } = await this.supabase.getTenantByEmail(user.email || '');
                     if (error) throw error;
                     
                     if (tenant) {
+                        console.log("[HUB_DATA] Tenant found:", tenant.name, "HubID:", tenant.hub_id);
                         this.state.hubId.set(tenant.hub_id);
                         this.state.tenantName.set(tenant.name || 'Mon Établissement');
                         await this.loadHomeSections(tenant.id);
+                    } else {
+                        console.warn("[HUB_DATA] No tenant found for user", user.id);
                     }
                 } catch (e) {
-                    console.error("Data init error:", e);
+                    console.error("[HUB_DATA] Data init error:", e);
                     this.clearData(true);
                 }
             } else {
+                console.log("[HUB_DATA] No user, clearing data.");
                 this.clearData(true);
             }
         });
@@ -87,13 +93,13 @@ export class HubDataService {
     }
 
     async loadHomeSections(tenantId: string) {
+        console.log("[HUB_DATA] Loading home sections for tenant:", tenantId);
         if (this.state.isOffline()) {
             await this.loadOfflineData();
             return;
         }
         this.state.isLoading.set(true);
         try {
-            // Utilisation de Promise.allSettled pour ne pas tout bloquer si une table est vide ou en erreur
             const results = await Promise.allSettled([
                 this.supabase.client.from('tenant_licenses').select('*').eq('tenant_id', tenantId),
                 this.supabase.client.from('bundles').select('*').eq('is_active', true),
@@ -101,39 +107,70 @@ export class HubDataService {
                 this.supabase.client.from('apps').select('*, modules:app_modules(*)').eq('is_active', true)
             ]);
 
-            const licenses = results[0].status === 'fulfilled' ? results[0].value.data : [];
-            const bundles = results[1].status === 'fulfilled' ? results[1].value.data : [];
-            const promotions = results[2].status === 'fulfilled' ? results[2].value.data : [];
-            const allApps = results[3].status === 'fulfilled' ? results[3].value.data : [];
+            const licenses = results[0].status === 'fulfilled' && !results[0].value.error ? results[0].value.data : [];
+            const bundles = results[1].status === 'fulfilled' && !results[1].value.error ? results[1].value.data : [];
+            const promotions = results[2].status === 'fulfilled' && !results[2].value.error ? results[2].value.data : [];
+            const allApps = results[3].status === 'fulfilled' && !results[3].value.error ? results[3].value.data : [];
+
+            console.log("[HUB_DATA] Data fetched from Supabase:", { 
+                licenses: licenses?.length, 
+                apps: allApps?.length,
+                hasError: results.some(r => r.status === 'rejected' || (r as any).value?.error)
+            });
 
             this.state.rawLicenses.set(licenses || []);
             this.state.bundles.set(bundles || []);
             this.state.activePromotions.set(promotions || []);
 
-            if (allApps) {
+            if (allApps && allApps.length > 0) {
                 const licensedModuleIds = new Set(licenses?.map(l => l.module_id) || []);
                 const installed = allApps.filter((app: any) => app.modules?.some((mod: any) => licensedModuleIds.has(mod.id)));
 
-                this.state.installedApps.set(await Promise.all(installed.map(async (a: any) => {
-                    const isPhysicallyInstalled = await invoke<boolean>('is_app_installed', { appId: a.id });
+                console.log("[HUB_DATA] Processing apps (licensed:", installed.length, ")");
+                
+                // On charge les apps disponibles et installées
+                const enrichedInstalled = await Promise.all(installed.map(async (a: any) => {
+                    let isPhysicallyInstalled = false;
+                    try {
+                        isPhysicallyInstalled = await invoke<boolean>('is_app_installed', { appId: a.id });
+                    } catch (e) { }
                     return { ...a, status: isPhysicallyInstalled ? 'installed' : 'owned', icon: a.icon_svg || '', banner: a.banner_url || '', modules: a.modules || [] };
-                })));
+                }));
+                this.state.installedApps.set(enrichedInstalled);
 
                 const installedIds = new Set(installed.map(a => a.id));
-                this.state.availableApps.set(await Promise.all(allApps.map(async (a: any) => {
+                const enrichedAvailable = await Promise.all(allApps.map(async (a: any) => {
                     const isInstalled = installedIds.has(a.id);
-                    const isPhysicallyInstalled = isInstalled ? await invoke<boolean>('is_app_installed', { appId: a.id }) : false;
+                    let isPhysicallyInstalled = false;
+                    if (isInstalled) {
+                        try {
+                            isPhysicallyInstalled = await invoke<boolean>('is_app_installed', { appId: a.id });
+                        } catch (e) { }
+                    }
                     return { ...a, status: isInstalled ? (isPhysicallyInstalled ? 'installed' : 'owned') : 'available', icon: a.icon_svg || '', banner: a.banner_url || '', modules: a.modules || [] };
-                })));
+                }));
+                this.state.availableApps.set(enrichedAvailable);
+                
                 this.state.unlockedModuleIds.set(Array.from(licensedModuleIds));
                 await this.saveCache();
+                console.log("[HUB_DATA] Hub UI populated with real data.");
+            } else {
+                console.warn("[HUB_DATA] Supabase returned no apps, using MOCKS as fallback.");
+                this.useMocks();
             }
         } catch (error) {
-            console.error('Error loading hub data:', error);
+            console.error('[HUB_DATA] Critical error loading hub data:', error);
             await this.loadOfflineData();
+            if (this.state.availableApps().length === 0) this.useMocks();
         } finally {
             this.state.isLoading.set(false);
         }
+    }
+
+    private useMocks() {
+        this.state.availableApps.set(MOCK_APPS);
+        this.state.installedApps.set(MOCK_APPS.filter(a => a.status === 'installed'));
+        this.state.unlockedModuleIds.set(['students', 'planning', 'exams', 'finance']);
     }
 
     isAppLicensed(app: any): boolean {

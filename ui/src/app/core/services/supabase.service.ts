@@ -64,12 +64,12 @@ export class SupabaseService {
     await this.supabase.auth.signOut();
   }
 
-  // Helper for fetching tenant info
-  async getTenantByOwner(userId: string) {
+  // Helper for fetching tenant info by authenticated user email
+  async getTenantByEmail(email: string) {
     return await this.supabase
       .from('tenants')
       .select('*')
-      .eq('owner_id', userId)
+      .eq('contact_email', email)
       .single();
   }
 }

@@ -149,7 +149,55 @@
         </div>
     </section>
 
-    <!-- 5. MODULES & EXTENSIONS -->
+    <!-- 5. MOST DOWNLOADED APPS -->
+    <section class="mb-24">
+        <div class="max-w-[1600px] mx-auto px-8">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                    <span class="w-1.5 h-8 bg-teal-500 rounded-full"></span>
+                    Les plus téléchargées
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                @if (hubService.isLoading()) {
+                    @for (i of [1,2,3,4]; track i) {
+                        <div class="h-72 glass-card rounded-2xl animate-pulse shimmer"></div>
+                    }
+                } @else {
+                    @for (app of hubService.storeTopDownloads(); track app.id) {
+                        <app-app-card [app]="app" mode="grid"></app-app-card>
+                    }
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. CATALOGUE COMPLET -->
+    <section class="mb-24">
+        <div class="max-w-[1600px] mx-auto px-8">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                    <span class="w-1.5 h-8 bg-violet-500 rounded-full"></span>
+                    Tout le catalogue
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                @if (hubService.isLoading()) {
+                    @for (i of [1,2,3,4,5,6,7,8]; track i) {
+                        <div class="h-72 glass-card rounded-2xl animate-pulse shimmer"></div>
+                    }
+                } @else {
+                    @for (app of hubService.storeCatalog(); track app.id) {
+                        <app-app-card [app]="app" mode="grid"></app-app-card>
+                    }
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. MODULES & EXTENSIONS -->
     <section class="max-w-[1600px] mx-auto px-8 mb-20 pb-20">
         <div class="flex items-center justify-between mb-10">
             <h2 class="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">

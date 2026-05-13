@@ -16,6 +16,34 @@ export class HubNavigationService {
     private toast = inject(ToastService);
     private terminal = inject(TerminalService);
 
+    constructor() {
+        this.syncActiveApps();
+    }
+
+    async syncActiveApps() {
+        try {
+            const apps: any[] = await invoke('get_active_apps');
+            if (apps && apps.length > 0) {
+                this.state.activeTabs.update(tabs => {
+                    const newTabs = [...tabs];
+                    apps.forEach(app => {
+                        if (!newTabs.find(t => t.id === app.id)) {
+                            newTabs.push({ 
+                                id: app.id, 
+                                name: app.name, 
+                                url: `http://127.0.0.1:${app.port}`, 
+                                isActive: false 
+                            });
+                        }
+                    });
+                    return newTabs;
+                });
+            }
+        } catch (e) {
+            console.error('Failed to sync active apps', e);
+        }
+    }
+
     setActiveTab(tab: 'home' | 'library' | 'store' | 'downloads' | 'settings') {
         this.state.activeTab.set(tab);
         sessionStorage.setItem('hub-active-tab', tab);
@@ -143,6 +171,13 @@ export class HubNavigationService {
         if (app) {
             this.state.selectedApp.set(app);
             this.setActiveTab('store');
+        }
+    }
+
+    navigateToModuleApp(module: any) {
+        const app = this.state.allApps().find(a => a.id === module.app_id);
+        if (app) {
+            this.state.selectedApp.set(app);
         }
     }
 }
