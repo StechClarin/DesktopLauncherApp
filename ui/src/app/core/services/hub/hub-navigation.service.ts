@@ -175,7 +175,7 @@ export class HubNavigationService {
                 });
 
                 const subLogs = this.terminal.output$.subscribe(log => {
-                    if (log.appId === app.id) {
+                    if (log && log.appId === app.id) {
                         lastActivity = Date.now(); // L'app donne des signes de vie
                         if (log.text.toLowerCase().includes('error') || log.text.toLowerCase().includes('exception') || log.text.toLowerCase().includes('failed')) {
                             this.state.launchStep.set('Détection d\'une instabilité...');

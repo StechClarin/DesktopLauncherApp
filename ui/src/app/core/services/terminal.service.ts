@@ -23,6 +23,9 @@ export class TerminalService {
   private readySubject = new BehaviorSubject<{appId: string} | null>(null);
   public ready$ = this.readySubject.asObservable();
 
+  private outputSubject = new BehaviorSubject<{appId: string, text: string} | null>(null);
+  public output$ = this.outputSubject.asObservable();
+
   private activeAppId: string | null = null;
 
   constructor() {
@@ -52,6 +55,9 @@ export class TerminalService {
       if (log.app_id === this.activeAppId) {
         this.logsSubject.next([...appLogs]);
       }
+
+      // Émission immédiate pour la surveillance d'activité
+      this.outputSubject.next({ appId: log.app_id, text: log.message });
     });
 
     // 2. Listen for the reactive READY signal (Industrial v2.0)
