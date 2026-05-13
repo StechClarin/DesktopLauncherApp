@@ -138,27 +138,60 @@ export class HubNavigationService {
             });
 
             this.state.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
-            this.state.launchStep.set('Attente du signal de l\'application...');
+            this.state.launchStep.set('Initialisation du système (cela peut prendre du temps au premier lancement)...');
             
-            // Wait for READY signal
+            // Wait for READY signal or monitor for errors
             const isReady = await new Promise<boolean>((resolve) => {
-                const timeout = setTimeout(() => { sub.unsubscribe(); resolve(false); }, 45000); // 45s plus généreux
-                const sub = this.terminal.ready$.subscribe(ready => {
+                let lastActivity = Date.now();
+                const MAX_INACTIVITY = 30000; // 30s sans aucun log = blocage
+                const TOTAL_TIMEOUT = 120000; // 2 minutes max pour le premier lancement
+                
+                const watchdog = setInterval(() => {
+                    const inactiveTime = Date.now() - lastActivity;
+                    if (inactiveTime > MAX_INACTIVITY) {
+                        console.warn(`[LAUNCH] Inactivity detected for ${app.name}`);
+                        clearInterval(watchdog);
+                        subReady.unsubscribe();
+                        subLogs.unsubscribe();
+                        resolve(false); // Instable
+                    }
+                }, 5000);
+
+                const timeout = setTimeout(() => {
+                    clearInterval(watchdog);
+                    subReady.unsubscribe();
+                    subLogs.unsubscribe();
+                    resolve(false);
+                }, TOTAL_TIMEOUT);
+
+                const subReady = this.terminal.ready$.subscribe(ready => {
                     if (ready && ready.appId === app.id) {
                         clearTimeout(timeout);
-                        sub.unsubscribe();
+                        clearInterval(watchdog);
+                        subReady.unsubscribe();
+                        subLogs.unsubscribe();
                         resolve(true);
+                    }
+                });
+
+                const subLogs = this.terminal.output$.subscribe(log => {
+                    if (log.appId === app.id) {
+                        lastActivity = Date.now(); // L'app donne des signes de vie
+                        if (log.text.toLowerCase().includes('error') || log.text.toLowerCase().includes('exception') || log.text.toLowerCase().includes('failed')) {
+                            this.state.launchStep.set('Détection d\'une instabilité...');
+                        }
                     }
                 });
             });
             
             if (isReady) {
-                this.state.launchStep.set('Finalisation...');
+                this.state.launchStep.set('Application prête !');
                 this.openTab(app.id, app.name, `http://127.0.0.1:${actualPort}`, app.icon_svg || app.icon);
                 await this.sync.pullSync(app.id); 
                 this.state.isLaunchingApp.set(null);
             } else {
-                throw new Error(`Timeout : L'application ${app.name} est trop longue à démarrer.`);
+                this.toast.error(`Erreur : L'application ${app.name} semble instable ou trop longue à démarrer.`, 8000);
+                this.state.isLaunchingApp.set(null);
             }
         } catch (error) {
             this.toast.error(`Erreur au lancement : ${error}`);
