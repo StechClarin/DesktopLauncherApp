@@ -9,6 +9,7 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
+    "remote": "npm --prefix ui run remote",
     "build": "tauri build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

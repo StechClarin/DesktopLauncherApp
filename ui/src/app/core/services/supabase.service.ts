@@ -23,9 +23,8 @@ export class SupabaseService {
           getItem: (key: string) => window.localStorage.getItem(key),
           setItem: (key: string, value: string) => window.localStorage.setItem(key, value),
           removeItem: (key: string) => window.localStorage.removeItem(key),
-          // No-op lock implementation to bypass Navigator LockManager issues in Tauri
-          lock: async (name: string, callback: () => Promise<any>) => await callback(),
         } as any,
+        lock: async (name: string, acquireTimeout: number, callback: () => Promise<any>) => await callback(),
         storageKey: 'ethernanos-launcher-auth',
         autoRefreshToken: true,
         persistSession: true,

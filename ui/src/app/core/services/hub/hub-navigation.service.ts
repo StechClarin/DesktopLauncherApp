@@ -21,6 +21,7 @@ export class HubNavigationService {
     }
 
     async syncActiveApps() {
+        if (!(window as any).__TAURI_INTERNALS__) return;
         try {
             const apps: any[] = await invoke('get_active_apps');
             this.state.activeTabs.update(tabs => {
@@ -98,7 +99,9 @@ export class HubNavigationService {
         }
 
         try {
-            await invoke('kill_app', { appId });
+            if ((window as any).__TAURI_INTERNALS__) {
+                await invoke('kill_app', { appId });
+            }
             // Point Industrial v20.2: Fermeture du terminal associé
             this.terminal.close(); // Correction: Pas d'argument selon l'erreur TS
         } catch (e) { console.error('Failed to kill app', e); }
@@ -120,7 +123,11 @@ export class HubNavigationService {
     }
 
     async launchApp(app: any) {
-        this.state.isLaunchingApp.set(app.id);
+        if (!(window as any).__TAURI_INTERNALS__) {
+            this.toast.show('info', 'Le lancement d\'applications n\'est possible que depuis l\'application de bureau.');
+            return;
+        }
+        console.log(`Preparing launch for app: ${app.name}`);
         this.state.launchStep.set('Préparation de l\'environnement...');
         
         this.terminal.setActiveApp(app.id);

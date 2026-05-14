@@ -22,6 +22,7 @@ export class HubInstallerService {
     }
 
     private async initProgressListeners() {
+        if (!(window as any).__TAURI_INTERNALS__) return;
         await listen('download-progress', (event: any) => {
             const { app_id, progress } = event.payload;
             if (this.state.downloadingAppId() === app_id) {
@@ -53,6 +54,7 @@ export class HubInstallerService {
     }
 
     async syncDownloadTasks() {
+        if (!(window as any).__TAURI_INTERNALS__) return;
         try {
             const tasks = await invoke<any[]>('get_download_tasks');
             this.state.downloadTasks.set(tasks);
@@ -66,6 +68,10 @@ export class HubInstallerService {
     }
 
     async installApp(appId: string) {
+        if (!(window as any).__TAURI_INTERNALS__) {
+            this.toast.show('info', 'L\'installation n\'est possible que depuis l\'application de bureau.');
+            return;
+        }
         if (this.state.downloadingAppId()) return;
 
         try {
@@ -116,6 +122,10 @@ export class HubInstallerService {
     }
 
     async uninstallApp(appId: string) {
+        if (!(window as any).__TAURI_INTERNALS__) {
+            this.toast.show('info', 'La désinstallation n\'est possible que depuis l\'application de bureau.');
+            return;
+        }
         const app = [...this.state.installedApps(), ...this.state.availableApps()].find(a => a.id === appId);
         if (!app) return;
 

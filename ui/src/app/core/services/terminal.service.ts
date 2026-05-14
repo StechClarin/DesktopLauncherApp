@@ -33,6 +33,10 @@ export class TerminalService {
   }
 
   private async initListeners() {
+    if (!(window as any).__TAURI_INTERNALS__) {
+      console.warn("[Terminal] Environnement non-Tauri détecté, les logs ne seront pas disponibles.");
+      return;
+    }
     // 1. Listen for raw logs
     await listen<any>('app-log', (event) => {
       const payload = event.payload;

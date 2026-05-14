@@ -14,6 +14,7 @@ export class HubConfigService {
     private toast = inject(ToastService);
 
     async loadDbConfig() {
+        if (!(window as any).__TAURI_INTERNALS__) return;
         try {
             const config = await invoke<DbConfig | null>('get_db_config');
             if (config) this.state.dbConfig.set(config);
