@@ -84,6 +84,10 @@ pub async fn execute_app<R: Runtime>(
     
     let hub_pid = std::process::id();
 
+    let hub_api_key = std::env::var("VITE_HUB_API_KEY").unwrap_or_else(|_| "ethernanos-hub-secret-2026".to_string());
+    let admin_pass = std::env::var("ADMIN_DEFAULT_PASSWORD").unwrap_or_else(|_| "admin1234".to_string());
+    println!("[DEBUG] ADMIN_DEFAULT_PASSWORD injected into child process: {}", if admin_pass.is_empty() { "NO" } else { "YES" });
+
     // Preparation of the command
     let mut cmd = if cfg!(target_os = "windows") {
         let mut c = Command::new("cmd");
@@ -101,9 +105,6 @@ pub async fn execute_app<R: Runtime>(
     let mut hasher = Sha256::new();
     hasher.update(session_msg.as_bytes());
     let session_token = format!("{:x}", hasher.finalize());
-
-    let hub_api_key = std::env::var("VITE_HUB_API_KEY").unwrap_or_else(|_| "ethernanos-hub-secret-2026".to_string());
-    let admin_pass = std::env::var("ADMIN_DEFAULT_PASSWORD").unwrap_or_else(|_| "admin1234".to_string());
     
     let mut cmd = cmd.current_dir(&app_path);
     cmd = cmd.env("ETHER_SESSION_TOKEN", &session_token)
@@ -283,6 +284,10 @@ pub async fn run_app_setup<R: Runtime>(
         return Ok(());
     }
 
+    let hub_api_key = std::env::var("VITE_HUB_API_KEY").unwrap_or_else(|_| "ethernanos-hub-secret-2026".to_string());
+    let admin_pass = std::env::var("ADMIN_DEFAULT_PASSWORD").unwrap_or_else(|_| "admin1234".to_string());
+    println!("[DEBUG] ADMIN_DEFAULT_PASSWORD injected into setup process: {}", if admin_pass.is_empty() { "NO" } else { "YES" });
+
     // --- EXECUTE hub_setup.sh ---
     let mut setup_cmd = if cfg!(target_os = "windows") {
         let mut c = Command::new("cmd");
@@ -304,9 +309,6 @@ pub async fn run_app_setup<R: Runtime>(
             fs::set_permissions(&script_path, perms).map_err(|e| e.to_string())?;
         }
     }
-
-    let hub_api_key = std::env::var("VITE_HUB_API_KEY").unwrap_or_else(|_| "ethernanos-hub-secret-2026".to_string());
-    let admin_pass = std::env::var("ADMIN_DEFAULT_PASSWORD").unwrap_or_else(|_| "admin1234".to_string());
 
     let status = setup_cmd.current_dir(&app_path)
         .env("ETHER_TENANT_ID", &tenant_id)
