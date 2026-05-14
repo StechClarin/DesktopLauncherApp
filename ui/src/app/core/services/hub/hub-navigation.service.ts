@@ -67,6 +67,7 @@ export class HubNavigationService {
     }
 
     openTab(appId: string, name: string, url: string, logo?: string) {
+        console.log(`[OPEN_TAB] appId=${appId}, name=${name}, url=${url}, logo=${logo}`);
         this.state.activeTabs.update(tabs => {
             const newTabs = tabs.map(t => ({ ...t, isActive: false }));
             const existing = newTabs.find(t => t.id === appId);
@@ -74,13 +75,17 @@ export class HubNavigationService {
                 if (url && existing.url !== url) existing.url = url;
                 if (logo) existing.logo = logo;
                 existing.isActive = true;
+                console.log(`[OPEN_TAB] Updated existing tab, new URL: ${existing.url}`);
                 return newTabs;
             }
             if (!url) {
                 const port = this.state.appPorts()[appId];
                 if (port) url = `http://127.0.0.1:${port}`;
+                console.log(`[OPEN_TAB] No URL provided, constructed from port ${port}: ${url}`);
             }
-            return [...newTabs, { id: appId, name, url, logo, isActive: true }];
+            const newTab = { id: appId, name, url, logo, isActive: true };
+            console.log(`[OPEN_TAB] Created new tab:`, newTab);
+            return [...newTabs, newTab];
         });
     }
 
@@ -130,10 +135,11 @@ export class HubNavigationService {
         console.log(`Preparing launch for app: ${app.name}`);
         this.state.launchStep.set('Préparation de l\'environnement...');
         
+        // Ouvre le terminal de debug pour suivre l'initialisation
         this.terminal.setActiveApp(app.id);
         this.terminal.clear(app.id);
         this.terminal.resetReady();
-        // this.terminal.open(); // On ne l'ouvre plus forcément, l'overlay de chargement suffit
+        this.terminal.open(); // ✅ Ouvre le terminal pour les logs Django/Rust
         
         try {
             const user = (await this.supabase.client.auth.getSession()).data.session?.user;
@@ -162,6 +168,13 @@ export class HubNavigationService {
 
             console.log(`[LAUNCH DEBUG] App ${app.id} (${app.name}) returned port: ${actualPort} (type: ${typeof actualPort})`);
             this.state.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
+            
+            // Log dans le terminal
+            console.log(`\n=== 🚀 LANCEMENT DE L'APP ${app.name.toUpperCase()} ===`);
+            console.log(`Port dynamique: ${actualPort}`);
+            console.log(`URL d'accès: http://127.0.0.1:${actualPort}`);
+            console.log(`En attente du signal READY...`);
+            
             this.state.launchStep.set('Initialisation du système (cela peut prendre du temps au premier lancement)...');
             
             // Wait for READY signal or monitor for errors
@@ -212,6 +225,9 @@ export class HubNavigationService {
                 this.state.launchStep.set('Application prête !');
                 const tabUrl = `http://127.0.0.1:${actualPort}`;
                 console.log(`[LAUNCH DEBUG] Opening tab for ${app.id} with URL: ${tabUrl}`);
+                console.log(`[LAUNCH DEBUG] Final port value: ${actualPort}, type: ${typeof actualPort}`);
+                console.log(`=== ✅ APPLICATION PRÊTE ===\nURL: ${tabUrl}\n`);
+                
                 this.openTab(app.id, app.name, tabUrl, app.icon_svg || app.icon);
                 this.state.isLaunchingApp.set(null); // On libère l'UI immédiatement
                 
