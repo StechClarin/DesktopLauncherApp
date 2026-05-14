@@ -160,6 +160,7 @@ export class HubNavigationService {
                 cloudApiUrl: app.cloud_api_url || null
             });
 
+            console.log(`[LAUNCH DEBUG] App ${app.id} (${app.name}) returned port: ${actualPort} (type: ${typeof actualPort})`);
             this.state.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
             this.state.launchStep.set('Initialisation du système (cela peut prendre du temps au premier lancement)...');
             
@@ -209,7 +210,9 @@ export class HubNavigationService {
             
             if (isReady) {
                 this.state.launchStep.set('Application prête !');
-                this.openTab(app.id, app.name, `http://127.0.0.1:${actualPort}`, app.icon_svg || app.icon);
+                const tabUrl = `http://127.0.0.1:${actualPort}`;
+                console.log(`[LAUNCH DEBUG] Opening tab for ${app.id} with URL: ${tabUrl}`);
+                this.openTab(app.id, app.name, tabUrl, app.icon_svg || app.icon);
                 this.state.isLaunchingApp.set(null); // On libère l'UI immédiatement
                 
                 // On lance la synchro sans bloquer l'UI
