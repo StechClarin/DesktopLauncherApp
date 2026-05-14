@@ -23,22 +23,37 @@ export class HubNavigationService {
     async syncActiveApps() {
         try {
             const apps: any[] = await invoke('get_active_apps');
-            if (apps && apps.length > 0) {
-                this.state.activeTabs.update(tabs => {
-                    const newTabs = [...tabs];
-                    apps.forEach(app => {
-                        if (!newTabs.find(t => t.id === app.id)) {
-                            newTabs.push({ 
-                                id: app.id, 
-                                name: app.name, 
-                                url: `http://127.0.0.1:${app.port}`, 
-                                isActive: false 
-                            });
-                        }
-                    });
-                    return newTabs;
+            this.state.activeTabs.update(tabs => {
+                // 1. On garde le Hub s'il était là (mais ici il n'est pas dans tabs, c'est l'onglet par défaut)
+                let newTabs = [...tabs];
+                
+                // 2. Supprimer les onglets qui ne tournent plus
+                const runningIds = new Set(apps.map(a => a.id));
+                newTabs = newTabs.filter(t => runningIds.has(t.id));
+
+                // 3. Ajouter les nouveaux venus
+                apps.forEach(app => {
+                    if (!newTabs.find(t => t.id === app.id)) {
+                        newTabs.push({ 
+                            id: app.id, 
+                            name: app.name, 
+                            url: `http://127.0.0.1:${app.port}`, 
+                            isActive: false 
+                        });
+                        // Mettre à jour le cache des ports
+                        this.state.appPorts.update(p => ({ ...p, [app.id]: app.port }));
+                    }
                 });
-            }
+
+                // 4. Si l'onglet actif a disparu, on donne le focus au dernier ou au Hub
+                if (tabs.length > 0 && !newTabs.some(t => t.isActive)) {
+                    if (newTabs.length > 0) {
+                        newTabs[newTabs.length - 1].isActive = true;
+                    }
+                }
+
+                return newTabs;
+            });
         } catch (e) {
             console.error('Failed to sync active apps', e);
         }
@@ -110,6 +125,7 @@ export class HubNavigationService {
         
         this.terminal.setActiveApp(app.id);
         this.terminal.clear(app.id);
+        this.terminal.resetReady();
         // this.terminal.open(); // On ne l'ouvre plus forcément, l'overlay de chargement suffit
         
         try {

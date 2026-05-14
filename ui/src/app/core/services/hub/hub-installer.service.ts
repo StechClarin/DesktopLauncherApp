@@ -33,13 +33,32 @@ export class HubInstallerService {
             this.state.hubUpdateProgress.set(event.payload as number);
         });
 
+        await listen('download-status-changed', async (event: any) => {
+            console.log(`[DOWNLOAD_STATUS]`, event.payload);
+            await this.syncDownloadTasks();
+        });
+
         await listen('hub-app-status-changed', async (event: any) => {
             const { app_id, status } = event.payload;
             console.log(`[HUB_EVENT] App ${app_id} changed to ${status}`);
+            
+            if (status === 'started' || status === 'stopped') {
+                await this.navigation.syncActiveApps();
+            }
+
             if (status === 'installed' || status === 'uninstalled') {
                 await this.data.init(); // Refresh everything
             }
         });
+    }
+
+    async syncDownloadTasks() {
+        try {
+            const tasks = await invoke<any[]>('get_download_tasks');
+            this.state.downloadTasks.set(tasks);
+        } catch (e) {
+            console.error('Failed to sync download tasks', e);
+        }
     }
 
     private getOsKeyword(): string {

@@ -30,7 +30,7 @@ export class HubDataService {
                         this.state.tenantName.set(tenant.name || 'Mon Établissement');
                         await this.loadHomeSections(tenant.id);
                     } else {
-                        console.warn("[HUB_DATA] No tenant found for user", user.id);
+                        console.warn("[HUB_DATA] No tenant found for user", user.email);
                     }
                 } catch (e) {
                     console.error("[HUB_DATA] Data init error:", e);

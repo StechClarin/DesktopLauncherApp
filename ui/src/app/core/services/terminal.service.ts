@@ -85,6 +85,10 @@ export class TerminalService {
     this.isOpenSubject.next(!this.isOpenSubject.value);
   }
 
+  resetReady() {
+    this.readySubject.next(null);
+  }
+
   clear(appId?: string) {
     if (appId) {
       this.logs.set(appId, []);

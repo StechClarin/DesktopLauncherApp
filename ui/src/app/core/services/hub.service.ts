@@ -143,11 +143,7 @@ export class HubService {
     isAppOwned(id: string) { return this.state.installedApps().some(a => a.id === id) || this.state.availableApps().some(a => a.id === id && a.status === 'owned'); }
 
     async syncDownloadTasks() {
-        const { invoke } = await import('@tauri-apps/api/core');
-        try {
-            const tasks = await invoke<any[]>('get_download_tasks');
-            this.state.downloadTasks.set(tasks);
-        } catch (e) {}
+        return this.installer.syncDownloadTasks();
     }
 
     refreshTab(id: string) {
