@@ -140,7 +140,55 @@ export class TerminalComponent implements OnInit, AfterViewChecked, OnDestroy {
   activeAppId: string | null = null;
   private sub = new Subscription();
 
-  constructor(private terminalService: TerminalService) {}
+  constructor(private terminalService: TerminalService) {
+    this.captureConsoleLogs();
+  }
+
+  private captureConsoleLogs() {
+    // Capture console.log, console.error, console.warn
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.log = (...args) => {
+      originalLog(...args);
+      this.addConsoleLog('LOG', args.join(' '));
+    };
+
+    console.error = (...args) => {
+      originalError(...args);
+      this.addConsoleLog('ERROR', args.join(' '));
+    };
+
+    console.warn = (...args) => {
+      originalWarn(...args);
+      this.addConsoleLog('WARN', args.join(' '));
+    };
+  }
+
+  private addConsoleLog(level: string, message: string) {
+    const log: AppLog = {
+      app_id: this.activeAppId || 'console',
+      stream: level === 'ERROR' ? 'stderr' : 'stdout',
+      message: `[${level}] ${message}`,
+      timestamp: new Date()
+    };
+
+    // Ajouter aux logs du terminal service
+    if (!this.terminalService['logs'].has(log.app_id)) {
+      this.terminalService['logs'].set(log.app_id, []);
+    }
+
+    const appLogs = this.terminalService['logs'].get(log.app_id)!;
+    appLogs.push(log);
+
+    if (appLogs.length > 500) appLogs.shift();
+
+    // Mettre à jour l'affichage si c'est l'app active
+    if (log.app_id === this.activeAppId || log.app_id === 'console') {
+      this.logs = [...appLogs];
+    }
+  }
 
   ngOnInit() {
     this.sub.add(this.terminalService.logs$.subscribe(logs => {
