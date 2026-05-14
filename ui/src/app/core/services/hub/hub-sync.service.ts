@@ -46,13 +46,30 @@ export class HubSyncService {
             if (!cloudResponse.ok) throw new Error("Erreur Cloud.");
             const deepData = await cloudResponse.json();
 
-            // 2. Push to LOCAL
-            const localResponse = await fetch(`http://127.0.0.1:${port}/api/external/sync-in/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Hub-Api-Key': apiKey },
-                body: JSON.stringify(deepData)
-            });
-            if (!localResponse.ok) throw new Error("Erreur locale.");
+            // 2. Push to LOCAL (avec retry car Django peut mettre du temps à bind le port)
+            this.toast.info(`Injection dans l'application locale (127.0.0.1:${port})...`);
+            
+            let localResponse: Response | null = null;
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            while (attempts < maxAttempts) {
+                try {
+                    localResponse = await fetch(`http://127.0.0.1:${port}/api/external/sync-in/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Hub-Api-Key': apiKey },
+                        body: JSON.stringify(deepData)
+                    });
+                    if (localResponse.ok) break;
+                } catch (e) {
+                    attempts++;
+                    if (attempts >= maxAttempts) throw e;
+                    console.log(`[SYNC] Local port ${port} not ready yet, retrying in 1s... (Attempt ${attempts}/${maxAttempts})`);
+                    await new Promise(r => setTimeout(r, 1500)); // Attente progressive
+                }
+            }
+
+            if (!localResponse || !localResponse.ok) throw new Error("Erreur locale après plusieurs tentatives.");
 
             this.toast.success("Données locales mises à jour (Pull).");
             await this.data.loadHomeSections(hubId);

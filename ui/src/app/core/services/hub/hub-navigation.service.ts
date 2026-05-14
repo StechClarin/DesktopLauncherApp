@@ -203,8 +203,12 @@ export class HubNavigationService {
             if (isReady) {
                 this.state.launchStep.set('Application prête !');
                 this.openTab(app.id, app.name, `http://127.0.0.1:${actualPort}`, app.icon_svg || app.icon);
-                await this.sync.pullSync(app.id); 
-                this.state.isLaunchingApp.set(null);
+                this.state.isLaunchingApp.set(null); // On libère l'UI immédiatement
+                
+                // On lance la synchro sans bloquer l'UI
+                this.sync.pullSync(app.id).catch(err => {
+                    console.warn(`[HUB] Initial background sync failed for ${app.name}:`, err);
+                });
             } else {
                 this.toast.error(`Erreur : L'application ${app.name} semble instable ou trop longue à démarrer.`, 8000);
                 this.state.isLaunchingApp.set(null);
