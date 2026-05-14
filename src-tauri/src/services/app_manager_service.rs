@@ -87,11 +87,11 @@ pub async fn execute_app<R: Runtime>(
     // Preparation of the command
     let mut cmd = if cfg!(target_os = "windows") {
         let mut c = Command::new("cmd");
-        c.arg("/C").arg(&exec_cmd);
+        c.arg("/C").arg(format!("{} --app-port {} --tenant-id {} --admin-pass {}", exec_cmd, actual_port, tenant_id, admin_pass));
         c
     } else {
         let mut c = Command::new("sh");
-        c.arg("-c").arg(format!("./{}", exec_cmd));
+        c.arg("-c").arg(format!("./{} --app-port {} --tenant-id {} --admin-pass {}", exec_cmd, actual_port, tenant_id, admin_pass));
         c
     };
 
@@ -286,11 +286,11 @@ pub async fn run_app_setup<R: Runtime>(
     // --- EXECUTE hub_setup.sh ---
     let mut setup_cmd = if cfg!(target_os = "windows") {
         let mut c = Command::new("cmd");
-        c.arg("/C").arg(script_name);
+        c.arg("/C").arg(format!("{} --tenant-id {} --admin-pass {}", script_name, tenant_id, admin_pass));
         c
     } else {
         let mut c = Command::new("sh");
-        c.arg("-c").arg(format!("./{}", script_name));
+        c.arg("-c").arg(format!("./{} --tenant-id {} --admin-pass {}", script_name, tenant_id, admin_pass));
         c
     };
 
