@@ -103,11 +103,15 @@ pub async fn execute_app<R: Runtime>(
     let session_token = format!("{:x}", hasher.finalize());
 
     let hub_api_key = std::env::var("VITE_HUB_API_KEY").unwrap_or_else(|_| "ethernanos-hub-secret-2026".to_string());
+    let admin_pass = std::env::var("ADMIN_DEFAULT_PASSWORD").unwrap_or_else(|_| "admin1234".to_string());
+    
     let mut cmd = cmd.current_dir(&app_path);
     cmd = cmd.env("ETHER_SESSION_TOKEN", &session_token)
         .env("ETHER_HUB_PID", hub_pid.to_string())
         .env("ETHER_APP_PORT", actual_port.to_string())
         .env("ETHER_HUB_API_KEY", &hub_api_key)
+        .env("ETHER_TENANT_ID", &tenant_id)
+        .env("ADMIN_DEFAULT_PASSWORD", &admin_pass)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped());
@@ -131,6 +135,7 @@ pub async fn execute_app<R: Runtime>(
         "app_port": actual_port,
         "db_config": app_db_creds,
         "hub_api_key": hub_api_key,
+        "admin_pass": admin_pass,
         "url_prefix": format!("/schoolmanage/{}/", tenant_id),
         "cloud_api_url": cloud_api_url
     });
@@ -300,7 +305,13 @@ pub async fn run_app_setup<R: Runtime>(
         }
     }
 
+    let hub_api_key = std::env::var("VITE_HUB_API_KEY").unwrap_or_else(|_| "ethernanos-hub-secret-2026".to_string());
+    let admin_pass = std::env::var("ADMIN_DEFAULT_PASSWORD").unwrap_or_else(|_| "admin1234".to_string());
+
     let status = setup_cmd.current_dir(&app_path)
+        .env("ETHER_TENANT_ID", &tenant_id)
+        .env("ETHER_HUB_API_KEY", &hub_api_key)
+        .env("ADMIN_DEFAULT_PASSWORD", &admin_pass)
         .status()
         .map_err(|e| format!("Échec du lancement du setup : {}", e))?;
 
