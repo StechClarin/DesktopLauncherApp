@@ -66,4 +66,13 @@
 
 .app-tab-pane {
   top: 0;
+  overflow: hidden; /* Empêche le débordement avant le scale */
+
+  iframe {
+    width: 111.11%;  /* 100% / 0.9 */
+    height: 111.11%; /* 100% / 0.9 */
+    transform: scale(0.9);
+    transform-origin: top left;
+    border: none;
+  }
 }
