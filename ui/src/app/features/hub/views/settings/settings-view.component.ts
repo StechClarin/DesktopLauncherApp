@@ -1,3 +1,9 @@
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HubService } from '../../../../core/services/hub.service';
+import { AudioService } from '../../../../core/services/audio.service';
+import { AppearanceService, AccentColor } from '../../../../core/services/appearance.service';
 import { DbConfig } from '../../../../core/models/hub.models';
 
 @Component({
