@@ -2,6 +2,56 @@
   display: block;
 }
 
+.wizard-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.step-pill {
+  height: 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &.active {
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+  }
+}
+
+.option-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  &.selected {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+  }
+}
+
+input {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
+  transition: all 0.3s ease !important;
+  
+  &:focus {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.1) !important;
+  }
+}
+
 .custom-scrollbar {
   &::-webkit-scrollbar {
     width: 4px;
@@ -15,22 +65,11 @@
   }
 }
 
-.shake {
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-
-input::placeholder {
-  color: rgba(255, 255, 255, 0.2);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.animate-step {
+  animation: fadeInScale 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }

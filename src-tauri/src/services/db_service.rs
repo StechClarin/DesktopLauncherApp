@@ -77,9 +77,14 @@ pub async fn initialize_database<R: Runtime>(
             config.host.clone()
         };
 
+        let db_name = match &config.db_name {
+            Some(n) if !n.is_empty() => n.clone(),
+            _ => format!("ether_{}", app_id.replace("-", "_")),
+        };
+
         serde_json::json!({
             "engine": "postgres",
-            "db_name": config.db_name.clone().unwrap_or_else(|| format!("ether_{}", app_id.replace("-", "_"))),
+            "name": db_name,
             "host": db_host,
             "port": config.port,
             "user": config.user,
@@ -88,7 +93,7 @@ pub async fn initialize_database<R: Runtime>(
     } else {
         serde_json::json!({
             "engine": "sqlite",
-            "db_name": "db.sqlite3"
+            "name": "db.sqlite3"
         })
     };
 

@@ -3,6 +3,10 @@ export interface DbConfig {
     port: number;
     user: string;
     pass: string;
+    db_name?: string;
+    mode?: 'solo' | 'structure';
+    role?: 'server' | 'client';
+    server_ip?: string;
 }
 
 export interface ProgressPayload {

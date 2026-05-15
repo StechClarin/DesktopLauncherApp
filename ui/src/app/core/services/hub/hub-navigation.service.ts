@@ -191,6 +191,18 @@ export class HubNavigationService {
                 return;
             }
 
+            this.state.launchStep.set('Vérification de la configuration...');
+            const config = this.state.dbConfig() || {
+                host: this.state.dbHost(),
+                port: this.state.dbPort(),
+                user: this.state.dbUser(),
+                pass: this.state.dbPass(),
+                mode: this.state.deploymentMode(),
+                role: this.state.deploymentRole()
+            };
+            // On s'assure que le fichier db.json existe avant le lancement
+            await invoke('initialize_database', { config, appId: app.id });
+
             this.state.launchStep.set('Démarrage du moteur local...');
             const actualPort = await invoke<number>('execute_app', {
                 appId: app.id,

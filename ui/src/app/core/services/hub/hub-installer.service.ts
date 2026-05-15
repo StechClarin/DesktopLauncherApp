@@ -97,21 +97,28 @@ export class HubInstallerService {
             this.toast.info(`Étape 1/3 : Téléchargement de ${appId}...`);
             await invoke('download_app', { appId, url: release.download_url, checksum: release.checksum });
             
-            const config = this.state.dbConfig();
-            if (config) {
-                this.state.installProgress.set(101);
-                this.toast.info(`Étape 2/3 : Création de la base SQL...`);
-                await invoke('initialize_database', { config, appId });
-                
-                this.state.installProgress.set(102);
-                this.toast.info(`Étape 3/3 : Initialisation finale...`);
-                
-                const tenantId = this.state.hubId();
-                if (!tenantId) throw new Error("Hub ID manquant.");
+            // Point Industrial v21.0: On garantit la création de db.json même si config est null
+            const config = this.state.dbConfig() || {
+                host: this.state.dbHost(),
+                port: this.state.dbPort(),
+                user: this.state.dbUser(),
+                pass: this.state.dbPass(),
+                mode: this.state.deploymentMode(),
+                role: this.state.deploymentRole()
+            };
 
-                await invoke('run_app_setup', { appId, tenantId, config });
-                this.toast.success(`Installation terminée !`);
-            }
+            this.state.installProgress.set(101);
+            this.toast.info(`Étape 2/3 : Création de la base SQL...`);
+            await invoke('initialize_database', { config, appId });
+            
+            this.state.installProgress.set(102);
+            this.toast.info(`Étape 3/3 : Initialisation finale...`);
+            
+            const tenantId = this.state.hubId();
+            if (!tenantId) throw new Error("Hub ID manquant.");
+
+            await invoke('run_app_setup', { appId, tenantId, config });
+            this.toast.success(`Installation terminée !`);
             
             this.finalizeInstallation(appId, release.version);
         } catch (err: any) {

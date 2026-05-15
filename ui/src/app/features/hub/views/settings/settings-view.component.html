@@ -19,6 +19,14 @@
             <div *ngIf="activeSection() === 'appearance'" class="absolute left-0 w-1 h-6 bg-indigo-500 rounded-r-full shadow-[0_0_12px_#6366f1]"></div>
         </button>
 
+        <button (click)="setSection('network')" 
+            class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative"
+            [ngClass]="activeSection() === 'network' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">database</span>
+            <span class="text-sm font-bold">Réseau & Base de données</span>
+            <div *ngIf="activeSection() === 'network'" class="absolute left-0 w-1 h-6 bg-emerald-500 rounded-r-full shadow-[0_0_12px_#10b981]"></div>
+        </button>
+
         <button (click)="setSection('update')" 
             class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative"
             [ngClass]="activeSection() === 'update' ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400' : 'text-slate-400 hover:bg-white/5'">
@@ -339,6 +347,111 @@
                     <p class="text-purple-400/60 text-xs leading-relaxed italic">
                         "L'immersion sonore est conçue pour rester active tant que vous interagissez avec le Hub ou ses applications intégrées."
                     </p>
+                </div>
+            </div>
+        }
+
+        <!-- SECTION: NETWORK -->
+        @if (activeSection() === 'network') {
+            <div class="animate-in fade-in slide-in-from-right-4 duration-500 h-full">
+                <div class="mb-10">
+                    <h2 class="text-2xl font-black text-white mb-2 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-emerald-400">database</span>
+                        Réseau & Base de données
+                    </h2>
+                    <p class="text-slate-400 text-sm">Configurez la persistence des données et le mode de déploiement de votre cockpit.</p>
+                </div>
+
+                <div class="space-y-8">
+                    <!-- Deployment Mode Card -->
+                    <div class="p-8 bg-slate-950/40 border border-white/5 rounded-3xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h4 class="text-white font-bold">Mode de Déploiement</h4>
+                                <p class="text-slate-500 text-xs">Choisissez comment vos applications stockent leurs données.</p>
+                            </div>
+                            <div class="flex bg-slate-900 p-1 rounded-xl border border-white/5">
+                                <button (click)="hubService.state.deploymentMode.set('solo')" 
+                                    class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                    [ngClass]="hubService.state.deploymentMode() === 'solo' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'">Solo</button>
+                                <button (click)="hubService.state.deploymentMode.set('structure')" 
+                                    class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                    [ngClass]="hubService.state.deploymentMode() === 'structure' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'">Structure</button>
+                            </div>
+                        </div>
+
+                        @if (hubService.state.deploymentMode() === 'structure') {
+                            <div class="pt-6 border-t border-white/5 space-y-6 animate-in slide-in-from-top-4 duration-500">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h5 class="text-sm font-bold text-slate-300">Rôle de ce Poste</h5>
+                                        <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Serveur central ou terminal client ?</p>
+                                    </div>
+                                    <div class="flex bg-slate-900 p-1 rounded-xl border border-white/5">
+                                        <button (click)="hubService.state.deploymentRole.set('server')" 
+                                            class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                            [ngClass]="hubService.state.deploymentRole() === 'server' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'">Serveur</button>
+                                        <button (click)="hubService.state.deploymentRole.set('client')" 
+                                            class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                            [ngClass]="hubService.state.deploymentRole() === 'client' ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'">Client</button>
+                                    </div>
+                                </div>
+
+                                <!-- Connection Settings -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Host PostgreSQL</label>
+                                        <input type="text" [ngModel]="hubService.state.dbHost()" (ngModelChange)="hubService.state.dbHost.set($event)" 
+                                            class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                            placeholder="127.0.0.1">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Port</label>
+                                        <input type="number" [ngModel]="hubService.state.dbPort()" (ngModelChange)="hubService.state.dbPort.set($event)" 
+                                            class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Utilisateur</label>
+                                        <input type="text" [ngModel]="hubService.state.dbUser()" (ngModelChange)="hubService.state.dbUser.set($event)" 
+                                            class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Mot de passe</label>
+                                        <input type="password" [ngModel]="hubService.state.dbPass()" (ngModelChange)="hubService.state.dbPass.set($event)" 
+                                            class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors">
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-4 pt-4">
+                                    <button (click)="hubService.testDbConnection()" 
+                                        [disabled]="hubService.state.dbConfigStatus() === 'checking'"
+                                        class="flex-1 px-6 py-4 bg-slate-800 text-white font-black rounded-2xl hover:bg-slate-700 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2">
+                                        <span class="material-symbols-outlined text-[18px]">connectivity</span>
+                                        Tester la Connexion
+                                    </button>
+                                    <button (click)="hubService.saveDbConfig()" 
+                                        class="flex-1 px-6 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-500 transition-all active:scale-95 text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+                                        Sauvegarder
+                                    </button>
+                                </div>
+
+                                @if (hubService.state.dbConfigError()) {
+                                    <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl animate-in shake duration-500">
+                                        <p class="text-rose-400 text-xs font-bold">{{ hubService.state.dbConfigError() }}</p>
+                                    </div>
+                                }
+                            </div>
+                        } @else {
+                            <div class="pt-6 border-t border-white/5 animate-in fade-in duration-500">
+                                <div class="flex items-start gap-4 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
+                                    <span class="material-symbols-outlined text-blue-400">info</span>
+                                    <p class="text-[11px] text-blue-400/80 leading-relaxed italic">
+                                        En mode Solo, vos applications utilisent une base de données locale isolée (SQLite). Aucune configuration serveur n'est requise. Les données sont sauvegardées dans votre profil utilisateur.
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         }

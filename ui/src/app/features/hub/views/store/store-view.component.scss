@@ -4,41 +4,99 @@
 
 @keyframes slow-zoom {
   0% { transform: scale(1); }
-  100% { transform: scale(1.15); }
+  100% { transform: scale(1.1); }
 }
 
 .animate-slow-zoom {
-  animation: slow-zoom 20s infinite alternate ease-in-out;
+  animation: slow-zoom 30s infinite alternate ease-in-out;
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.glass-card {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  
+  &:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Horizontal Scroll with hidden scrollbar */
+.h-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+  margin-bottom: -1rem;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+  
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  & > * {
+    flex: 0 0 auto;
+    width: 320px;
+  }
+}
+
+/* Bento Grid */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 220px;
+  gap: 1.5rem;
+}
+
+.bento-item-large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.bento-item-wide {
+  grid-column: span 2;
+}
+
+/* Featured Glow */
+.featured-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Section Header styling */
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #3b82f6;
+  margin-bottom: 0.5rem;
+  display: block;
 }
 
 .shimmer {
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.03) 50%,
     rgba(255, 255, 255, 0) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
-.glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  &:hover {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(59, 130, 246, 0.4);
-    transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7),
-                0 0 25px -5px rgba(59, 130, 246, 0.25);
-  }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

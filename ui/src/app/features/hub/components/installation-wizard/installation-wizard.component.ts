@@ -38,7 +38,7 @@ export class InstallationWizardComponent {
     port: 5432,
     user: 'postgres',
     pass: '',
-    dbName: 'ethernanos_db'
+    db_name: 'ethernanos_db'
   };
   
   serverIp = signal<string>('');
@@ -75,15 +75,15 @@ export class InstallationWizardComponent {
     this.connectionStatus.set(null);
     
     try {
-      // Simulate or call real test
-      if (this.role() === 'server') {
-        const res = await this.hubService.testDbConnection(this.dbConfig);
-        this.connectionStatus.set('success');
-      } else {
-        // For client, we might want a different test (ping server hub)
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        this.connectionStatus.set('success');
+      const configToTest = { ...this.dbConfig };
+      
+      // Si on est client, on teste la connexion vers l'IP du serveur
+      if (this.role() === 'client') {
+        configToTest.host = this.serverIp();
       }
+
+      await this.hubService.testDbConnection(configToTest);
+      this.connectionStatus.set('success');
     } catch (e) {
       this.connectionStatus.set('error');
     } finally {

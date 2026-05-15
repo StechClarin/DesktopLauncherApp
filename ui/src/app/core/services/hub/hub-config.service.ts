@@ -22,11 +22,14 @@ export class HubConfigService {
     }
 
     async saveDbConfig(config?: DbConfig) {
-        const targetConfig = config || {
+        const targetConfig: DbConfig = config || {
             host: this.state.dbHost(),
             port: this.state.dbPort(),
             user: this.state.dbUser(),
-            pass: this.state.dbPass()
+            pass: this.state.dbPass(),
+            db_name: '',
+            mode: this.state.deploymentMode(),
+            role: this.state.deploymentRole()
         };
         try {
             await invoke('save_db_config', { config: targetConfig });
@@ -39,11 +42,14 @@ export class HubConfigService {
     }
 
     async testDbConnection(config?: DbConfig): Promise<string> {
-        const targetConfig = config || {
+        const targetConfig: DbConfig = config || {
             host: this.state.dbHost(),
             port: this.state.dbPort(),
             user: this.state.dbUser(),
-            pass: this.state.dbPass()
+            pass: this.state.dbPass(),
+            db_name: '',
+            mode: this.state.deploymentMode(),
+            role: this.state.deploymentRole()
         };
         try {
             this.state.dbConfigStatus.set('checking');

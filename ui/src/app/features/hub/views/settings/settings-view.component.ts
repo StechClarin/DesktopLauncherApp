@@ -1,9 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HubService } from '../../../../core/services/hub.service';
-import { AudioService } from '../../../../core/services/audio.service';
-import { AppearanceService, AccentColor } from '../../../../core/services/appearance.service';
+import { DbConfig } from '../../../../core/models/hub.models';
 
 @Component({
   selector: 'app-settings-view',
@@ -21,9 +16,9 @@ export class SettingsViewComponent {
   accentColors: AccentColor[] = ['purple', 'blue', 'emerald', 'amber', 'rose', 'cyan'];
 
   // Navigation
-  activeSection = signal<'update' | 'about' | 'experience' | 'appearance'>('appearance');
+  activeSection = signal<'update' | 'about' | 'experience' | 'appearance' | 'network'>('appearance');
 
-  setSection(section: 'update' | 'about' | 'experience' | 'appearance') {
+  setSection(section: 'update' | 'about' | 'experience' | 'appearance' | 'network') {
     this.activeSection.set(section);
   }
 }

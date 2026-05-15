@@ -71,4 +71,44 @@ export class SupabaseService {
       .eq('contact_email', email)
       .single();
   }
+
+  async getAppTenants(appId: string) {
+    // 1. Get module IDs for this app
+    const { data: modules } = await this.supabase
+      .from('app_modules')
+      .select('id')
+      .eq('app_id', appId);
+    
+    if (!modules || modules.length === 0) return { data: [], error: null };
+    const moduleIds = modules.map(m => m.id);
+
+    // 2. Get unique tenants who have licenses for these modules
+    // We select tenants via a join and order by created_at as a proxy for seniority/usage if count is missing
+    return await this.supabase
+      .from('tenant_licenses')
+      .select(`
+        tenants (
+          name, 
+          industry, 
+          country
+        )
+      `)
+      .in('module_id', moduleIds)
+      .limit(20); // Get more than 12 to deduplicate if necessary in JS
+  }
+
+  async getAppReviews(appId: string) {
+    return await this.supabase
+      .from('app_reviews')
+      .select('*')
+      .eq('app_id', appId)
+      .eq('is_published', true)
+      .order('created_at', { ascending: false });
+  }
+
+  async submitReview(review: any) {
+    return await this.supabase
+      .from('app_reviews')
+      .insert([review]);
+  }
 }
