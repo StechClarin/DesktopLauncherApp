@@ -18,6 +18,7 @@ import { StoreViewComponent } from '../../features/hub/views/store/store-view.co
 import { DownloadsViewComponent } from '../../features/hub/views/downloads/downloads-view.component';
 import { SettingsViewComponent } from '../../features/hub/views/settings/settings-view.component';
 import { AppDetailViewComponent } from '../../features/hub/views/app-detail/app-detail-view.component';
+import { InstallationWizardComponent } from '../../features/hub/components/installation-wizard/installation-wizard.component';
 
 @Component({
     selector: 'app-hub-layout',
@@ -31,7 +32,8 @@ import { AppDetailViewComponent } from '../../features/hub/views/app-detail/app-
         StoreViewComponent,
         DownloadsViewComponent,
         SettingsViewComponent,
-        AppDetailViewComponent
+        AppDetailViewComponent,
+        InstallationWizardComponent
     ],
     templateUrl: './hub-layout.component.html',
     styleUrl: './hub-layout.component.scss'

@@ -63,18 +63,37 @@ pub async fn initialize_database<R: Runtime>(
     config: DbConfig, 
     app_id: String
 ) -> Result<String, String> {
-    let _ = config;
     let mut app_dir = app_handle.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     app_dir.push("apps");
     app_dir.push(&app_id);
     fs::create_dir_all(&app_dir).map_err(|e| format!("Impossible de créer le dossier de l'application : {}", e))?;
     
     let db_json_path = app_dir.join("db.json");
-    let creds = serde_json::json!({
-        "engine": "sqlite",
-        "db_name": "db.sqlite3"
-    });
-    fs::write(db_json_path, serde_json::to_string(&creds).unwrap()).map_err(|e| format!("Impossible d'écrire db.json : {}", e))?;
+    
+    let creds = if config.mode.as_deref() == Some("structure") {
+        let db_host = if config.role.as_deref() == Some("client") {
+            config.server_ip.clone().unwrap_or_else(|| "127.0.0.1".to_string())
+        } else {
+            config.host.clone()
+        };
 
-    Ok(serde_json::to_string(&creds).unwrap())
+        serde_json::json!({
+            "engine": "postgres",
+            "db_name": config.db_name.clone().unwrap_or_else(|| format!("ether_{}", app_id.replace("-", "_"))),
+            "host": db_host,
+            "port": config.port,
+            "user": config.user,
+            "password": config.pass
+        })
+    } else {
+        serde_json::json!({
+            "engine": "sqlite",
+            "db_name": "db.sqlite3"
+        })
+    };
+
+    let json_creds = serde_json::to_string(&creds).unwrap();
+    fs::write(db_json_path, &json_creds).map_err(|e| format!("Impossible d'écrire db.json : {}", e))?;
+
+    Ok(json_creds)
 }

@@ -61,4 +61,7 @@
     <!-- 3. IMMERSIVE APP DETAIL OVERLAY -->
     <!-- Removed App Detail View from here and moved it to inside main content container -->
 
+    @if (hubService.state.showInstallationWizard()) {
+        <app-installation-wizard></app-installation-wizard>
+    }
 </div>

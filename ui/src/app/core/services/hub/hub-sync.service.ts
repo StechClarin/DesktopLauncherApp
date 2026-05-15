@@ -27,6 +27,10 @@ export class HubSyncService {
     }
 
     async pullSync(appId?: string) {
+        if (this.state.deploymentMode() === 'structure' && this.state.deploymentRole() === 'client') {
+            console.warn("[SYNC] Pull skipped: client machines don't sync with cloud.");
+            return;
+        }
         const id = appId || this.state.selectedApp()?.id;
         if (!id) return;
         const port = this.state.appPorts()[id] || 8000;
@@ -82,6 +86,9 @@ export class HubSyncService {
     }
 
     async pushSync(appId?: string): Promise<boolean> {
+        if (this.state.deploymentMode() === 'structure' && this.state.deploymentRole() === 'client') {
+            return true; 
+        }
         const id = appId || this.state.selectedApp()?.id;
         if (!id) return true;
         const port = this.state.appPorts()[id] || 8000;

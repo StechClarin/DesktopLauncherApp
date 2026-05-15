@@ -46,6 +46,9 @@ export class HubStateService {
     activeTab = signal<'home' | 'library' | 'store' | 'downloads' | 'settings'>((sessionStorage.getItem('hub-active-tab') as any) || 'home');
     activeTabs = signal<{id: string, name: string, url: string, safeUrl?: SafeResourceUrl, logo?: string, isActive: boolean}[]>([]);
     appPorts = signal<Record<string, number>>({});
+    showInstallationWizard = signal<any | null>(null); // Contient l'app pour laquelle on affiche le wizard
+    deploymentMode = signal<'solo' | 'structure'>((localStorage.getItem('hub-deployment-mode') as any) || 'solo');
+    deploymentRole = signal<'server' | 'client'>((localStorage.getItem('hub-deployment-role') as any) || 'server');
 
     // DB Config
     dbHost = signal<string>('127.0.0.1');

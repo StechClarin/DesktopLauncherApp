@@ -15,6 +15,10 @@ pub struct DbConfig {
     pub port: u16,
     pub user: String,
     pub pass: String,
+    pub mode: Option<String>,      // "solo" | "structure"
+    pub role: Option<String>,      // "server" | "client"
+    pub server_ip: Option<String>, 
+    pub db_name: Option<String>,
 }
 
 pub struct ActiveApp {

@@ -31,7 +31,7 @@ export class AppDetailViewComponent {
   }
 
   installApp(app: any) {
-    this.hubService.installApp(app.id);
+    this.hubService.state.showInstallationWizard.set(app);
   }
 
   uninstallApp(app: any) {

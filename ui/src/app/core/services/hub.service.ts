@@ -40,6 +40,8 @@ export class HubService {
     isLoading = this.state.isLoading;
     isOffline = this.state.isOffline;
     isSyncing = this.state.isSyncing;
+    deploymentMode = this.state.deploymentMode;
+    deploymentRole = this.state.deploymentRole;
     
     // Applications et Modules
     installedApps = this.state.installedApps;
