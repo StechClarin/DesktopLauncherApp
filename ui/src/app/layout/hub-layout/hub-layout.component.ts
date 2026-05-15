@@ -83,11 +83,6 @@ export class HubLayoutComponent {
         this.isSidebarOpen.update(v => !v);
     }
 
-    // Helper for App Iframes
-    getSafeUrl(url: string) {
-        return this.sanitizer.bypassSecurityTrustResourceUrl(url);
-    }
-
     async logOut() {
         await this.supabase.signOut();
         this.router.navigate(['/login']);

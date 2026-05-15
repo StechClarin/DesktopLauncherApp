@@ -1,10 +1,11 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { invoke } from '@tauri-apps/api/core';
+import { TerminalService } from '../terminal.service';
+import { ToastService } from '../toast.service';
 import { HubStateService } from './hub-state.service';
 import { HubSyncService } from './hub-sync.service';
 import { SupabaseService } from '../supabase.service';
-import { ToastService } from '../toast.service';
-import { TerminalService } from '../terminal.service';
-import { invoke } from '@tauri-apps/api/core';
 
 @Injectable({
     providedIn: 'root'
@@ -15,6 +16,7 @@ export class HubNavigationService {
     private supabase = inject(SupabaseService);
     private toast = inject(ToastService);
     private terminal = inject(TerminalService);
+    private sanitizer = inject(DomSanitizer);
 
     constructor() {
         this.syncActiveApps();
@@ -41,10 +43,12 @@ export class HubNavigationService {
                         // Don't update existing.url to prevent iframe reload
                     } else {
                         // Add new tab
+                        const tabUrl = `http://127.0.0.1:${app.port}`;
                         newTabs.push({ 
                             id: app.id, 
                             name: app.name, 
-                            url: `http://127.0.0.1:${app.port}`, 
+                            url: tabUrl, 
+                            safeUrl: this.sanitizer.bypassSecurityTrustResourceUrl(tabUrl),
                             logo: app.icon,
                             isActive: false 
                         });
@@ -82,7 +86,10 @@ export class HubNavigationService {
             const newTabs = tabs.map(t => ({ ...t, isActive: false }));
             const existing = newTabs.find(t => t.id === appId);
             if (existing) {
-                if (url && existing.url !== url) existing.url = url;
+                if (url && existing.url !== url) {
+                    existing.url = url;
+                    existing.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+                }
                 if (logo) existing.logo = logo;
                 existing.isActive = true;
                 console.log(`[OPEN_TAB] Updated existing tab, new URL: ${existing.url}`);
@@ -93,7 +100,14 @@ export class HubNavigationService {
                 if (port) url = `http://127.0.0.1:${port}`;
                 console.log(`[OPEN_TAB] No URL provided, constructed from port ${port}: ${url}`);
             }
-            const newTab = { id: appId, name, url, logo, isActive: true };
+            const newTab = { 
+                id: appId, 
+                name, 
+                url, 
+                safeUrl: this.sanitizer.bypassSecurityTrustResourceUrl(url),
+                logo, 
+                isActive: true 
+            };
             console.log(`[OPEN_TAB] Created new tab:`, newTab);
             return [...newTabs, newTab];
         });

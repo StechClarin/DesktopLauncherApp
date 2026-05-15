@@ -2,6 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { DbConfig } from '../../models/hub.models';
 import { MOCK_APPS } from '../../models/app-manifest.mock';
 import { Subject } from 'rxjs';
+import { SafeResourceUrl } from '@angular/platform-browser';
 
 @Injectable({
     providedIn: 'root'
@@ -43,7 +44,7 @@ export class HubStateService {
     // Navigation & UI
     selectedApp = signal<any | null>(null);
     activeTab = signal<'home' | 'library' | 'store' | 'downloads' | 'settings'>((sessionStorage.getItem('hub-active-tab') as any) || 'home');
-    activeTabs = signal<{id: string, name: string, url: string, logo?: string, isActive: boolean}[]>([]);
+    activeTabs = signal<{id: string, name: string, url: string, safeUrl?: SafeResourceUrl, logo?: string, isActive: boolean}[]>([]);
     appPorts = signal<Record<string, number>>({});
 
     // DB Config
