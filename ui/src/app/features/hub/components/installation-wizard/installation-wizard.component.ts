@@ -45,6 +45,10 @@ export class InstallationWizardComponent {
   isTestingConnection = signal<boolean>(false);
   connectionStatus = signal<'success' | 'error' | null>(null);
 
+  isStepDisabled(step: number): boolean {
+    return this.usageMode() === 'solo' && (step === 2 || step === 3);
+  }
+
   nextStep() {
     if (this.currentStep() === 1 && this.usageMode() === 'solo') {
       this.currentStep.set(4); // Skip to confirm for solo

@@ -22,8 +22,8 @@
             @for (step of [1,2,3,4]; track step) {
                 <div class="flex-1 h-1.5 rounded-full transition-all duration-500"
                      [class.bg-blue-600]="currentStep() >= step"
-                     [class.bg-white/10]="currentStep() < step"
-                     [class.opacity-30]="usageMode() === 'solo' && (step === 2 || step === 3)"></div>
+                     [class.bg-white-10]="currentStep() < step"
+                     [class.opacity-30]="isStepDisabled(step)"></div>
             }
         </div>
 
