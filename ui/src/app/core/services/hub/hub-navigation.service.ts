@@ -25,31 +25,41 @@ export class HubNavigationService {
         try {
             const apps: any[] = await invoke('get_active_apps');
             this.state.activeTabs.update(tabs => {
-                // 1. On garde le Hub s'il était là (mais ici il n'est pas dans tabs, c'est l'onglet par défaut)
+                // Create a new array to avoid unnecessary re-renders
                 let newTabs = [...tabs];
                 
-                // 2. Supprimer les onglets qui ne tournent plus
+                // Remove tabs that are no longer running, but keep active tabs to prevent flashing
                 const runningIds = new Set(apps.map(a => a.id));
-                newTabs = newTabs.filter(t => runningIds.has(t.id));
-
-                // 3. Ajouter les nouveaux venus
+                newTabs = newTabs.filter(t => runningIds.has(t.id) || t.isActive);
+                
+                // Update existing tabs with new port info without changing URL unnecessarily
                 apps.forEach(app => {
-                    if (!newTabs.find(t => t.id === app.id)) {
+                    const existing = newTabs.find(t => t.id === app.id);
+                    if (existing) {
+                        // Only update port cache, don't change URL if it's already set
+                        this.state.appPorts.update(p => ({ ...p, [app.id]: app.port }));
+                        // Don't update existing.url to prevent iframe reload
+                    } else {
+                        // Add new tab
                         newTabs.push({ 
                             id: app.id, 
                             name: app.name, 
                             url: `http://127.0.0.1:${app.port}`, 
+                            logo: app.icon,
                             isActive: false 
                         });
-                        // Mettre à jour le cache des ports
+                        // Update port cache
                         this.state.appPorts.update(p => ({ ...p, [app.id]: app.port }));
                     }
                 });
 
-                // 4. Si l'onglet actif a disparu, on donne le focus au dernier ou au Hub
-                if (tabs.length > 0 && !newTabs.some(t => t.isActive)) {
-                    if (newTabs.length > 0) {
-                        newTabs[newTabs.length - 1].isActive = true;
+                // Ensure active tab is still valid - only activate last tab if no active tab exists
+                const hasActiveTab = newTabs.some(t => t.isActive);
+                if (!hasActiveTab && newTabs.length > 0) {
+                    // Find the most recently opened tab or the last one
+                    const lastTab = newTabs[newTabs.length - 1];
+                    if (lastTab) {
+                        lastTab.isActive = true;
                     }
                 }
 
@@ -114,9 +124,17 @@ export class HubNavigationService {
         this.state.activeTabs.update(tabs => {
             const closingTab = tabs.find(t => t.id === appId);
             const newTabs = tabs.filter(t => t.id !== appId);
-            if (closingTab?.isActive && newTabs.length > 0) {
-                newTabs[newTabs.length - 1].isActive = true;
+            
+            // If we removed the active tab, activate the last remaining tab or switch to hub
+            if (closingTab?.isActive) {
+                if (newTabs.length > 0) {
+                    newTabs[newTabs.length - 1].isActive = true;
+                } else {
+                    // No more tabs, switch to hub
+                    this.setActiveTab('home');
+                }
             }
+            
             return newTabs;
         });
     }

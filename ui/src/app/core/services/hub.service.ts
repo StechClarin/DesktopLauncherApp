@@ -139,8 +139,10 @@ export class HubService {
     // Utils
     isModuleUnlocked(id: string) { return this.state.unlockedModuleIds().includes(id); }
     isAppLicensed(app: any) { return this.data.isAppLicensed(app); }
-    isAppOnDisk(id: string) { return this.state.installedApps().some(a => a.id === id); }
-    isAppOwned(id: string) { return this.state.installedApps().some(a => a.id === id) || this.state.availableApps().some(a => a.id === id && a.status === 'owned'); }
+    isAppOnDisk(id: string) { return this.state.isAppOnDisk(id)(); }
+    isAppOwned(id: string) { return this.state.isAppOwned(id)(); }
+    isAppInstalling(id: string) { return this.state.isAppInstalling(id)(); }
+    isAppRunning(id: string) { return this.state.isAppRunning(id)(); }
 
     async syncDownloadTasks() {
         return this.installer.syncDownloadTasks();

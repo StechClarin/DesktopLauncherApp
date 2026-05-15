@@ -62,7 +62,7 @@ export class HubStateService {
 
     // Computed Properties
     hasUpdate = computed(() => this.latestHubVersion() !== null && this.latestHubVersion() !== this.currentHubVersion());
-    isHubActive = computed(() => !this.activeTabs().some(t => t.isActive));
+    isHubActive = computed(() => this.activeTabs().length === 0 || !this.activeTabs().some(t => t.isActive));
     runningAppIds = computed(() => new Set(this.activeTabs().map(t => t.id)));
 
     enrichedApps = computed(() => {
@@ -142,4 +142,10 @@ export class HubStateService {
     storeTopDownloads = computed(() => [...this.enrichedApps()].sort((a, b) => (b.installCount || 0) - (a.installCount || 0)).slice(0, 4));
     storeCatalog = computed(() => [...this.enrichedApps()]);
     storeModules = computed(() => this.enrichedApps().flatMap(app => (app.modules || []).filter((mod: any) => mod.is_premium).map((mod: any) => ({ ...mod, appName: app.name, displayPrice: mod.hasDiscount ? mod.price : (mod.price ? mod.price + '€' : 'Premium') }))).slice(0, 4));
+
+    // Reactive computed signals for app status checks
+    isAppOnDisk = (id: string) => computed(() => this.installedApps().some(a => a.id === id && a.status === 'installed'));
+    isAppOwned = (id: string) => computed(() => this.installedApps().some(a => a.id === id) || this.availableApps().some(a => a.id === id && a.status === 'owned'));
+    isAppInstalling = (id: string) => computed(() => this.installingApps().some(a => a.id === id));
+    isAppRunning = (id: string) => computed(() => this.runningAppIds().has(id));
 }
