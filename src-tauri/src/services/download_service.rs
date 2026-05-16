@@ -13,8 +13,20 @@ impl DownloadManager {
             let _ = fs::create_dir_all(&path);
             path.push("downloads.json");
             if let Ok(tasks) = self.tasks.lock() {
-                let json = serde_json::to_string(&*tasks).unwrap_or_default();
-                let _ = fs::write(path, json);
+                // Point Industrial v22.3: On ne sauvegarde pas les tâches terminées sur disque
+                // car elles contiennent des URLs sensibles (jetons Supabase, etc.)
+                let persistent_tasks: std::collections::HashMap<String, DownloadTask> = tasks
+                    .iter()
+                    .filter(|(_, task)| task.status != DownloadStatus::Completed)
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+
+                if persistent_tasks.is_empty() {
+                    let _ = fs::remove_file(&path);
+                } else {
+                    let json = serde_json::to_string(&persistent_tasks).unwrap_or_default();
+                    let _ = fs::write(path, json);
+                }
             }
         }
     }
