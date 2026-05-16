@@ -37,8 +37,7 @@ export class InstallationWizardComponent {
     host: '127.0.0.1',
     port: 5432,
     user: 'postgres',
-    pass: '',
-    db_name: 'ethernanos_db'
+    pass: ''
   };
   
   serverIp = signal<string>('');

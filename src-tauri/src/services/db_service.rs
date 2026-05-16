@@ -77,10 +77,9 @@ pub async fn initialize_database<R: Runtime>(
             config.host.clone()
         };
 
-        let db_name = match &config.db_name {
-            Some(n) if !n.is_empty() => n.clone(),
-            _ => format!("ether_{}", app_id.replace("-", "_")),
-        };
+        // Point Industrial v22.0: On génère systématiquement un nom unique pour l'app
+        // pour éviter que toutes les apps partagent 'ethernanos_db' si l'utilisateur l'a mis dans le wizard.
+        let db_name = format!("db_{}", app_id.replace("-", "_"));
 
         serde_json::json!({
             "engine": "postgres",
