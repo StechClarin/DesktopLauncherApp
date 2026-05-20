@@ -20,7 +20,7 @@ export class HubDataService {
             console.log("[HUB_DATA] User state changed:", user?.email);
             if (user) {
                 try {
-                    this.clearData(false);
+                    this.clearData(true);
                     const { data: tenant, error } = await this.supabase.getTenantByEmail(user.email || '');
                     if (error) throw error;
                     

@@ -140,7 +140,7 @@ export class HubStateService {
         return this.enrichedApps().filter(app => installedIds.has(app.id)).flatMap(app => (app.modules || []).filter((mod: any) => mod.is_premium && !unlockedIds.has(mod.id)).map((mod: any) => ({ ...mod, parentAppName: app.name, parentAppBanner: app.banner, displayPrice: mod.hasDiscount ? mod.price : (mod.price ? mod.price + '€' : 'Premium') }))).slice(0, 4);
     });
 
-    storeFeatured = computed(() => this.enrichedApps().slice(0, 3).map(app => ({ id: app.id, title: app.name, description: app.description || "Découvrez la puissance de l'écosystème EtherNanos.", image: app.banner_url || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070', action: 'Déverrouiller', price: app.hasDiscount ? app.price : 'Inclus' })));
+    storeFeatured = computed(() => this.enrichedApps().slice(0, 3).map(app => ({ id: app.id, title: app.name, description: app.description || "Découvrez la puissance de l'écosystème EtherNanos.", image: app.banner_url || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=70&w=1200&auto=format&fit=crop', action: 'Déverrouiller', price: app.hasDiscount ? app.price : 'Inclus' })));
     storeDeals = computed(() => this.enrichedApps().filter(app => app.hasDiscount).slice(0, 4));
     storeNewReleases = computed(() => [...this.enrichedApps()].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 3));
     storeTopDownloads = computed(() => [...this.enrichedApps()].sort((a, b) => (b.installCount || 0) - (a.installCount || 0)).slice(0, 4));

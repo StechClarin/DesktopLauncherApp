@@ -46,4 +46,15 @@ export class HeroCarouselComponent implements OnInit, OnDestroy {
       this.currentSlide.update(c => (c + 1) % total);
     }
   }
+
+  onLearnMore(item: any) {
+    if (item.type === 'app') {
+      const app = this.hubService.allApps().find(a => a.id === item.id);
+      if (app) {
+        this.hubService.selectedApp.set(app);
+      }
+    } else if (item.type === 'bundle') {
+      this.hubService.setActiveTab('store');
+    }
+  }
 }

@@ -34,6 +34,79 @@ export class AppDetailViewComponent {
     comment: ''
   });
 
+  // DB Config Modal State
+  showConfigModal = signal(false);
+  dbConfig = signal<any>({
+    host: '127.0.0.1',
+    port: 5432,
+    user: 'postgres',
+    pass: '',
+    mode: 'solo',
+    role: 'server'
+  });
+  dbConfigStatus = signal<'idle' | 'checking' | 'connected' | 'error'>('idle');
+  dbConfigError = signal<string | null>(null);
+
+  async openConfigModal() {
+    const app = this.app();
+    if (!app) return;
+
+    this.dbConfigStatus.set('idle');
+    this.dbConfigError.set(null);
+
+    const config = await this.hubService.config.loadDbConfig(app.id);
+    if (config) {
+      this.dbConfig.set({ ...config });
+    } else {
+      // Default fallback
+      this.dbConfig.set({
+        host: '127.0.0.1',
+        port: 5432,
+        user: 'postgres',
+        pass: '',
+        mode: 'solo',
+        role: 'server'
+      });
+    }
+    this.showConfigModal.set(true);
+  }
+
+  closeConfigModal() {
+    this.showConfigModal.set(false);
+  }
+
+  setMode(mode: 'solo' | 'structure') {
+    this.dbConfig.update(c => ({ ...c, mode }));
+  }
+
+  setRole(role: 'server' | 'client') {
+    this.dbConfig.update(c => ({ ...c, role }));
+  }
+
+  async testConfigConnection() {
+    this.dbConfigStatus.set('checking');
+    this.dbConfigError.set(null);
+    try {
+      await this.hubService.config.testDbConnection(this.dbConfig());
+      this.dbConfigStatus.set('connected');
+    } catch (e: any) {
+      this.dbConfigStatus.set('error');
+      this.dbConfigError.set(e.message || e.toString() || 'Erreur de connexion.');
+    }
+  }
+
+  async saveAppConfig() {
+    const app = this.app();
+    if (!app) return;
+
+    try {
+      await this.hubService.config.saveDbConfig(app.id, this.dbConfig());
+      this.closeConfigModal();
+    } catch (e) {
+      console.error("Failed to save app db config", e);
+    }
+  }
+
   constructor() {
     // Re-fetch data whenever the selected app changes
     effect(async () => {

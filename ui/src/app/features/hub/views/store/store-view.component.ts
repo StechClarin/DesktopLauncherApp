@@ -53,7 +53,9 @@ export class StoreViewComponent {
   });
 
   openAppDetails(app: any) {
-    this.hubService.selectedApp.set(app);
+    if (!app) return;
+    const fullApp = this.hubService.allApps().find(a => a.id === app.id);
+    this.hubService.selectedApp.set(fullApp || app);
   }
 
   setCategory(cat: string) {

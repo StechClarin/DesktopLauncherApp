@@ -5,7 +5,7 @@
     <div class="relative w-full h-[350px] shrink-0 overflow-hidden">
         <!-- Background Banner -->
         <div class="absolute inset-0 bg-cover bg-center"
-             [style.backgroundImage]="'url(' + (app.banner || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070') + ')'"></div>
+             [style.backgroundImage]="'url(' + (app.banner || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=70&w=800&auto=format&fit=crop') + ')'"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-[#020617]/40 via-[#020617]/80 to-[#020617]"></div>
 
         <!-- Top Navigation Bar -->
@@ -30,6 +30,13 @@
                     </div>
 
                     <div class="flex gap-2">
+                        <button (click)="openConfigModal()"
+                                class="h-12 px-5 rounded-xl bg-slate-800/80 border border-white/5 text-slate-300 hover:bg-slate-700/80 transition-all flex items-center gap-2 font-bold"
+                                title="Configurer la base de données de l'application">
+                            <span class="material-symbols-outlined text-xl">database</span>
+                            CONFIGURER
+                        </button>
+
                         <button (click)="uninstallApp(app)"
                                 class="h-12 px-5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 font-bold">
                             <span class="material-symbols-outlined text-xl">delete</span>
@@ -355,5 +362,152 @@
             </div>
         </div>
     }
+
+        <!-- DATABASE CONFIGURATION MODAL -->
+        @if (showConfigModal()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                <div class="w-full max-w-xl bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                    
+                    <!-- Header -->
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-emerald-400">database</span>
+                            <div>
+                                <h3 class="text-xl font-black text-white">Configuration Base de données</h3>
+                                <p class="text-slate-500 text-[10px] uppercase tracking-widest mt-0.5">{{ app.name }}</p>
+                            </div>
+                        </div>
+                        <button (click)="closeConfigModal()" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all flex items-center justify-center">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-8 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
+                        <!-- Deployment Mode -->
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <div>
+                                <h4 class="text-white text-sm font-bold">Mode de Déploiement</h4>
+                                <p class="text-slate-500 text-[10px]">Déterminez la persistence des données de l'application.</p>
+                            </div>
+                            <div class="flex bg-slate-950 p-1 rounded-xl border border-white/5">
+                                <button (click)="setMode('solo')" 
+                                    class="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                                    [class.bg-blue-600]="dbConfig().mode === 'solo'"
+                                    [class.text-white]="dbConfig().mode === 'solo'"
+                                    [class.text-slate-500]="dbConfig().mode !== 'solo'"
+                                    [class.hover:text-slate-300]="dbConfig().mode !== 'solo'">Solo</button>
+                                <button (click)="setMode('structure')" 
+                                    class="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                                    [class.bg-emerald-600]="dbConfig().mode === 'structure'"
+                                    [class.text-white]="dbConfig().mode === 'structure'"
+                                    [class.text-slate-500]="dbConfig().mode !== 'structure'"
+                                    [class.hover:text-slate-300]="dbConfig().mode !== 'structure'">Structure</button>
+                            </div>
+                        </div>
+
+                        @if (dbConfig().mode === 'structure') {
+                            <div class="space-y-6 animate-in slide-in-from-top-4 duration-300">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h5 class="text-xs font-bold text-slate-300">Rôle du poste</h5>
+                                        <p class="text-[9px] text-slate-500 uppercase tracking-widest mt-0.5">Serveur central ou client terminal ?</p>
+                                    </div>
+                                    <div class="flex bg-slate-950 p-1 rounded-xl border border-white/5">
+                                        <button (click)="setRole('server')" 
+                                            class="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                                            [class.bg-indigo-600]="dbConfig().role === 'server'"
+                                            [class.text-white]="dbConfig().role === 'server'"
+                                            [class.text-slate-500]="dbConfig().role !== 'server'"
+                                            [class.hover:text-slate-300]="dbConfig().role !== 'server'">Serveur</button>
+                                        <button (click)="setRole('client')" 
+                                            class="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                                            [class.bg-amber-600]="dbConfig().role === 'client'"
+                                            [class.text-white]="dbConfig().role === 'client'"
+                                            [class.text-slate-500]="dbConfig().role !== 'client'"
+                                            [class.hover:text-slate-300]="dbConfig().role !== 'client'">Client</button>
+                                    </div>
+                                </div>
+
+                                <!-- Server IP if role is client -->
+                                @if (dbConfig().role === 'client') {
+                                    <div class="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+                                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Adresse IP du Serveur PostgreSQL</label>
+                                        <input type="text" [(ngModel)]="dbConfig().server_ip" 
+                                            class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                            placeholder="192.168.1.100">
+                                    </div>
+                                }
+
+                                <!-- Connection Settings -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Host PostgreSQL</label>
+                                        <input type="text" [(ngModel)]="dbConfig().host" 
+                                            class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                            placeholder="127.0.0.1">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Port</label>
+                                        <input type="number" [(ngModel)]="dbConfig().port" 
+                                            class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Utilisateur</label>
+                                        <input type="text" [(ngModel)]="dbConfig().user" 
+                                            class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Mot de passe</label>
+                                        <input type="password" [(ngModel)]="dbConfig().pass" 
+                                            class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors">
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-4 pt-2">
+                                    <button (click)="testConfigConnection()" 
+                                        [disabled]="dbConfigStatus() === 'checking'"
+                                        class="flex-1 px-4 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-slate-700 transition-all active:scale-95 text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">connectivity</span>
+                                        Tester la Connexion
+                                    </button>
+                                </div>
+
+                                @if (dbConfigError()) {
+                                    <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl animate-in shake duration-500">
+                                        <p class="text-rose-400 text-[10px] font-bold">{{ dbConfigError() }}</p>
+                                    </div>
+                                }
+                                @if (dbConfigStatus() === 'connected') {
+                                    <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl animate-in fade-in duration-300">
+                                        <p class="text-emerald-400 text-[10px] font-bold">Connexion réussie !</p>
+                                    </div>
+                                }
+                            </div>
+                        } @else {
+                            <div class="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl animate-in fade-in duration-300">
+                                <div class="flex items-start gap-3">
+                                    <span class="material-symbols-outlined text-blue-400 text-sm">info</span>
+                                    <p class="text-[10px] text-blue-400/80 leading-relaxed italic">
+                                        En mode Solo, l'application utilise une base de données locale isolée (SQLite). Aucune configuration PostgreSQL n'est requise. Les données sont sauvegardées en local.
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="p-8 border-t border-white/5 flex gap-4 bg-slate-950/20">
+                        <button (click)="closeConfigModal()" class="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all">
+                            Annuler
+                        </button>
+                        <button (click)="saveAppConfig()" class="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-600/15">
+                            Sauvegarder
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        }
 </div>
 }

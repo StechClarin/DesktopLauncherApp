@@ -22,9 +22,9 @@ export class SettingsViewComponent {
   accentColors: AccentColor[] = ['purple', 'blue', 'emerald', 'amber', 'rose', 'cyan'];
 
   // Navigation
-  activeSection = signal<'update' | 'about' | 'experience' | 'appearance' | 'network'>('appearance');
+  activeSection = signal<'update' | 'about' | 'experience' | 'appearance'>('appearance');
 
-  setSection(section: 'update' | 'about' | 'experience' | 'appearance' | 'network') {
+  setSection(section: 'update' | 'about' | 'experience' | 'appearance') {
     this.activeSection.set(section);
   }
 }

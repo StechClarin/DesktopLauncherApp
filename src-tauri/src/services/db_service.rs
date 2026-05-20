@@ -7,10 +7,11 @@ use crate::models::DbConfig;
 pub async fn save_db_config<R: Runtime>(
     app_handle: AppHandle<R>,
     config: DbConfig,
+    app_id: String,
 ) -> Result<(), String> {
     let mut config_path = app_handle.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
     fs::create_dir_all(&config_path).map_err(|e| e.to_string())?;
-    config_path.push("db_config.json");
+    config_path.push(format!("db_config_{}.json", app_id));
 
     let json = serde_json::to_string(&config).map_err(|e| e.to_string())?;
     fs::write(config_path, json).map_err(|e| e.to_string())?;
@@ -20,9 +21,10 @@ pub async fn save_db_config<R: Runtime>(
 #[tauri::command]
 pub async fn get_db_config<R: Runtime>(
     app_handle: AppHandle<R>,
+    app_id: String,
 ) -> Result<Option<DbConfig>, String> {
     let mut config_path = app_handle.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
-    config_path.push("db_config.json");
+    config_path.push(format!("db_config_{}.json", app_id));
 
     if !config_path.exists() {
         return Ok(None);

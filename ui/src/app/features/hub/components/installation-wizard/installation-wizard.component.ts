@@ -101,14 +101,12 @@ export class InstallationWizardComponent {
     this.hubService.state.deploymentRole.set(this.role());
 
     // Save configuration if server or solo with custom DB
-    if (this.usageMode() === 'structure' || (this.usageMode() === 'solo' && this.dbConfig.pass)) {
-      await this.hubService.saveDbConfig({
+      await this.hubService.saveDbConfig(app.id, {
         ...this.dbConfig,
         mode: this.usageMode(),
         role: this.role(),
         server_ip: this.serverIp()
       } as any);
-    }
 
     // Trigger real installation
     this.hubService.installApp(app.id);

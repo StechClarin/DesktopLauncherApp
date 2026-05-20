@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
     <div (click)="clicked.emit()"
         class="group relative h-[220px] rounded-3xl overflow-hidden border border-white/10 hover:border-yellow-500/30 transition-all duration-500 cursor-pointer shadow-xl">
         <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-            [style.backgroundImage]="'url(' + (bundle.banner_url || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070') + ')'"></div>
+            [style.backgroundImage]="'url(' + (bundle.banner_url || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=70&w=800&auto=format&fit=crop') + ')'"></div>
         <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
         <div class="absolute inset-0 p-8 flex flex-col justify-center items-start">
             <div class="flex items-center gap-2 mb-2">

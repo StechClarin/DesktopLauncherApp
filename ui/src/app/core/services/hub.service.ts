@@ -25,7 +25,6 @@ export class HubService {
     private async init() {
         console.log("[HUB_FACADE] Initializing Hub Service...");
         try {
-            await this.config.loadDbConfig();
             await this.data.init();
         } catch (e) {
             console.error("[HUB_FACADE] Init failed", e);
@@ -134,8 +133,8 @@ export class HubService {
     executeDeepSync(appId?: string) { return this.sync.executeDeepSync(appId); }
     
     // Configuration DB
-    saveDbConfig(cfg?: any) { return this.config.saveDbConfig(cfg); }
-    testDbConnection(cfg?: any) { return this.config.testDbConnection(cfg); }
+    saveDbConfig(appId: string, cfg: any) { return this.config.saveDbConfig(appId, cfg); }
+    testDbConnection(cfg: any) { return this.config.testDbConnection(cfg); }
     toggleOfflineMode() { this.config.toggleOfflineMode(); }
 
     // Utils

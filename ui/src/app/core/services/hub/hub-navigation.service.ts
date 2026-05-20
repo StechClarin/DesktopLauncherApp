@@ -5,6 +5,7 @@ import { TerminalService } from '../terminal.service';
 import { ToastService } from '../toast.service';
 import { HubStateService } from './hub-state.service';
 import { HubSyncService } from './hub-sync.service';
+import { HubConfigService } from './hub-config.service';
 import { SupabaseService } from '../supabase.service';
 
 @Injectable({
@@ -17,6 +18,7 @@ export class HubNavigationService {
     private toast = inject(ToastService);
     private terminal = inject(TerminalService);
     private sanitizer = inject(DomSanitizer);
+    private configService = inject(HubConfigService);
 
     constructor() {
         this.syncActiveApps();
@@ -192,14 +194,18 @@ export class HubNavigationService {
             }
 
             this.state.launchStep.set('Vérification de la configuration...');
-            const config = this.state.dbConfig() || {
-                host: this.state.dbHost(),
-                port: this.state.dbPort(),
-                user: this.state.dbUser(),
-                pass: this.state.dbPass(),
-                mode: this.state.deploymentMode(),
-                role: this.state.deploymentRole()
-            };
+            let config = await this.configService.loadDbConfig(app.id);
+            if (!config) {
+                config = {
+                    host: '127.0.0.1',
+                    port: 5432,
+                    user: 'postgres',
+                    pass: '',
+                    db_name: '',
+                    mode: 'solo',
+                    role: 'server'
+                };
+            }
             // On s'assure que le fichier db.json existe avant le lancement
             await invoke('initialize_database', { config, appId: app.id });
 
