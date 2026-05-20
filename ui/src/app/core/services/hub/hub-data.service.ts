@@ -27,6 +27,7 @@ export class HubDataService {
                     if (tenant) {
                         console.log("[HUB_DATA] Tenant found:", tenant.name, "HubID:", tenant.hub_id);
                         this.state.hubId.set(tenant.hub_id);
+                        this.state.tenantId.set(tenant.id);
                         this.state.tenantName.set(tenant.name || 'Mon Établissement');
                         await this.loadHomeSections(tenant.id);
                     } else {
@@ -45,6 +46,7 @@ export class HubDataService {
 
     clearData(loadOffline: boolean = true) {
         this.state.hubId.set(null);
+        this.state.tenantId.set(null);
         this.state.tenantName.set(null);
         this.state.installedApps.set([]);
         this.state.availableApps.set([]);

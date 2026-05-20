@@ -76,7 +76,12 @@ export class HubSyncService {
             if (!localResponse || !localResponse.ok) throw new Error("Erreur locale après plusieurs tentatives.");
 
             this.toast.success("Données locales mises à jour (Pull).");
-            await this.data.loadHomeSections(hubId);
+            const tenantId = this.state.tenantId();
+            if (tenantId) {
+                await this.data.loadHomeSections(tenantId);
+            } else {
+                await this.data.loadHomeSections(hubId);
+            }
         } catch (e) {
             this.toast.error(`Échec du Pull : ${e}`);
             throw e;

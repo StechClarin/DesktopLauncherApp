@@ -19,6 +19,7 @@ export class HubStateService {
     cloudApiUrl = signal<string>((import.meta as any).env?.VITE_CLOUD_API_URL || 'http://127.0.0.1:8000');
 
     hubId = signal<string | null>(null);
+    tenantId = signal<string | null>(null);
     tenantName = signal<string | null>(null);
     unlockedModuleIds = signal<string[]>([]);
     installedApps = signal<any[]>([]);

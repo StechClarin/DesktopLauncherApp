@@ -35,6 +35,7 @@ export class HubService {
     
     // Identité et État Global
     hubId = this.state.hubId;
+    tenantId = this.state.tenantId;
     tenantName = this.state.tenantName;
     isLoading = this.state.isLoading;
     isOffline = this.state.isOffline;
