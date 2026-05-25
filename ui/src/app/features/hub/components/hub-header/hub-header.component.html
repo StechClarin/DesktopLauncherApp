@@ -100,6 +100,19 @@
 
     <!-- Right: System Controls -->
     <div class="flex items-center gap-3 no-drag">
+        <!-- Sync Debug Drawer Toggle -->
+        <button (click)="syncLogger.toggleDrawer()"
+            class="p-2 rounded-lg transition-all relative group flex items-center justify-center overflow-hidden"
+            [ngClass]="syncLogger.isOpen() ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500 hover:bg-white/5'">
+            
+            <span class="material-symbols-outlined text-[18px]">bug_report</span>
+
+            <!-- Tooltip -->
+            <div class="absolute top-full mt-2 px-2 py-1 bg-slate-800 text-[9px] font-bold text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100] border border-white/5 shadow-xl pointer-events-none">
+                Console de Sync
+            </div>
+        </button>
+
         <!-- Audio Status Toggle -->
         <button (click)="audioService.ambientSoundEnabled.set(!audioService.ambientSoundEnabled())"
             class="p-2 rounded-lg transition-all relative group flex items-center justify-center overflow-hidden"

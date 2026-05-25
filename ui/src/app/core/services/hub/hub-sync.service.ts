@@ -3,6 +3,7 @@ import { HubStateService } from './hub-state.service';
 import { HubDataService } from './hub-data.service';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../toast.service';
+import { SyncLoggerService } from './sync-logger.service';
 
 @Injectable({
     providedIn: 'root'
@@ -12,23 +13,27 @@ export class HubSyncService {
     private data = inject(HubDataService);
     private supabase = inject(SupabaseService);
     private toast = inject(ToastService);
+    private logger = inject(SyncLoggerService);
 
     async executeDeepSync(appId?: string) {
         const id = appId || this.state.selectedApp()?.id;
         if (!id) return;
         this.toast.info("Début de la synchronisation profonde...");
+        this.logger.logInfo("Démarrage de la synchronisation complète", id);
         try {
             await this.pullSync(id);
             await this.pushSync(id);
             this.toast.success("Synchronisation complète terminée !");
+            this.logger.logSuccess("Synchronisation profonde terminée avec succès", id);
         } catch (e) {
             this.toast.error("Échec de la synchronisation profonde.");
+            this.logger.logError(`Échec de la synchronisation profonde: ${e}`, id);
         }
     }
 
     async pullSync(appId?: string) {
         if (this.state.deploymentMode() === 'structure' && this.state.deploymentRole() === 'client') {
-            console.warn("[SYNC] Pull skipped: client machines don't sync with cloud.");
+            this.logger.logInfo("Pull ignoré : noeud client", appId);
             return;
         }
         const id = appId || this.state.selectedApp()?.id;
@@ -47,11 +52,14 @@ export class HubSyncService {
             const cloudResponse = await fetch(`${cloudApiUrl}/api/external/sync-tenant/?tenant_id=${hubId}`, {
                 headers: { 'X-Hub-Api-Key': apiKey }
             });
-            if (!cloudResponse.ok) throw new Error("Erreur Cloud.");
+            if (!cloudResponse.ok) throw new Error(`Erreur Cloud HTTP ${cloudResponse.status}`);
             const deepData = await cloudResponse.json();
+            
+            this.logger.logPull("Données reçues du Cloud", deepData, id);
 
             // 2. Push to LOCAL (avec retry car Django peut mettre du temps à bind le port)
             this.toast.info(`Injection dans l'application locale (127.0.0.1:${port})...`);
+            this.logger.logInfo(`Tentative d'injection locale sur le port ${port}`, id);
             
             let localResponse: Response | null = null;
             let attempts = 0;
@@ -68,7 +76,7 @@ export class HubSyncService {
                 } catch (e) {
                     attempts++;
                     if (attempts >= maxAttempts) throw e;
-                    console.log(`[SYNC] Local port ${port} not ready yet, retrying in 1s... (Attempt ${attempts}/${maxAttempts})`);
+                    this.logger.logInfo(`Port local ${port} non prêt, nouvel essai dans 1.5s... (Tentative ${attempts}/${maxAttempts})`, id);
                     await new Promise(r => setTimeout(r, 1500)); // Attente progressive
                 }
             }
@@ -76,6 +84,8 @@ export class HubSyncService {
             if (!localResponse || !localResponse.ok) throw new Error("Erreur locale après plusieurs tentatives.");
 
             this.toast.success("Données locales mises à jour (Pull).");
+            this.logger.logSuccess("Injection locale réussie (Pull terminé)", id);
+            
             const tenantId = this.state.tenantId();
             if (tenantId) {
                 await this.data.loadHomeSections(tenantId);
@@ -84,6 +94,7 @@ export class HubSyncService {
             }
         } catch (e) {
             this.toast.error(`Échec du Pull : ${e}`);
+            this.logger.logError(`Échec du Pull : ${e}`, id);
             throw e;
         } finally {
             this.state.isSyncing.set(false);
@@ -107,10 +118,15 @@ export class HubSyncService {
             const deltaResponse = await fetch(`http://127.0.0.1:${port}/api/external/sync-delta/`, {
                 headers: { 'X-Hub-Api-Key': apiKey }
             });
-            if (!deltaResponse.ok) throw new Error("Erreur lecture deltas.");
+            if (!deltaResponse.ok) throw new Error("Erreur lecture deltas depuis l'app locale.");
             const deltas = await deltaResponse.json();
 
-            if (!deltas || deltas.length === 0) return true;
+            if (!deltas || deltas.length === 0) {
+                this.logger.logInfo("Aucun delta local à pousser.", id);
+                return true;
+            }
+
+            this.logger.logPush(`Deltas locaux extraits (${deltas.length} éléments)`, deltas, id);
 
             // 2. Send to CLOUD
             const cloudPushResponse = await fetch(`${cloudApiUrl}/api/external/push-delta/`, {
@@ -128,9 +144,11 @@ export class HubSyncService {
             });
 
             this.toast.success(`Push réussi (${deltas.length} modifs).`);
+            this.logger.logSuccess(`Push réussi vers le Cloud (${deltas.length} éléments).`, id);
             return true;
         } catch (e) {
             this.toast.error(`Échec du Push : ${e}`);
+            this.logger.logError(`Échec du Push : ${e}`, id);
             return false;
         } finally {
             this.state.isSyncing.set(false);

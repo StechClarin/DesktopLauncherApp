@@ -82,8 +82,8 @@ export class HubNavigationService {
         this.state.selectedApp.set(null); 
     }
 
-    openTab(appId: string, name: string, url: string, logo?: string) {
-        console.log(`[OPEN_TAB] appId=${appId}, name=${name}, url=${url}, logo=${logo}`);
+    openTab(appId: string, name: string, url: string, logo?: string, isLoading: boolean = false) {
+        console.log(`[OPEN_TAB] appId=${appId}, name=${name}, url=${url}, logo=${logo}, isLoading=${isLoading}`);
         this.state.activeTabs.update(tabs => {
             const newTabs = tabs.map(t => ({ ...t, isActive: false }));
             const existing = newTabs.find(t => t.id === appId);
@@ -94,6 +94,7 @@ export class HubNavigationService {
                 }
                 if (logo) existing.logo = logo;
                 existing.isActive = true;
+                if (isLoading !== undefined) existing.isLoading = isLoading;
                 console.log(`[OPEN_TAB] Updated existing tab, new URL: ${existing.url}`);
                 return newTabs;
             }
@@ -108,7 +109,8 @@ export class HubNavigationService {
                 url, 
                 safeUrl: this.sanitizer.bypassSecurityTrustResourceUrl(url),
                 logo, 
-                isActive: true 
+                isActive: true,
+                isLoading
             };
             console.log(`[OPEN_TAB] Created new tab:`, newTab);
             return [...newTabs, newTab];
@@ -219,6 +221,10 @@ export class HubNavigationService {
             console.log(`[LAUNCH DEBUG] App ${app.id} (${app.name}) returned port: ${actualPort} (type: ${typeof actualPort})`);
             this.state.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
             
+            // Ouvre l'onglet IMMEDIATEMENT en mode chargement (ECG)
+            const tabUrl = `http://127.0.0.1:${actualPort}`;
+            this.openTab(app.id, app.name, tabUrl, app.icon_svg || app.icon, true);
+            
             // Log dans le terminal
             console.log(`\n=== 🚀 LANCEMENT DE L'APP ${app.name.toUpperCase()} ===`);
             console.log(`Port dynamique: ${actualPort}`);
@@ -274,11 +280,24 @@ export class HubNavigationService {
             if (isReady) {
                 this.state.launchStep.set('Application prête !');
                 const tabUrl = `http://127.0.0.1:${actualPort}`;
-                console.log(`[LAUNCH DEBUG] Opening tab for ${app.id} with URL: ${tabUrl}`);
+                console.log(`[LAUNCH DEBUG] App is ready for ${app.id} with URL: ${tabUrl}`);
                 console.log(`[LAUNCH DEBUG] Final port value: ${actualPort}, type: ${typeof actualPort}`);
                 console.log(`=== ✅ APPLICATION PRÊTE ===\nURL: ${tabUrl}\n`);
                 
-                this.openTab(app.id, app.name, tabUrl, app.icon_svg || app.icon);
+                // Au lieu de créer l'onglet ici, on met simplement à jour son état `isLoading`
+                // et on attribue le safeUrl APRES un très court délai pour laisser Django binder
+                setTimeout(() => {
+                    this.state.activeTabs.update(tabs => {
+                        const newTabs = [...tabs];
+                        const existing = newTabs.find(t => t.id === app.id);
+                        if (existing) {
+                            existing.isLoading = false;
+                            existing.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(tabUrl);
+                        }
+                        return newTabs;
+                    });
+                }, 100);
+
                 this.state.isLaunchingApp.set(null); // On libère l'UI immédiatement
                 
                 // On lance la synchro sans bloquer l'UI

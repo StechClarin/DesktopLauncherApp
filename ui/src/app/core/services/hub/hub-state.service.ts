@@ -45,7 +45,7 @@ export class HubStateService {
     // Navigation & UI
     selectedApp = signal<any | null>(null);
     activeTab = signal<'home' | 'library' | 'store' | 'downloads' | 'settings'>((sessionStorage.getItem('hub-active-tab') as any) || 'home');
-    activeTabs = signal<{id: string, name: string, url: string, safeUrl?: SafeResourceUrl, logo?: string, isActive: boolean}[]>([]);
+    activeTabs = signal<{id: string, name: string, url: string, safeUrl?: SafeResourceUrl, logo?: string, isActive: boolean, isLoading?: boolean}[]>([]);
     appPorts = signal<Record<string, number>>({});
     showInstallationWizard = signal<any | null>(null); // Contient l'app pour laquelle on affiche le wizard
     deploymentMode = signal<'solo' | 'structure'>((localStorage.getItem('hub-deployment-mode') as any) || 'solo');

@@ -50,9 +50,34 @@
 
             <!-- APP IFRAMES -->
             @for (tab of hubService.activeTabs(); track tab.id) {
-                <div class="absolute inset-0 z-10 bg-black animate-in fade-in duration-500 app-tab-pane"
+                <div class="absolute inset-0 z-10 bg-[#020617] animate-in fade-in duration-500 app-tab-pane"
                      [class.hidden]="!tab.isActive">
-                    <iframe #appIframe [attr.data-app-id]="tab.id" [src]="tab.safeUrl"></iframe>
+                     
+                    @if (tab.isLoading) {
+                        <!-- ANIMATION ECG HEARTBEAT -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center bg-[#020617] z-20">
+                            <div class="relative w-full max-w-md h-32 overflow-hidden flex items-center justify-center">
+                                <!-- Ligne de fond (grisée) -->
+                                <svg class="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 500 150" preserveAspectRatio="none">
+                                    <polyline fill="none" stroke="#3b82f6" stroke-width="2" points="0,75 200,75 220,20 240,130 260,75 500,75" />
+                                </svg>
+                                <!-- Ligne animée (lumineuse) -->
+                                <svg class="absolute inset-0 w-full h-full ecg-animated-line" viewBox="0 0 500 150" preserveAspectRatio="none">
+                                    <polyline fill="none" stroke="#60a5fa" stroke-width="4" points="0,75 200,75 220,20 240,130 260,75 500,75" />
+                                </svg>
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#020617] ecg-mask"></div>
+                            </div>
+                            <div class="mt-8 flex flex-col items-center">
+                                <span class="text-blue-400 font-mono text-sm tracking-widest animate-pulse mb-2">INITIALISATION DU CONTENEUR</span>
+                                <span class="text-slate-400 text-xs">{{ hubService.state.launchStep() }}</span>
+                            </div>
+                        </div>
+                    }
+
+                    <iframe #appIframe [attr.data-app-id]="tab.id" [src]="tab.safeUrl" 
+                            [class.opacity-0]="tab.isLoading" 
+                            class="w-full h-full border-none transition-opacity duration-1000">
+                    </iframe>
                 </div>
             }
         </div>
@@ -64,4 +89,7 @@
     @if (hubService.state.showInstallationWizard()) {
         <app-installation-wizard></app-installation-wizard>
     }
+
+    <!-- 4. SYNC DEBUG DRAWER -->
+    <app-sync-debug-drawer></app-sync-debug-drawer>
 </div>

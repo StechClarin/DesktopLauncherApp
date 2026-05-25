@@ -19,6 +19,7 @@ import { DownloadsViewComponent } from '../../features/hub/views/downloads/downl
 import { SettingsViewComponent } from '../../features/hub/views/settings/settings-view.component';
 import { AppDetailViewComponent } from '../../features/hub/views/app-detail/app-detail-view.component';
 import { InstallationWizardComponent } from '../../features/hub/components/installation-wizard/installation-wizard.component';
+import { SyncDebugDrawerComponent } from '../../features/hub/components/sync-debug-drawer/sync-debug-drawer.component';
 
 @Component({
     selector: 'app-hub-layout',
@@ -33,7 +34,8 @@ import { InstallationWizardComponent } from '../../features/hub/components/insta
         DownloadsViewComponent,
         SettingsViewComponent,
         AppDetailViewComponent,
-        InstallationWizardComponent
+        InstallationWizardComponent,
+        SyncDebugDrawerComponent
     ],
     templateUrl: './hub-layout.component.html',
     styleUrl: './hub-layout.component.scss'

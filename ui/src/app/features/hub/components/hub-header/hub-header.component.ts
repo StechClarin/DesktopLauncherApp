@@ -2,6 +2,7 @@ import { Component, inject, input, output, computed, signal, OnInit, HostListene
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
 import { AudioService } from '../../../../core/services/audio.service';
+import { SyncLoggerService } from '../../../../core/services/hub/sync-logger.service';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 @Component({
@@ -14,6 +15,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 export class HubHeaderComponent implements OnInit {
   hubService = inject(HubService);
   audioService = inject(AudioService);
+  syncLogger = inject(SyncLoggerService);
 
   // Inputs
   user = input<any>();

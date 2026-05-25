@@ -76,3 +76,28 @@
     border: none;
   }
 }
+
+/* --- ECG Animation Styles --- */
+.ecg-animated-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: ecg-draw 3s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.8));
+}
+
+@keyframes ecg-draw {
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.ecg-mask {
+  /* Creates a moving mask effect to hide the drawn line over time */
+  background: linear-gradient(90deg, transparent 0%, transparent 80%, #020617 90%, #020617 100%);
+  background-size: 200% 100%;
+  animation: ecg-sweep 3s linear infinite;
+}
+
+@keyframes ecg-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
+}

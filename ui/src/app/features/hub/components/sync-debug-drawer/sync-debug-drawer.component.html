@@ -1,0 +1,79 @@
+<div class="fixed inset-y-0 right-0 w-[500px] bg-[#020617] border-l border-slate-800 shadow-2xl transform transition-transform duration-300 z-[100] flex flex-col font-mono text-sm"
+     [class.translate-x-0]="logger.isOpen()"
+     [class.translate-x-full]="!logger.isOpen()">
+  
+  <!-- Header -->
+  <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-[#0f172a]">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-blue-400 text-lg">bug_report</span>
+      <h2 class="text-slate-200 font-semibold uppercase tracking-wider text-xs">Sync Console</h2>
+    </div>
+    <div class="flex items-center gap-2">
+      <button (click)="clearLogs()" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Effacer les logs">
+        <span class="material-symbols-outlined text-sm">delete_outline</span>
+      </button>
+      <button (click)="logger.closeDrawer()" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors">
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Log List -->
+  <div class="flex-1 overflow-y-auto p-4 custom-scrollbar flex flex-col gap-2">
+    @if (logger.logs().length === 0) {
+        <div class="flex flex-col items-center justify-center h-full text-slate-600 opacity-50">
+            <span class="material-symbols-outlined text-4xl mb-2">code</span>
+            <span class="text-xs uppercase tracking-widest">En attente d'événements...</span>
+        </div>
+    }
+
+    @for (log of logger.logs(); track log.id) {
+        <div class="rounded border border-slate-800/50 bg-[#0f172a]/50 overflow-hidden">
+            <!-- Log Header Row -->
+            <div class="flex items-start gap-3 p-2 hover:bg-[#1e293b]/50 cursor-pointer transition-colors"
+                 (click)="log.payload ? toggleLog(log.id) : null">
+                
+                <!-- Type Badge -->
+                <div class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider shrink-0 mt-0.5 w-16 text-center"
+                     [ngClass]="{
+                        'bg-blue-500/20 text-blue-400 border border-blue-500/30': log.type === 'PULL',
+                        'bg-purple-500/20 text-purple-400 border border-purple-500/30': log.type === 'PUSH',
+                        'bg-red-500/20 text-red-400 border border-red-500/30': log.type === 'ERROR',
+                        'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': log.type === 'SUCCESS',
+                        'bg-slate-500/20 text-slate-400 border border-slate-500/30': log.type === 'INFO'
+                     }">
+                    {{ log.type }}
+                </div>
+
+                <!-- Message & Metadata -->
+                <div class="flex-1 min-w-0 flex flex-col">
+                    <span class="text-slate-300 break-words" [class.text-red-300]="log.type === 'ERROR'">
+                        {{ log.message }}
+                    </span>
+                    <div class="flex items-center gap-2 mt-1 text-[10px] text-slate-500">
+                        <span>{{ log.timestamp | date:'HH:mm:ss.SSS' }}</span>
+                        @if (log.appId) {
+                            <span class="text-slate-400">| App: {{ log.appId }}</span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Expand Icon (if payload exists) -->
+                @if (log.payload) {
+                    <span class="material-symbols-outlined text-slate-500 text-sm mt-0.5 transition-transform duration-200"
+                          [class.rotate-180]="isExpanded(log.id)">
+                        expand_more
+                    </span>
+                }
+            </div>
+
+            <!-- JSON Payload Viewer -->
+            @if (log.payload && isExpanded(log.id)) {
+                <div class="p-3 bg-[#020617] border-t border-slate-800 overflow-x-auto text-xs">
+                    <pre class="text-slate-400 m-0"><code>{{ log.payload | json }}</code></pre>
+                </div>
+            }
+        </div>
+    }
+  </div>
+</div>
