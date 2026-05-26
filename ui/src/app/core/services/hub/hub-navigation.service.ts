@@ -163,6 +163,16 @@ export class HubNavigationService {
         })));
     }
 
+    async closeAllApps() {
+        const tabs = this.state.activeTabs();
+        // Ferme toutes les apps (cela gère la synchro et tue les processus Tauri)
+        await Promise.all(tabs.map(tab => this.closeTab(tab.id)));
+        // S'assurer que le terminal est fermé
+        this.terminal.close();
+        this.state.activeTabs.set([]);
+        this.setActiveTab('home');
+    }
+
     async launchApp(app: any) {
         if (!(window as any).__TAURI_INTERNALS__) {
             this.toast.show('info', 'Le lancement d\'applications n\'est possible que depuis l\'application de bureau.');

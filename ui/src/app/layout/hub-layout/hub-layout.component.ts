@@ -7,6 +7,7 @@ import { SupabaseService } from '../../core/services/supabase.service';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import { HubNavigationService } from '../../core/services/hub/hub-navigation.service';
 import { ToastService } from '../../core/services/toast.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -45,6 +46,7 @@ export class HubLayoutComponent {
     supabase = inject(SupabaseService);
     sanitizer = inject(DomSanitizer);
     router = inject(Router);
+    hubNavigation = inject(HubNavigationService);
     private sub = new Subscription();
 
     @ViewChildren('appIframe') iframes!: QueryList<ElementRef<HTMLIFrameElement>>;
@@ -88,7 +90,25 @@ export class HubLayoutComponent {
     }
 
     async logOut() {
-        await this.supabase.signOut();
-        this.router.navigate(['/login']);
+        try {
+            // 1. Fermer toutes les applications (backend & frontend tabs)
+            await this.hubNavigation.closeAllApps();
+            
+            // 2. Déconnexion Supabase
+            await this.supabase.signOut();
+            
+            // 3. Vidange radicale du cache
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // 4. Hard reload vers la page de login pour détruire l'instance mémoire Angular
+            window.location.href = '/login';
+        } catch (error) {
+            console.error('Erreur lors de la déconnexion:', error);
+            // Fallback de sécurité
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/login';
+        }
     }
 }
