@@ -75,6 +75,16 @@ export class HubInstallerService {
         if (this.state.downloadingAppId()) return;
 
         try {
+            const appName = this.state.availableApps().find(a => a.id === appId)?.name 
+                || this.state.installedApps().find(a => a.id === appId)?.name 
+                || appId;
+
+            const isRunning = this.state.runningAppIds().has(appId);
+            if (isRunning) {
+                this.toast.info(`Arrêt en cours de ${appName} pour appliquer la mise à jour...`);
+                await this.navigation.closeTab(appId);
+            }
+
             this.state.downloadingAppId.set(appId);
             this.state.installProgress.set(0);
 
@@ -155,10 +165,15 @@ export class HubInstallerService {
     }
 
     private finalizeInstallation(appId: string, version: string) {
-        const app = this.state.availableApps().find(a => a.id === appId);
+        const app = this.state.availableApps().find(a => a.id === appId)
+            || this.state.installedApps().find(a => a.id === appId);
+
         if (app) {
             this.state.availableApps.update(apps => apps.filter(a => a.id !== appId));
-            this.state.installedApps.update(apps => [...apps, { ...app, status: 'installed' }]);
+            this.state.installedApps.update(apps => {
+                const filtered = apps.filter(a => a.id !== appId);
+                return [...filtered, { ...app, status: 'installed', localVersion: version }];
+            });
             
             this.state.downloadHistory.update(history => [
                 { id: appId, name: app.name, version: version, date: new Date().toISOString(), status: 'completed' },

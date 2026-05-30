@@ -30,6 +30,21 @@ export class HubStateService {
     isLoading = signal<boolean>(false);
     rawLicenses = signal<any[]>([]);
     
+    // Launch History State
+    launchHistory = signal<{ appId: string, launchedAt: string }[]>(
+        JSON.parse(localStorage.getItem('hub-launch-history') || '[]')
+    );
+
+    recordAppLaunch(appId: string) {
+        const now = new Date().toISOString();
+        this.launchHistory.update(history => {
+            const filtered = history.filter(h => h.appId !== appId);
+            const updated = [{ appId, launchedAt: now }, ...filtered].slice(0, 10);
+            localStorage.setItem('hub-launch-history', JSON.stringify(updated));
+            return updated;
+        });
+    }
+    
     // Launch & UX states
     isLaunchingApp = signal<string | null>(null); // Contient l'ID de l'app en cours de lancement
     launchStep = signal<string>(''); // Message d'étape pour l'UX
@@ -45,7 +60,7 @@ export class HubStateService {
     // Navigation & UI
     selectedApp = signal<any | null>(null);
     activeTab = signal<'home' | 'library' | 'store' | 'downloads' | 'settings'>((sessionStorage.getItem('hub-active-tab') as any) || 'home');
-    activeTabs = signal<{id: string, name: string, url: string, safeUrl?: SafeResourceUrl, logo?: string, isActive: boolean, isLoading?: boolean}[]>([]);
+    activeTabs = signal<{id: string, name: string, url: string, safeUrl?: SafeResourceUrl, logo?: string, isActive: boolean, isLoading?: boolean, zoom?: number}[]>([]);
     appPorts = signal<Record<string, number>>({});
     showInstallationWizard = signal<any | null>(null); // Contient l'app pour laquelle on affiche le wizard
     deploymentMode = signal<'solo' | 'structure'>((localStorage.getItem('hub-deployment-mode') as any) || 'solo');
@@ -106,14 +121,58 @@ export class HubStateService {
         return app ? [{ ...app, status: progress === 101 ? 'initializing' : 'installing', progress }] : [];
     });
 
-    recentApps = computed(() => [...this.enrichedApps()].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4));
+    recentApps = computed(() => {
+        const history = this.launchHistory();
+        const apps = this.enrichedApps();
+        const recent: any[] = [];
+        
+        // Map launch history first
+        for (const record of history) {
+            const app = apps.find(a => a.id === record.appId);
+            if (app) {
+                recent.push(app);
+            }
+        }
+        
+        // If not enough apps, fill with remaining apps sorted by created_at
+        if (recent.length < 4) {
+            const launchedIds = new Set(recent.map(a => a.id));
+            const remaining = [...apps]
+                .filter(a => !launchedIds.has(a.id))
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            recent.push(...remaining);
+        }
+        
+        return recent.slice(0, 4);
+    });
     popularApps = computed(() => [...this.enrichedApps()].sort((a, b) => (b.installCount || 0) - (a.installCount || 0)).slice(0, 4));
-    featuredModules = computed(() => this.enrichedApps().flatMap(app => (app.modules || []).filter((mod: any) => mod.is_premium).map((mod: any) => ({ ...mod, appName: app.name }))).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 3));
+    featuredModules = computed(() => {
+        const modules = this.enrichedApps().flatMap(app => 
+            (app.modules || [])
+                .filter((mod: any) => mod.is_premium)
+                .map((mod: any) => ({ ...mod, appName: app.name }))
+        );
+        return [...modules].sort((a, b) => {
+            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            if (dateB !== dateA) {
+                return dateB - dateA;
+            }
+            return (a.name || '').localeCompare(b.name || '');
+        }).slice(0, 3);
+    });
     featuredApp = computed(() => this.installedApps()[0] || this.enrichedApps()[0]);
     recommendedApps = computed(() => this.enrichedApps().slice(0, 2));
     mostUsedApp = computed(() => this.installedApps()[0]); 
     appUpdates = computed(() => this.installedApps().filter(a => a.isNewUpdate));
-    libraryModules = computed(() => this.installedApps().flatMap(app => (app.modules || []).map((mod: any) => ({ ...mod, appName: app.name }))));
+    libraryModules = computed(() => {
+        const unlockedIds = new Set(this.unlockedModuleIds());
+        return this.installedApps().flatMap(app => 
+            (app.modules || [])
+                .filter((mod: any) => mod.is_premium && !unlockedIds.has(mod.id))
+                .map((mod: any) => ({ ...mod, appName: app.name }))
+        );
+    });
     
     libraryCarousel = computed(() => {
         const bundles = this.bundles();
@@ -149,7 +208,7 @@ export class HubStateService {
     storeModules = computed(() => this.enrichedApps().flatMap(app => (app.modules || []).filter((mod: any) => mod.is_premium).map((mod: any) => ({ ...mod, appName: app.name, displayPrice: mod.hasDiscount ? mod.price : (mod.price ? mod.price + '€' : 'Premium') }))).slice(0, 4));
 
     // Reactive computed signals for app status checks
-    isAppOnDisk = (id: string) => computed(() => this.installedApps().some(a => a.id === id && a.status === 'installed'));
+    isAppOnDisk = (id: string) => computed(() => this.installedApps().some(a => a.id === id && (a.status === 'installed' || a.status === 'update_available')));
     isAppOwned = (id: string) => computed(() => this.installedApps().some(a => a.id === id) || this.availableApps().some(a => a.id === id && a.status === 'owned'));
     isAppInstalling = (id: string) => computed(() => this.installingApps().some(a => a.id === id));
     isAppRunning = (id: string) => computed(() => this.runningAppIds().has(id));

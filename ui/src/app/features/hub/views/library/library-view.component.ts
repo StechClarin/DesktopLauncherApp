@@ -1,7 +1,6 @@
-import { Component, inject, signal, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
-import { HeroCarouselComponent } from './components/hero-carousel/hero-carousel.component';
 import { LibraryStatsComponent } from './components/library-stats/library-stats.component';
 import { AppCardComponent } from '../../components/app-card/app-card.component';
 import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
@@ -14,7 +13,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   standalone: true,
   imports: [
     CommonModule, 
-    HeroCarouselComponent, 
     LibraryStatsComponent, 
     AppCardComponent,
     SectionHeaderComponent,
@@ -29,10 +27,65 @@ export class LibraryViewComponent {
   private sanitizer = inject(DomSanitizer);
 
   libraryViewMode = signal<'grid' | 'list'>('grid');
+  searchQuery = signal<string>('');
+  activeFilter = signal<'all' | 'ready' | 'updates' | 'downloads'>('all');
+
+  // Computed signal for reactively filtered applications
+  filteredApps = computed(() => {
+    const apps = this.hubService.installedApps();
+    const query = this.searchQuery().toLowerCase().trim();
+    const filter = this.activeFilter();
+
+    let result = apps;
+
+    // 1. Filter by status
+    if (filter === 'ready') {
+      result = apps.filter(a => a.status === 'installed');
+    } else if (filter === 'updates') {
+      result = apps.filter(a => a.status === 'update_available' || a.isNewUpdate);
+    } else if (filter === 'downloads') {
+      result = apps.filter(a => 
+        a.status === 'installing' || 
+        a.status === 'downloading' || 
+        a.status === 'initializing' || 
+        this.hubService.downloadingAppId() === a.id
+      );
+    }
+
+    // 2. Filter by search query
+    if (query) {
+      result = result.filter(a => 
+        a.name.toLowerCase().includes(query) || 
+        (a.description && a.description.toLowerCase().includes(query))
+      );
+    }
+
+    return result;
+  });
+
+  // Computed counts for badges
+  countAll = computed(() => this.hubService.installedApps().length);
+  countReady = computed(() => this.hubService.installedApps().filter(a => a.status === 'installed').length);
+  countUpdates = computed(() => this.hubService.installedApps().filter(a => a.status === 'update_available' || a.isNewUpdate).length);
+  countDownloads = computed(() => this.hubService.installedApps().filter(a => 
+    a.status === 'installing' || 
+    a.status === 'downloading' || 
+    a.status === 'initializing' || 
+    this.hubService.downloadingAppId() === a.id
+  ).length);
 
   setLibraryView(mode: 'grid' | 'list') {
     this.libraryViewMode.set(mode);
     localStorage.setItem('hub_library_view', mode);
+  }
+
+  setFilter(filter: 'all' | 'ready' | 'updates' | 'downloads') {
+    this.activeFilter.set(filter);
+  }
+
+  onSearchChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.searchQuery.set(input.value);
   }
 
   constructor() {

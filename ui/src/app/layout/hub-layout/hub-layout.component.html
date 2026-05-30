@@ -23,7 +23,7 @@
         <div class="flex-1 relative overflow-hidden bg-black/20">
             
             <!-- HUB CONTENT (Home, Library, Store, etc.) -->
-            <div class="hub-content absolute inset-0 overflow-y-auto custom-scrollbar" 
+            <div class="hub-content absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar" 
                  [class.hidden]="!hubService.isHubActive()">
                 
                 <!-- BACKGROUND ELEMENTS (Immersive) -->
@@ -76,6 +76,7 @@
 
                     <iframe #appIframe [attr.data-app-id]="tab.id" [src]="tab.safeUrl" 
                             [class.opacity-0]="tab.isLoading" 
+                            [style.--zoom-factor]="tab.zoom || 0.9"
                             class="w-full h-full border-none transition-opacity duration-1000">
                     </iframe>
                 </div>

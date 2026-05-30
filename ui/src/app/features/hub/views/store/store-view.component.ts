@@ -36,6 +36,14 @@ export class StoreViewComponent {
 
   searchQuery = signal<string>('');
   selectedCategory = signal<string>('Tout');
+  
+  // Section visibility states (Ubisoft Connect collapse/expand)
+  showDeals = signal<boolean>(true);
+  showNewReleases = signal<boolean>(true);
+  showCatalog = signal<boolean>(true);
+
+  // View modes (Grid, List, Compact)
+  storeViewMode = signal<'grid' | 'list' | 'compact'>('grid');
 
   categories = ['Tout', 'Nouveautés', 'Modules', 'Productivité', 'Utilitaires'];
 
@@ -60,5 +68,21 @@ export class StoreViewComponent {
 
   setCategory(cat: string) {
     this.selectedCategory.set(cat);
+  }
+
+  toggleDeals() {
+    this.showDeals.update(v => !v);
+  }
+
+  toggleNewReleases() {
+    this.showNewReleases.update(v => !v);
+  }
+
+  toggleCatalog() {
+    this.showCatalog.update(v => !v);
+  }
+
+  setViewMode(mode: 'grid' | 'list' | 'compact') {
+    this.storeViewMode.set(mode);
   }
 }

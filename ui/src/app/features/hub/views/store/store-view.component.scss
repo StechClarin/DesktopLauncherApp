@@ -2,89 +2,7 @@
   display: block;
 }
 
-@keyframes slow-zoom {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.1); }
-}
-
-.animate-slow-zoom {
-  animation: slow-zoom 30s infinite alternate ease-in-out;
-}
-
-.glass-card {
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-  
-  &:hover {
-    background: rgba(30, 41, 59, 0.7);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
-  }
-}
-
-/* Horizontal Scroll with hidden scrollbar */
-.h-scroll-container {
-  display: flex;
-  overflow-x: auto;
-  gap: 1.5rem;
-  padding-bottom: 2rem;
-  margin-bottom: -1rem;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
-  
-  &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-  }
-  
-  & > * {
-    flex: 0 0 auto;
-    width: 320px;
-  }
-}
-
-/* Bento Grid */
-.bento-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 220px;
-  gap: 1.5rem;
-}
-
-.bento-item-large {
-  grid-column: span 2;
-  grid-row: span 2;
-}
-
-.bento-item-wide {
-  grid-column: span 2;
-}
-
-/* Featured Glow */
-.featured-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 150%;
-  height: 150%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Section Header styling */
-.section-title {
-  font-size: 0.75rem;
-  font-weight: 900;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: #3b82f6;
-  margin-bottom: 0.5rem;
-  display: block;
-}
-
+/* Shimmer animation for Skeleton states */
 .shimmer {
   background: linear-gradient(
     90deg,
@@ -93,10 +11,172 @@
     rgba(255, 255, 255, 0) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+  animation: shimmer 1.5s infinite linear;
 }
 
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+/* Premium Store Card Styling */
+.store-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+  
+  /* Card Container (Horizontal aspect ratio matching banners) */
+  .card-image-wrapper {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border-radius: 1rem;
+    overflow: hidden;
+    background-color: #0b1329;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    
+    /* Hardware acceleration & smooth transition */
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, border-color, box-shadow;
+    
+    .card-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+    
+    /* Gradient overlay for premium depth */
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(2, 6, 23, 0.8) 0%, rgba(2, 6, 23, 0) 60%);
+      opacity: 0.8;
+      transition: opacity 0.4s ease;
+    }
+  }
+
+  /* Text elements */
+  .card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    transition: color 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.125rem;
+  }
+
+  /* Hover states */
+  &:hover {
+    .card-image-wrapper {
+      transform: translateY(-6px);
+      border-color: rgba(59, 130, 246, 0.4); /* Blue accent default */
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(59, 130, 246, 0.15);
+      
+      .card-bg {
+        transform: scale(1.06);
+      }
+      
+      .card-overlay {
+        opacity: 0.95;
+      }
+    }
+    
+    .card-title {
+      color: #3b82f6; /* Blue glow color on hover */
+    }
+  }
+
+  /* Gold/Yellow Theme for Deals */
+  &.deal-theme {
+    &:hover {
+      .card-image-wrapper {
+        border-color: rgba(234, 179, 8, 0.5); /* Yellow/Gold accent */
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(234, 179, 8, 0.2);
+      }
+      .card-title {
+        color: #eab308;
+      }
+    }
+  }
+}
+
+/* List View Premium Hover */
+.store-list-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, border-color, background-color;
+  
+  &:hover {
+    transform: translateX(4px);
+    border-color: rgba(59, 130, 246, 0.3);
+    background-color: rgba(30, 41, 59, 0.6);
+  }
+  
+  &.deal-theme:hover {
+    border-color: rgba(234, 179, 8, 0.3);
+  }
+}
+
+/* Compact view card styling */
+.compact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: pointer;
+  text-align: center;
+
+  .compact-image-wrapper {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, border-color;
+
+    .compact-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+    }
+  }
+
+  .compact-title {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  &:hover {
+    .compact-image-wrapper {
+      transform: translateY(-2px);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+    .compact-title {
+      color: #3b82f6;
+    }
+
+    &.deal-theme {
+      .compact-image-wrapper {
+        border-color: rgba(234, 179, 8, 0.4);
+      }
+      .compact-title {
+        color: #eab308;
+      }
+    }
+  }
 }

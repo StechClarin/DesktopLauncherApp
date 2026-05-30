@@ -1,47 +1,119 @@
-<div class="max-w-7xl mx-auto p-6 md:p-8 animate-in fade-in duration-500">
+<div class="max-w-7xl mx-auto p-6 md:p-8 animate-in fade-in duration-500 space-y-10">
 
-    <!-- 1. HERO SECTION (Mise en avant) -->
+    <!-- 1. HERO SLIDESHOW SECTION -->
     <app-home-hero (featuredClicked)="openAppDetails($event)"></app-home-hero>
 
-    <!-- 2. Récemment Joués -->
-    <section class="mb-12">
-        <app-section-header 
-            title="Récemment Joués" 
-            borderClass="border-blue-600">
-        </app-section-header>
+    <!-- 2. MAIN LAYOUT GRID (Main Feed + Sidebar) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- LEFT COLUMN: News / Marketing Feed (8 cols) -->
+        <div class="lg:col-span-8 space-y-8">
+            <section>
+                <app-section-header 
+                    title="Actualités & Mises à jour" 
+                    borderClass="border-blue-600">
+                </app-section-header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            @for (app of hubService.recentApps(); track app.id) {
-                <app-app-card [app]="app" mode="grid"></app-app-card>
-            }
+                <div class="space-y-6">
+                    @for (news of newsItems(); track news.id) {
+                        <div class="group relative flex flex-col md:flex-row gap-6 p-4 rounded-2xl bg-[#0f172a]/40 border border-white/5 hover:border-blue-500/20 hover:bg-[#0f172a]/80 transition-all duration-300">
+                            <!-- Image container -->
+                            <div class="w-full md:w-48 h-32 rounded-xl overflow-hidden shrink-0 bg-slate-950 relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                                    [style.backgroundImage]="'url(' + news.image + ')'">
+                                </div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent"></div>
+                            </div>
+
+                            <!-- Text content -->
+                            <div class="flex-1 flex flex-col justify-between py-1">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-2.5">
+                                        <span [ngClass]="news.tagClass" class="px-2.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wider">
+                                            {{ news.category }}
+                                        </span>
+                                        <span class="text-slate-500 text-[10px] font-medium">{{ news.date }}</span>
+                                    </div>
+                                    <h3 class="font-bold text-white text-base group-hover:text-blue-400 transition-colors uppercase tracking-tight line-clamp-2">
+                                        {{ news.title }}
+                                    </h3>
+                                    <p class="text-xs text-slate-400 mt-2 line-clamp-3 font-light leading-relaxed">
+                                        {{ news.summary }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
         </div>
-    </section>
 
-    <!-- 3. Nouveaux Modules d'Extension -->
-    <section class="mb-12">
-        <app-section-header 
-            title="Nouveautés & Modules" 
-            borderClass="border-purple-500">
-        </app-section-header>
+        <!-- RIGHT COLUMN: Sidebar (4 cols) -->
+        <div class="lg:col-span-4 space-y-8">
+            
+            <!-- A. QUICK RESUME WIDGET -->
+            @if (lastActiveApp(); as app) {
+                <section>
+                    <app-section-header 
+                        title="Reprendre l'activité" 
+                        borderClass="border-green-500">
+                    </app-section-header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @for (module of hubService.featuredModules(); track module.id) {
-                <app-module-card [module]="module" (clicked)="navigateToModuleApp(module)"></app-module-card>
+                    <div class="group relative bg-gradient-to-br from-[#0f172a] to-[#1e293b]/30 border border-white/5 hover:border-green-500/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl flex flex-col justify-between overflow-hidden">
+                        <!-- Glow effect -->
+                        <div class="absolute -right-16 -top-16 w-32 h-32 bg-green-500/5 rounded-full blur-2xl group-hover:bg-green-500/10 transition-all duration-500"></div>
+
+                        <!-- App info Header -->
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-slate-800 border border-white/5 flex items-center justify-center text-green-400 shrink-0"
+                                    [innerHTML]="getSafeSvg(app.icon)">
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="font-extrabold text-white text-sm uppercase tracking-wider truncate">{{ app.name }}</h4>
+                                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Dernière version : v{{ app.version }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Usage stats -->
+                        <div class="my-6 py-4 border-y border-white/5 grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Temps de session</span>
+                                <span class="text-sm font-black text-slate-200 mt-1 block">{{ app.usageTime || '1h 30m' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Statut local</span>
+                                <span class="text-sm font-black text-green-500 mt-1 block flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span> Prêt
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Primary CTA Button -->
+                        <button (click)="launchApp($event, app)"
+                            class="w-full py-3 bg-green-600 hover:bg-green-500 text-white text-xs font-black rounded-xl transition-all shadow-lg shadow-green-600/20 hover:shadow-green-500/30 flex items-center justify-center gap-2 uppercase tracking-widest group-hover:scale-[1.02] active:scale-95">
+                            <span class="material-symbols-outlined text-[16px] font-black">play_arrow</span>
+                            <span>Lancer</span>
+                        </button>
+                    </div>
+                </section>
             }
-        </div>
-    </section>
 
-    <!-- 4. Nouveautés (Grid of 3) -->
-    <section class="mb-12 pb-10">
-        <app-section-header 
-            title="Nouveautés" 
-            borderClass="border-pink-500">
-        </app-section-header>
+            <!-- B. NEW MODULES & EXTENSIONS -->
+            <section>
+                <app-section-header 
+                    title="Nouveautés & Modules" 
+                    borderClass="border-purple-500">
+                </app-section-header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            @for (app of hubService.storeNewReleases(); track app.id) {
-                <app-app-card [app]="app" mode="grid"></app-app-card>
-            }
+                <div class="space-y-4">
+                    @for (module of hubService.featuredModules(); track module.id) {
+                        <app-module-card [module]="module" (clicked)="navigateToModuleApp(module)"></app-module-card>
+                    }
+                </div>
+            </section>
+
         </div>
-    </section>
+    </div>
 </div>

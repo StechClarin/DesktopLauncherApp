@@ -15,7 +15,7 @@ export class AppCardComponent {
   private sanitizer = inject(DomSanitizer);
 
   app = input.required<any>();
-  mode = input<'grid' | 'list'>('grid');
+  mode = input<'grid' | 'list' | 'compact'>('grid');
 
   getSafeSvg(svgString?: string): SafeHtml {
     if (!svgString) return '';

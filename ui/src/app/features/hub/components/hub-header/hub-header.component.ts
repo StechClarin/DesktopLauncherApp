@@ -127,6 +127,36 @@ export class HubHeaderComponent implements OnInit {
     this.closeContextMenu();
   }
 
+  zoomIn(event: MouseEvent) {
+    event.stopPropagation();
+    const id = this.contextMenuTargetId();
+    if (id) {
+      this.hubService.setTabZoom(id, this.hubService.getTabZoom(id) + 0.1);
+    }
+  }
+
+  zoomOut(event: MouseEvent) {
+    event.stopPropagation();
+    const id = this.contextMenuTargetId();
+    if (id) {
+      this.hubService.setTabZoom(id, this.hubService.getTabZoom(id) - 0.1);
+    }
+  }
+
+  resetZoom(event: MouseEvent) {
+    event.stopPropagation();
+    const id = this.contextMenuTargetId();
+    if (id) {
+      this.hubService.setTabZoom(id, 1.0); // Reset to 100%
+    }
+  }
+
+  getZoomPercent(): number {
+    const id = this.contextMenuTargetId();
+    if (!id) return 100;
+    return Math.round(this.hubService.getTabZoom(id) * 100);
+  }
+
   // Fermeture lors du clic ailleurs
   @HostListener('document:click')
   closeContextMenu() {

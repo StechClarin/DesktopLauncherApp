@@ -110,7 +110,8 @@ export class HubNavigationService {
                 safeUrl: this.sanitizer.bypassSecurityTrustResourceUrl(url),
                 logo, 
                 isActive: true,
-                isLoading
+                isLoading,
+                zoom: 0.9
             };
             console.log(`[OPEN_TAB] Created new tab:`, newTab);
             return [...newTabs, newTab];
@@ -179,6 +180,7 @@ export class HubNavigationService {
             return;
         }
         console.log(`Preparing launch for app: ${app.name}`);
+        this.state.recordAppLaunch(app.id);
         this.state.launchStep.set('Préparation de l\'environnement...');
         
         // Ouvre le terminal de debug pour suivre l'initialisation

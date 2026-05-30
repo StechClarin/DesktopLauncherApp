@@ -1,32 +1,53 @@
 @if (mode() === 'grid') {
     <div (click)="hubService.selectedApp.set(app())"
-        class="group relative bg-[#0f172a] hover:bg-[#1e293b] border border-white/5 hover:border-blue-500/30 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer flex flex-col">
+        class="group relative bg-[#0f172a] hover:bg-[#1e293b] border border-white/5 hover:border-blue-500/30 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer flex flex-col h-full">
 
         <!-- Top: Image Area -->
-        <div class="h-32 w-full relative overflow-hidden bg-slate-800">
+        <div class="h-32 w-full relative overflow-hidden bg-slate-800 shrink-0">
             <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
                 [style.backgroundImage]="'url(' + (app().banner || 'https://via.placeholder.com/400x200') + ')'">
             </div>
             <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80">
             </div>
-            <div
-                class="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/60 backdrop-blur text-[10px] font-mono text-white border border-white/10">
-                v{{ app().version }}
-            </div>
+            
+            @if (app().discount) {
+                <div class="absolute top-2 right-2 bg-yellow-500 text-black text-[9px] font-black px-2 py-0.5 rounded shadow-lg uppercase tracking-tight z-10">
+                    {{ app().discount }}
+                </div>
+            } @else {
+                @if (app().status === 'update_available') {
+                    <div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-orange-600 text-[10px] font-black text-white border border-orange-500 shadow-lg shadow-orange-600/20 z-10 animate-pulse">
+                        MAJ DISPO
+                    </div>
+                } @else {
+                    <div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/60 backdrop-blur text-[10px] font-mono text-white border border-white/10 z-10">
+                        v{{ app().version }}
+                    </div>
+                }
+            }
             
             <!-- Action Buttons Overlay -->
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                @if (app().status === 'installed') {
+            <div class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                @if (app().status === 'installed' || app().status === 'update_available') {
+                    @if (app().status === 'update_available') {
+                        <div (click)="installApp($event, app())" 
+                             class="w-12 h-12 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-xl scale-75 group-hover:scale-100 transition-transform duration-300 hover:bg-orange-500"
+                             title="Mettre à jour">
+                            <span class="material-symbols-outlined text-2xl font-black">update</span>
+                        </div>
+                    }
                     <div (click)="launchApp($event, app())" 
                          [class.bg-green-600]="hubService.runningAppIds().has(app().id)"
-                         class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xl scale-75 group-hover:scale-100 transition-transform duration-300">
+                         class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xl scale-75 group-hover:scale-100 transition-transform duration-300"
+                         title="Lancer l'application">
                         <span class="material-symbols-outlined text-2xl font-black">
                             {{ hubService.runningAppIds().has(app().id) ? 'visibility' : 'play_arrow' }}
                         </span>
                     </div>
                 } @else if (app().status === 'owned' || hubService.isAppLicensed(app())) {
                     <div (click)="installApp($event, app())" 
-                         class="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-xl scale-75 group-hover:scale-100 transition-transform duration-300 hover:bg-blue-400">
+                         class="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-xl scale-75 group-hover:scale-100 transition-transform duration-300 hover:bg-blue-400"
+                         title="Installer">
                         <span class="material-symbols-outlined text-2xl font-black">download</span>
                     </div>
                 }
@@ -42,9 +63,17 @@
                 <h3 class="font-bold text-white text-sm truncate group-hover:text-blue-400 transition-colors">
                     {{ app().name }}</h3>
                 <div class="flex items-center gap-2 mt-0.5">
-                    @if (app().status === 'installed') {
+                    @if (app().price) {
+                        <span class="text-blue-400 font-extrabold text-xs">{{ app().price }}</span>
+                        @if (app().oldPrice) {
+                            <span class="text-slate-500 line-through text-[10px] font-bold">{{ app().oldPrice }}</span>
+                        }
+                    } @else if (app().status === 'installed') {
                         <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                         <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Installé</span>
+                    } @else if (app().status === 'update_available') {
+                        <div class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
+                        <span class="text-[10px] text-orange-400 uppercase font-black tracking-wide">Mise à jour dispo</span>
                     } @else if (app().status === 'owned' || hubService.isAppLicensed(app())) {
                         <div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
                         <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Débloqué</span>
@@ -56,33 +85,47 @@
             </div>
         </div>
     </div>
-} @else {
+} @else if (mode() === 'list') {
     <!-- Original List Style -->
     <div (click)="hubService.selectedApp.set(app())"
-        class="group flex items-center gap-6 p-4 rounded-2xl bg-[#0f172a] hover:bg-[#162032] border border-white/5 hover:border-orange-500/30 transition-all cursor-pointer">
+        class="group flex items-center gap-6 p-4 rounded-2xl bg-[#0f172a] hover:bg-[#162032] border border-white/5 hover:border-blue-500/30 transition-all cursor-pointer">
         
         <div class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
             <div class="absolute inset-0 bg-cover bg-center"
                 [style.backgroundImage]="'url(' + (app().banner || '') + ')'"></div>
-            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center text-orange-400 text-2xl"
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center text-blue-400 text-2xl"
                 [innerHTML]="getSafeSvg(app().icon)"></div>
         </div>
 
         <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-white group-hover:text-orange-400 transition-colors">
+            <h3 class="font-bold text-white group-hover:text-blue-400 transition-colors uppercase">
                 {{ app().name }}</h3>
             <div class="flex items-center gap-2 mt-1">
-                <span class="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">v{{ app().version }}</span>
-                <span class="text-[10px] text-orange-400/80 font-mono">12h</span>
+                @if (app().price) {
+                    <span class="text-blue-400 font-extrabold text-xs">{{ app().price }}</span>
+                    @if (app().discount) {
+                        <span class="text-[9px] text-yellow-500 font-bold uppercase tracking-wider">{{ app().discount }}</span>
+                    }
+                } @else {
+                    <span class="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">v{{ app().version }}</span>
+                }
             </div>
         </div>
 
         <div class="flex items-center gap-2">
-            @if (app().status === 'installed') {
+            @if (app().status === 'installed' || app().status === 'update_available') {
+                @if (app().status === 'update_available') {
+                    <button (click)="installApp($event, app())"
+                        class="p-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white transition-all active:scale-95 shadow-lg shadow-orange-600/20"
+                        title="Mettre à jour">
+                        <span class="material-symbols-outlined text-xl">update</span>
+                    </button>
+                }
                 <button (click)="launchApp($event, app())"
                     [class.bg-green-600]="hubService.runningAppIds().has(app().id)"
                     [class.text-white]="hubService.runningAppIds().has(app().id)"
-                    class="p-2 rounded-lg bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white transition-all active:scale-95 group/play shadow-lg hover:shadow-blue-600/20">
+                    class="p-2 rounded-lg bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white transition-all active:scale-95 group/play shadow-lg hover:shadow-blue-600/20"
+                    title="Lancer">
                     <span class="material-symbols-outlined text-xl">
                         {{ hubService.runningAppIds().has(app().id) ? 'visibility' : 'play_arrow' }}
                     </span>
@@ -96,6 +139,26 @@
             <button (click)="$event.stopPropagation()" class="p-2 rounded-lg text-slate-500 hover:bg-white/10 hover:text-white transition-colors">
                 <span class="material-symbols-outlined text-xl">more_vert</span>
             </button>
+        </div>
+    </div>
+} @else {
+    <!-- Compact Mode -->
+    <div (click)="hubService.selectedApp.set(app())"
+        class="group relative aspect-[16/10] rounded-xl overflow-hidden bg-slate-900 border border-white/5 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer">
+        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+            [style.backgroundImage]="'url(' + (app().banner || '') + ')'"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+        
+        @if (app().discount) {
+            <div class="absolute top-1.5 right-1.5 bg-yellow-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10">
+                {{ app().discount }}
+            </div>
+        }
+        
+        <div class="absolute bottom-2 left-2 right-2 min-w-0 z-10">
+            <h3 class="font-bold text-white text-[10px] truncate group-hover:text-blue-400 transition-colors uppercase tracking-wider">
+                {{ app().name }}
+            </h3>
         </div>
     </div>
 }

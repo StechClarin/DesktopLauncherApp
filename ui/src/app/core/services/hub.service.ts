@@ -153,4 +153,16 @@ export class HubService {
     refreshTab(id: string) {
         this.state.refreshTabRequestedSource.next(id);
     }
+
+    getTabZoom(id: string): number {
+        const tab = this.state.activeTabs().find(t => t.id === id);
+        return tab?.zoom !== undefined ? tab.zoom : 0.9;
+    }
+
+    setTabZoom(id: string, zoom: number) {
+        const clampedZoom = Math.max(0.5, Math.min(1.5, parseFloat(zoom.toFixed(2))));
+        this.state.activeTabs.update(tabs => 
+            tabs.map(t => t.id === id ? { ...t, zoom: clampedZoom } : t)
+        );
+    }
 }

@@ -102,21 +102,46 @@ export class HubDataService {
         }
         this.state.isLoading.set(true);
         try {
+            const { data: { user } } = await this.supabase.client.auth.getUser();
+            const isEthernanos = tenantId === 'ETH-NANOS-SPA001' || 
+                                 this.state.hubId() === 'ETH-NANOS-SPA001' || 
+                                 user?.email === 'ethernanos@gmail.com';
+
+            let appsQuery = this.supabase.client.from('apps').select('*, modules:app_modules(*)');
+            if (!isEthernanos) {
+                appsQuery = appsQuery.eq('is_active', true);
+            }
+
+            const platform = this.getOsKeyword();
+
             const results = await Promise.allSettled([
                 this.supabase.client.from('tenant_licenses').select('*').eq('tenant_id', tenantId),
                 this.supabase.client.from('bundles').select('*').eq('is_active', true),
                 this.supabase.client.from('promotions').select('*').eq('is_active', true).is('code', null).gt('valid_until', new Date().toISOString()),
-                this.supabase.client.from('apps').select('*, modules:app_modules(*)').eq('is_active', true)
+                appsQuery,
+                this.supabase.client.from('app_releases')
+                    .select('app_id, version, download_url, checksum, released_at')
+                    .eq('platform', platform)
+                    .order('released_at', { ascending: false })
             ]);
 
             const licenses = results[0].status === 'fulfilled' && !results[0].value.error ? results[0].value.data : [];
             const bundles = results[1].status === 'fulfilled' && !results[1].value.error ? results[1].value.data : [];
             const promotions = results[2].status === 'fulfilled' && !results[2].value.error ? results[2].value.data : [];
             const allApps = results[3].status === 'fulfilled' && !results[3].value.error ? results[3].value.data : [];
+            const releasesData = results[4].status === 'fulfilled' && !results[4].value.error ? results[4].value.data : [];
+
+            const latestReleasesMap = new Map<string, any>();
+            for (const r of (releasesData || [])) {
+                if (!latestReleasesMap.has(r.app_id)) {
+                    latestReleasesMap.set(r.app_id, r);
+                }
+            }
 
             console.log("[HUB_DATA] Data fetched from Supabase:", { 
                 licenses: licenses?.length, 
                 apps: allApps?.length,
+                releases: releasesData?.length,
                 hasError: results.some(r => r.status === 'rejected' || (r as any).value?.error)
             });
 
@@ -133,10 +158,33 @@ export class HubDataService {
                 // On charge les apps disponibles et installées
                 const enrichedInstalled = await Promise.all(installed.map(async (a: any) => {
                     let isPhysicallyInstalled = false;
+                    let localVersion: string | null = null;
                     try {
                         isPhysicallyInstalled = await invoke<boolean>('is_app_installed', { appId: a.id });
+                        if (isPhysicallyInstalled) {
+                            const manifest = await invoke<any>('get_app_manifest', { appId: a.id });
+                            localVersion = manifest?.version || null;
+                        }
                     } catch (e) { }
-                    return { ...a, status: isPhysicallyInstalled ? 'installed' : 'owned', icon: a.icon_svg || '', banner: a.banner_url || '', modules: a.modules || [] };
+
+                    const remoteRelease = latestReleasesMap.get(a.id);
+                    const remoteVersion = remoteRelease?.version || null;
+                    
+                    let status: 'installed' | 'owned' | 'update_available' = isPhysicallyInstalled ? 'installed' : 'owned';
+                    if (isPhysicallyInstalled && localVersion && remoteVersion && localVersion !== remoteVersion) {
+                        status = 'update_available';
+                    }
+
+                    return { 
+                        ...a, 
+                        status, 
+                        localVersion, 
+                        remoteVersion: remoteVersion || a.version || '1.0.0',
+                        version: remoteVersion || a.version || '1.0.0',
+                        icon: a.icon_svg || '', 
+                        banner: a.banner_url || '', 
+                        modules: a.modules || [] 
+                    };
                 }));
                 this.state.installedApps.set(enrichedInstalled);
 
@@ -144,12 +192,39 @@ export class HubDataService {
                 const enrichedAvailable = await Promise.all(allApps.map(async (a: any) => {
                     const isInstalled = installedIds.has(a.id);
                     let isPhysicallyInstalled = false;
+                    let localVersion: string | null = null;
                     if (isInstalled) {
                         try {
                             isPhysicallyInstalled = await invoke<boolean>('is_app_installed', { appId: a.id });
+                            if (isPhysicallyInstalled) {
+                                const manifest = await invoke<any>('get_app_manifest', { appId: a.id });
+                                localVersion = manifest?.version || null;
+                            }
                         } catch (e) { }
                     }
-                    return { ...a, status: isInstalled ? (isPhysicallyInstalled ? 'installed' : 'owned') : 'available', icon: a.icon_svg || '', banner: a.banner_url || '', modules: a.modules || [] };
+
+                    const remoteRelease = latestReleasesMap.get(a.id);
+                    const remoteVersion = remoteRelease?.version || null;
+
+                    let status: 'installed' | 'owned' | 'available' | 'update_available' = 'available';
+                    if (isInstalled) {
+                        if (isPhysicallyInstalled) {
+                            status = (localVersion && remoteVersion && localVersion !== remoteVersion) ? 'update_available' : 'installed';
+                        } else {
+                            status = 'owned';
+                        }
+                    }
+
+                    return { 
+                        ...a, 
+                        status, 
+                        localVersion, 
+                        remoteVersion: remoteVersion || a.version || '1.0.0',
+                        version: remoteVersion || a.version || '1.0.0',
+                        icon: a.icon_svg || '', 
+                        banner: a.banner_url || '', 
+                        modules: a.modules || [] 
+                    };
                 }));
                 this.state.availableApps.set(enrichedAvailable);
                 
@@ -183,5 +258,9 @@ export class HubDataService {
             if (license.expires_at && new Date(license.expires_at) < new Date()) return false;
             return license.is_active !== false;
         });
+    }
+
+    private getOsKeyword(): string {
+        return typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('win') ? 'windows-latest' : 'ubuntu-latest';
     }
 }

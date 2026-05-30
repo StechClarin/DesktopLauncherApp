@@ -68,21 +68,19 @@ export class HubLayoutComponent {
 
     private refreshIframe(appId: string) {
         const iframeArray = this.iframes?.toArray() || [];
-        const iframeEl = iframeArray.find(el => el.nativeElement.dataset['appId'] === appId);
+        const iframeEl = iframeArray.find(el => el.nativeElement.getAttribute('data-app-id') === appId);
 
         if (!iframeEl) {
             console.warn(`[LAYOUT] No iframe found to refresh for ${appId}`);
             return;
         }
 
-        const iframeWindow = iframeEl.nativeElement.contentWindow;
-        if (!iframeWindow) {
-            console.warn(`[LAYOUT] Iframe window not available yet for ${appId}`);
-            return;
-        }
-
-        console.log(`[LAYOUT] Refreshing iframe for ${appId}`);
-        iframeWindow.location.reload();
+        console.log(`[LAYOUT] Refreshing iframe for ${appId} via cross-origin safe src reset`);
+        const currentSrc = iframeEl.nativeElement.src;
+        iframeEl.nativeElement.src = 'about:blank'; // Safe fallback URL
+        setTimeout(() => {
+            iframeEl.nativeElement.src = currentSrc;
+        }, 50);
     }
 
     toggleSidebar() {
