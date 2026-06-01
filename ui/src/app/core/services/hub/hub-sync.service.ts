@@ -21,8 +21,12 @@ export class HubSyncService {
         this.toast.info("Début de la synchronisation profonde...");
         this.logger.logInfo("Démarrage de la synchronisation complète", id);
         try {
-            await this.pullSync(id);
-            await this.pushSync(id);
+            const pushSuccess = await this.pushSync(id);
+            if (pushSuccess) {
+                await this.pullSync(id);
+            } else {
+                throw new Error("Le push des modifications locales a échoué.");
+            }
             this.toast.success("Synchronisation complète terminée !");
             this.logger.logSuccess("Synchronisation profonde terminée avec succès", id);
         } catch (e) {
