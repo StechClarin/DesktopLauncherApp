@@ -111,7 +111,7 @@ export class HubNavigationService {
                 logo, 
                 isActive: true,
                 isLoading,
-                zoom: 0.9
+                zoom: 1.0
             };
             console.log(`[OPEN_TAB] Created new tab:`, newTab);
             return [...newTabs, newTab];

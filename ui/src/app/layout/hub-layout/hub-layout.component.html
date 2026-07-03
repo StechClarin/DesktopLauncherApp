@@ -76,7 +76,7 @@
 
                     <iframe #appIframe [attr.data-app-id]="tab.id" [src]="tab.safeUrl" 
                             [class.opacity-0]="tab.isLoading" 
-                            [style.--zoom-factor]="tab.zoom || 0.9"
+                            [style.--zoom-factor]="tab.zoom || 1.0"
                             class="w-full h-full border-none transition-opacity duration-1000">
                     </iframe>
                 </div>

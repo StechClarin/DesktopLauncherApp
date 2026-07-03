@@ -138,7 +138,10 @@ export class HubSyncService {
                 headers: { 'Content-Type': 'application/json', 'X-Hub-Api-Key': apiKey },
                 body: JSON.stringify({ deltas })
             });
-            if (!cloudPushResponse.ok) throw new Error("Cloud a refusé les deltas.");
+            const cloudPushResult = await cloudPushResponse.json().catch(() => null);
+            if (!cloudPushResponse.ok) {
+                throw new Error(`Cloud a refusé les deltas (${cloudPushResponse.status}) ${cloudPushResult?.error || ''}`);
+            }
 
             // 3. Mark as Synced LOCALLY
             await fetch(`http://127.0.0.1:${port}/api/external/sync-delta/`, {
@@ -148,7 +151,7 @@ export class HubSyncService {
             });
 
             this.toast.success(`Push réussi (${deltas.length} modifs).`);
-            this.logger.logSuccess(`Push réussi vers le Cloud (${deltas.length} éléments).`, id);
+            this.logger.logSuccess(`Push réussi vers le Cloud (${deltas.length} éléments).`, cloudPushResult, id);
             return true;
         } catch (e) {
             this.toast.error(`Échec du Push : ${e}`);

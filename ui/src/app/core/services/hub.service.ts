@@ -156,7 +156,7 @@ export class HubService {
 
     getTabZoom(id: string): number {
         const tab = this.state.activeTabs().find(t => t.id === id);
-        return tab?.zoom !== undefined ? tab.zoom : 0.9;
+        return tab?.zoom !== undefined ? tab.zoom : 1.0;
     }
 
     setTabZoom(id: string, zoom: number) {

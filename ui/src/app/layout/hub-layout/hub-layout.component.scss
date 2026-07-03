@@ -69,11 +69,13 @@
   overflow: hidden; /* Empêche le débordement avant le scale */
 
   iframe {
-    width: calc(100% / var(--zoom-factor, 0.9));
-    height: calc(100% / var(--zoom-factor, 0.9));
-    transform: scale(var(--zoom-factor, 0.9));
+    width: calc(100% / var(--zoom-factor, 1));
+    height: calc(100% / var(--zoom-factor, 1));
+    transform: scale(var(--zoom-factor, 1));
     transform-origin: top left;
     border: none;
+    image-rendering: auto;
+    -webkit-font-smoothing: antialiased;
     transition: transform 0.2s ease-in-out, width 0.2s ease-in-out, height 0.2s ease-in-out;
   }
 }
