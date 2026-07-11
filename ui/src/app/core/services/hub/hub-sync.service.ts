@@ -90,6 +90,9 @@ export class HubSyncService {
             this.toast.success("Données locales mises à jour (Pull).");
             this.logger.logSuccess("Injection locale réussie (Pull terminé)", id);
             
+            // Lancement de la synchronisation des fichiers
+            await this.syncAssets(id, 'pull');
+            
             const tenantId = this.state.tenantId();
             if (tenantId) {
                 await this.data.loadHomeSections(tenantId);
@@ -157,6 +160,10 @@ export class HubSyncService {
 
             this.toast.success(`Push réussi (${deltas.length} modifs).`);
             this.logger.logSuccess(`Push réussi vers le Cloud (${deltas.length} éléments).`, cloudPushResult, id);
+            
+            // Lancement de la synchronisation des fichiers
+            await this.syncAssets(id, 'push');
+            
             return true;
         } catch (e) {
             this.toast.error(`Échec du Push : ${e}`);
@@ -164,6 +171,122 @@ export class HubSyncService {
             return false;
         } finally {
             this.state.isSyncing.set(false);
+        }
+    }
+
+    async syncAssets(appId: string | undefined, type: 'pull' | 'push') {
+        const id = appId || this.state.selectedApp()?.id;
+        if (!id) return;
+        
+        const port = this.state.appPorts()[id] || 8000;
+        const hubId = this.state.hubId();
+        const apiKey = this.state.hubApiKey();
+        
+        if (!hubId) return;
+
+        const app = [...this.state.installedApps(), ...this.state.availableApps()].find(a => a.id === id);
+        const cloudApiUrl = (app?.cloud_api_url || this.state.cloudApiUrl()).replace(/\/+$/, '').replace(/\/api$/, '');
+
+        const localUrl = `http://127.0.0.1:${port}`;
+        
+        try {
+            // 1. Fetch manifests
+            this.logger.logInfo(`Récupération des manifestes de fichiers pour le ${type}...`, id);
+            
+            const [cloudRes, localRes] = await Promise.all([
+                fetch(`${cloudApiUrl}/api/external/sync-assets/manifest/?tenant_id=${hubId}`, { headers: { 'X-Hub-Api-Key': apiKey } }),
+                fetch(`${localUrl}/api/external/sync-assets/manifest/?tenant_id=${hubId}`, { headers: { 'X-Hub-Api-Key': apiKey } })
+            ]);
+
+            if (!cloudRes.ok || !localRes.ok) {
+                throw new Error("Impossible de récupérer les manifestes de fichiers.");
+            }
+
+            const cloudData = await cloudRes.json();
+            const localData = await localRes.json();
+            
+            const cloudManifest: any[] = cloudData.manifest || [];
+            const localManifest: any[] = localData.manifest || [];
+            
+            const cloudMap = new Map(cloudManifest.map(m => [m.path, m.hash]));
+            const localMap = new Map(localManifest.map(m => [m.path, m.hash]));
+
+            if (type === 'pull') {
+                // Find files in cloud missing or different locally
+                const toDownload = cloudManifest.filter(m => !localMap.has(m.path) || localMap.get(m.path) !== m.hash);
+                if (toDownload.length === 0) {
+                    this.logger.logInfo("Aucun fichier à télécharger.", id);
+                    return;
+                }
+                this.toast.info(`Téléchargement de ${toDownload.length} fichier(s)...`);
+                this.logger.logInfo(`Téléchargement de ${toDownload.length} fichier(s) depuis le Cloud...`, id);
+                
+                for (const file of toDownload) {
+                    try {
+                        // Download from cloud
+                        const downloadRes = await fetch(`${cloudApiUrl}/api/external/sync-assets/transfer/?path=${encodeURIComponent(file.path)}`, {
+                            headers: { 'X-Hub-Api-Key': apiKey }
+                        });
+                        if (!downloadRes.ok) throw new Error(`Download HTTP ${downloadRes.status}`);
+                        const blob = await downloadRes.blob();
+                        
+                        // Upload to local
+                        const formData = new FormData();
+                        formData.append('file', blob, file.path.split('/').pop() || 'file');
+                        formData.append('path', file.path);
+                        
+                        const uploadRes = await fetch(`${localUrl}/api/external/sync-assets/transfer/`, {
+                            method: 'POST',
+                            headers: { 'X-Hub-Api-Key': apiKey },
+                            body: formData
+                        });
+                        if (!uploadRes.ok) throw new Error(`Upload HTTP ${uploadRes.status}`);
+                    } catch (err) {
+                        this.logger.logError(`Erreur transfert fichier ${file.path}: ${err}`, id);
+                    }
+                }
+                this.toast.success(`${toDownload.length} fichier(s) synchronisé(s) en local.`);
+                this.logger.logSuccess(`Pull Assets terminé : ${toDownload.length} fichiers transférés.`, null, id);
+            } else if (type === 'push') {
+                // Find files locally missing or different in cloud
+                const toUpload = localManifest.filter(m => !cloudMap.has(m.path) || cloudMap.get(m.path) !== m.hash);
+                if (toUpload.length === 0) {
+                    this.logger.logInfo("Aucun fichier à pousser.", id);
+                    return;
+                }
+                this.toast.info(`Envoi de ${toUpload.length} fichier(s) au Cloud...`);
+                this.logger.logInfo(`Envoi de ${toUpload.length} fichier(s) vers le Cloud...`, id);
+                
+                for (const file of toUpload) {
+                    try {
+                        // Download from local
+                        const downloadRes = await fetch(`${localUrl}/api/external/sync-assets/transfer/?path=${encodeURIComponent(file.path)}`, {
+                            headers: { 'X-Hub-Api-Key': apiKey }
+                        });
+                        if (!downloadRes.ok) throw new Error(`Download HTTP ${downloadRes.status}`);
+                        const blob = await downloadRes.blob();
+                        
+                        // Upload to cloud
+                        const formData = new FormData();
+                        formData.append('file', blob, file.path.split('/').pop() || 'file');
+                        formData.append('path', file.path);
+                        
+                        const uploadRes = await fetch(`${cloudApiUrl}/api/external/sync-assets/transfer/`, {
+                            method: 'POST',
+                            headers: { 'X-Hub-Api-Key': apiKey },
+                            body: formData
+                        });
+                        if (!uploadRes.ok) throw new Error(`Upload HTTP ${uploadRes.status}`);
+                    } catch (err) {
+                        this.logger.logError(`Erreur transfert fichier ${file.path}: ${err}`, id);
+                    }
+                }
+                this.toast.success(`${toUpload.length} fichier(s) envoyés au Cloud.`);
+                this.logger.logSuccess(`Push Assets terminé : ${toUpload.length} fichiers transférés.`, null, id);
+            }
+        } catch (e) {
+            this.toast.error(`Échec synchro fichiers : ${e}`);
+            this.logger.logError(`Erreur critique synchro fichiers : ${e}`, id);
         }
     }
 }
