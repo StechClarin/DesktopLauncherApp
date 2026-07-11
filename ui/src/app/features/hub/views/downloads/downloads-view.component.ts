@@ -18,4 +18,9 @@ export class DownloadsViewComponent {
     if (!svgString) return '';
     return this.sanitizer.bypassSecurityTrustHtml(svgString);
   }
+
+  launchAppFromHistory(appId: string, fallbackName: string) {
+    const app = this.hubService.installedApps().find(a => a.id === appId) || { id: appId, name: fallbackName };
+    this.hubService.launchApp(app);
+  }
 }

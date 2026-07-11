@@ -1,4 +1,4 @@
-<div class="h-screen w-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden">
+<div class="min-h-screen w-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-y-auto overflow-x-hidden">
     <!-- Background Ambient -->
     <div class="absolute inset-0 opacity-10 pointer-events-none bg-grid-slate-700/[0.2] bg-[size:30px_30px]"></div>
     <div class="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
@@ -8,7 +8,7 @@
         <!-- Logo Area -->
         <div class="flex flex-col items-center mb-10">
             <img src="icons/Fichier 16.svg" class="h-28 object-contain drop-shadow-[0_0_20px_rgba(66,85,165,0.4)]" alt="EtherNanos Logo" />
-            <span class="text-[10px] text-blue-400 tracking-[0.3em] font-medium mt-3">CONTROL CENTER</span>
+            <span class="text-[10px] text-blue-400 tracking-[0.3em] font-medium mt-3">Toutes vos applications au meme endroit</span>
         </div>
 
         <!-- Login Card -->
@@ -29,12 +29,17 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Mot de passe</label>
-                    <input 
-                        type="password" 
-                        [(ngModel)]="password" 
-                        name="password"
-                        class="w-full bg-slate-950/50 border border-white/5 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
-                        placeholder="••••••••">
+                    <div class="relative">
+                        <input 
+                            [type]="showPassword() ? 'text' : 'password'" 
+                            [(ngModel)]="password" 
+                            name="password"
+                            class="w-full bg-slate-950/50 border border-white/5 rounded-xl px-4 py-3 pr-10 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                            placeholder="••••••••">
+                        <button type="button" (click)="togglePassword()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-white focus:outline-none transition-colors">
+                            <span class="material-symbols-outlined text-lg">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Error Message -->
@@ -63,7 +68,7 @@
 
         <div class="mt-8 text-center">
             <p class="text-slate-500 text-sm">
-                Problème de connexion ? <a href="#" class="text-blue-400 hover:text-blue-300 font-medium transition-colors">Contactez le support</a>
+                Problème de connexion ? <a href="https://ethernanos.space" target="_blank" class="text-blue-400 hover:text-blue-300 font-medium transition-colors">Contactez le support</a>
             </p>
         </div>
     </div>

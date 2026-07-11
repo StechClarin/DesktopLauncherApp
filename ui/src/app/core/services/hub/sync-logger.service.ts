@@ -5,6 +5,7 @@ export interface SyncLog {
     type: 'PULL' | 'PUSH' | 'ERROR' | 'INFO' | 'SUCCESS';
     message: string;
     payload?: any;
+    acknowledgement?: any;
     timestamp: Date;
     appId?: string;
 }
@@ -28,14 +29,16 @@ export class SyncLoggerService {
         this.isOpen.set(false);
     }
 
-    private addLog(log: Omit<SyncLog, 'id' | 'timestamp'>) {
+    private addLog(log: Omit<SyncLog, 'id' | 'timestamp'>): string {
+        const id = Math.random().toString(36).substring(2, 9);
         const newLog: SyncLog = {
             ...log,
-            id: Math.random().toString(36).substring(2, 9),
+            id,
             timestamp: new Date()
         };
         // Keep last 100 logs
         this.logs.update(logs => [newLog, ...logs].slice(0, 100));
+        return id;
     }
 
     logInfo(message: string, appId?: string, payload?: any) {
@@ -58,9 +61,14 @@ export class SyncLoggerService {
         console.log(`[SYNC PULL] ${message}`, payload);
     }
 
-    logPush(message: string, payload: any, appId?: string) {
-        this.addLog({ type: 'PUSH', message, payload, appId });
+    logPush(message: string, payload: any, appId?: string): string {
+        const id = this.addLog({ type: 'PUSH', message, payload, appId });
         console.log(`[SYNC PUSH] ${message}`, payload);
+        return id;
+    }
+
+    updateLogAcknowledgement(id: string, acknowledgement: any) {
+        this.logs.update(logs => logs.map(log => log.id === id ? { ...log, acknowledgement } : log));
     }
 
     clearLogs() {

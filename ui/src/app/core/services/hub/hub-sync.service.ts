@@ -130,7 +130,7 @@ export class HubSyncService {
                 return true;
             }
 
-            this.logger.logPush(`Deltas locaux extraits (${deltas.length} éléments)`, deltas, id);
+            const pushLogId = this.logger.logPush(`Deltas locaux extraits (${deltas.length} éléments)`, deltas, id);
 
             // 2. Send to CLOUD
             const cloudPushResponse = await fetch(`${cloudApiUrl}/api/external/push-delta/`, {
@@ -139,6 +139,11 @@ export class HubSyncService {
                 body: JSON.stringify({ deltas })
             });
             const cloudPushResult = await cloudPushResponse.json().catch(() => null);
+            
+            if (cloudPushResult) {
+                this.logger.updateLogAcknowledgement(pushLogId, cloudPushResult);
+            }
+
             if (!cloudPushResponse.ok) {
                 throw new Error(`Cloud a refusé les deltas (${cloudPushResponse.status}) ${cloudPushResult?.error || ''}`);
             }

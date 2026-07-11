@@ -19,6 +19,11 @@ export class LoginComponent {
   password = signal('');
   isLoading = signal(false);
   error = signal<string | null>(null);
+  showPassword = signal(false);
+
+  togglePassword() {
+    this.showPassword.update(v => !v);
+  }
 
   async onLogin() {
     if (!this.email() || !this.password()) {

@@ -27,6 +27,12 @@ pub fn run() {
             // Load download tasks from disk
             let dm = app.state::<Arc<DownloadManager>>();
             dm.load_from_disk(app.handle());
+            
+            // Forcer le centrage de la fenêtre principale (parfois ignoré par certains gestionnaires de fenêtres Linux)
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.center();
+            }
+            
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

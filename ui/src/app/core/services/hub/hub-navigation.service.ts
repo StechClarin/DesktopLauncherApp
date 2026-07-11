@@ -233,9 +233,9 @@ export class HubNavigationService {
             console.log(`[LAUNCH DEBUG] App ${app.id} (${app.name}) returned port: ${actualPort} (type: ${typeof actualPort})`);
             this.state.appPorts.update(p => ({ ...p, [app.id]: actualPort }));
             
-            // Ouvre l'onglet IMMEDIATEMENT en mode chargement (ECG)
+            // Ouvre l'onglet IMMEDIATEMENT en mode chargement (ECG) avec about:blank pour forcer le rechargement plus tard
             const tabUrl = `http://127.0.0.1:${actualPort}`;
-            this.openTab(app.id, app.name, tabUrl, app.icon_svg || app.icon, true);
+            this.openTab(app.id, app.name, 'about:blank', app.icon_svg || app.icon, true);
             
             // Log dans le terminal
             console.log(`\n=== 🚀 LANCEMENT DE L'APP ${app.name.toUpperCase()} ===`);
@@ -304,6 +304,7 @@ export class HubNavigationService {
                         const existing = newTabs.find(t => t.id === app.id);
                         if (existing) {
                             existing.isLoading = false;
+                            existing.url = tabUrl;
                             existing.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(tabUrl);
                         }
                         return newTabs;

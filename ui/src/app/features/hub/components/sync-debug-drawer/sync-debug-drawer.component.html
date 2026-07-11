@@ -69,8 +69,25 @@
 
             <!-- JSON Payload Viewer -->
             @if (log.payload && isExpanded(log.id)) {
-                <div class="p-3 bg-[#020617] border-t border-slate-800 overflow-x-auto text-xs">
-                    <pre class="text-slate-400 m-0"><code>{{ log.payload | json }}</code></pre>
+                <div class="p-3 bg-[#020617] border-t border-slate-800 overflow-auto max-h-96 custom-scrollbar text-xs flex flex-col gap-3">
+                    @if (log.acknowledgement) {
+                        <div>
+                            <div class="text-slate-500 font-bold mb-2 uppercase tracking-wider text-[10px] flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px]">upload</span>
+                                Données envoyées
+                            </div>
+                            <pre class="text-slate-400 m-0"><code>{{ log.payload | json }}</code></pre>
+                        </div>
+                        <div class="border-t border-slate-800/50 pt-3">
+                            <div class="text-emerald-500 font-bold mb-2 uppercase tracking-wider text-[10px] flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px]">download_done</span>
+                                Accusé de réception
+                            </div>
+                            <pre class="text-emerald-400 m-0"><code>{{ log.acknowledgement | json }}</code></pre>
+                        </div>
+                    } @else {
+                        <pre class="text-slate-400 m-0"><code>{{ log.payload | json }}</code></pre>
+                    }
                 </div>
             }
         </div>

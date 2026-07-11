@@ -68,10 +68,20 @@
                                 <span class="text-[10px] text-slate-600 font-medium">{{ item.date | date:'short' }}</span>
                             </div>
                         </div>
-                        <button (click)="hubService.clearHistoryItem(item.id)" 
-                            class="p-2 rounded-lg text-slate-600 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all">
-                            <span class="material-symbols-outlined text-lg">close</span>
-                        </button>
+                        <div class="flex items-center">
+                            @if (item.status === 'completed') {
+                                <button (click)="launchAppFromHistory(item.id, item.name)" 
+                                    class="p-2 rounded-lg text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-all mr-1"
+                                    title="Lancer l'application">
+                                    <span class="material-symbols-outlined text-lg">play_arrow</span>
+                                </button>
+                            }
+                            <button (click)="hubService.clearHistoryItem(item.id)" 
+                                class="p-2 rounded-lg text-slate-600 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all"
+                                title="Supprimer de l'historique">
+                                <span class="material-symbols-outlined text-lg">close</span>
+                            </button>
+                        </div>
                     </div>
                 }
             </div>
