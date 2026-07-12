@@ -92,6 +92,25 @@ Format requis pour qu'une application soit reconnue par le Hub :
 - Redémarrage : Le Hub est conçu pour être "Always-On", minimisant les besoins 
   de redémarrage manuel grâce à son système de détection à chaud.
 
+7. SYNCHRONISATION HYBRIDE (CLOUD <-> LOCAL) MULTI-TENANT
+---------------------------------------------------------
+Le Hub Ethernanos agit comme le chef d'orchestre (pont) entre l'instance Locale (Angular + Django) 
+et l'instance Cloud (VPS). Les deux serveurs ne se parlent jamais directement.
+
+a) Rôle du Hub (Frontend Angular)
+   - Fichier clé : `ui/src/app/core/services/hub/hub-sync.service.ts`
+   - Le Hub télécharge les données (Pull) depuis le Cloud et les injecte au serveur Local.
+   - Le Hub récupère les modifications (Push Deltas) du serveur Local et les envoie au Cloud.
+
+b) Synchronisation des Fichiers Binaires (Assets)
+   - Le Hub s'occupe aussi des fichiers médias (Logos, Photos de profil, Documents).
+   - Il compare deux Manifestes (listes MD5) générés par le Local et le Cloud.
+   - En cas de différence (nouveau fichier ou modification), le Hub utilise la méthode 
+     `syncAssets()` pour télécharger le fichier manquant d'une instance et l'uploader 
+     vers l'autre.
+   - Architecture Zéro-Fuite : Cette mécanique est strictement cloisonnée par Tenant (`tenant_id`), 
+     garantissant qu'une école ne voit et ne télécharge que ses propres médias.
+
 ================================================================================
 FIN DU DOCUMENT
 ================================================================================
