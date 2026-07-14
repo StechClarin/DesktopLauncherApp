@@ -246,7 +246,7 @@ export class HubSyncService {
                     }
                 }
                 this.toast.success(`${toDownload.length} fichier(s) synchronisé(s) en local.`);
-                this.logger.logSuccess(`Pull Assets terminé : ${toDownload.length} fichiers transférés.`, null, id);
+                this.logger.logSuccess(`Pull Assets terminé : ${toDownload.length} fichiers transférés.`, id);
             } else if (type === 'push') {
                 // Find files locally missing or different in cloud
                 const toUpload = localManifest.filter(m => !cloudMap.has(m.path) || cloudMap.get(m.path) !== m.hash);
@@ -282,7 +282,7 @@ export class HubSyncService {
                     }
                 }
                 this.toast.success(`${toUpload.length} fichier(s) envoyés au Cloud.`);
-                this.logger.logSuccess(`Push Assets terminé : ${toUpload.length} fichiers transférés.`, null, id);
+                this.logger.logSuccess(`Push Assets terminé : ${toUpload.length} fichiers transférés.`, id);
             }
         } catch (e) {
             this.toast.error(`Échec synchro fichiers : ${e}`);
