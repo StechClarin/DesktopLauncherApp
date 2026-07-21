@@ -31,7 +31,7 @@
         <div class="rounded border border-slate-800/50 bg-[#0f172a]/50 overflow-hidden">
             <!-- Log Header Row -->
             <div class="flex items-start gap-3 p-2 hover:bg-[#1e293b]/50 cursor-pointer transition-colors"
-                 (click)="log.payload ? toggleLog(log.id) : null">
+                 (click)="(log.payload || log.type === 'ERROR') ? toggleLog(log.id) : null">
                 
                 <!-- Type Badge -->
                 <div class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider shrink-0 mt-0.5 w-16 text-center"
@@ -58,8 +58,8 @@
                     </div>
                 </div>
 
-                <!-- Expand Icon (if payload exists) -->
-                @if (log.payload) {
+                <!-- Expand Icon (if payload exists or type is ERROR) -->
+                @if (log.payload || log.type === 'ERROR') {
                     <span class="material-symbols-outlined text-slate-500 text-sm mt-0.5 transition-transform duration-200"
                           [class.rotate-180]="isExpanded(log.id)">
                         expand_more
@@ -67,27 +67,75 @@
                 }
             </div>
 
-            <!-- JSON Payload Viewer -->
-            @if (log.payload && isExpanded(log.id)) {
+            <!-- Expanded Details (Payload or Error details) -->
+            @if (isExpanded(log.id) && (log.payload || log.type === 'ERROR')) {
                 <div class="p-3 bg-[#020617] border-t border-slate-800 overflow-auto max-h-96 custom-scrollbar text-xs flex flex-col gap-3">
-                    @if (log.acknowledgement) {
-                        <div>
-                            <div class="text-slate-500 font-bold mb-2 uppercase tracking-wider text-[10px] flex items-center gap-2">
-                                <span class="material-symbols-outlined text-[14px]">upload</span>
-                                Données envoyées
+                    
+                    <!-- If it's an Error, show the full error details and copy button -->
+                    @if (log.type === 'ERROR') {
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <div class="text-red-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[14px]">error</span>
+                                    Détails de l'erreur
+                                </div>
+                                <button (click)="copyToClipboard(log.message, $event)" class="flex items-center gap-1 px-2 py-1 rounded bg-[#1e293b] hover:bg-[#334155] text-red-400 hover:text-red-300 transition-colors text-[10px] font-sans border border-red-900/30" title="Copier le message d'erreur">
+                                    <span class="material-symbols-outlined text-[12px]">content_copy</span>
+                                    Copier l'erreur
+                                </button>
                             </div>
-                            <pre class="text-slate-400 m-0"><code>{{ log.payload | json }}</code></pre>
+                            <pre class="text-red-300 m-0 bg-red-950/20 p-2.5 rounded border border-red-900/30 break-words whitespace-pre-wrap select-text"><code>{{ log.message }}</code></pre>
                         </div>
-                        <div class="border-t border-slate-800/50 pt-3">
-                            <div class="text-emerald-500 font-bold mb-2 uppercase tracking-wider text-[10px] flex items-center gap-2">
-                                <span class="material-symbols-outlined text-[14px]">download_done</span>
-                                Accusé de réception
-                            </div>
-                            <pre class="text-emerald-400 m-0"><code>{{ log.acknowledgement | json }}</code></pre>
-                        </div>
-                    } @else {
-                        <pre class="text-slate-400 m-0"><code>{{ log.payload | json }}</code></pre>
                     }
+
+                    <!-- If there is a payload (with optional acknowledgement) -->
+                    @if (log.payload) {
+                        <div class="flex flex-col gap-3" [class.border-t]="log.type === 'ERROR'" [class.border-slate-800]="log.type === 'ERROR'" [class.pt-3]="log.type === 'ERROR'">
+                            @if (log.acknowledgement) {
+                                <div>
+                                    <div class="text-slate-500 font-bold mb-2 uppercase tracking-wider text-[10px] flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-[14px]">upload</span>
+                                            Données envoyées
+                                        </div>
+                                        <button (click)="copyToClipboard(getJsonString(log.payload), $event)" class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-slate-400 hover:text-white transition-colors text-[9px] font-sans border border-slate-800">
+                                            <span class="material-symbols-outlined text-[10px]">content_copy</span>
+                                            Copier
+                                        </button>
+                                    </div>
+                                    <pre class="text-slate-400 m-0 bg-slate-950/40 p-2 rounded border border-slate-800/50"><code>{{ log.payload | json }}</code></pre>
+                                </div>
+                                <div class="border-t border-slate-800/50 pt-3">
+                                    <div class="text-emerald-500 font-bold mb-2 uppercase tracking-wider text-[10px] flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-[14px]">download_done</span>
+                                            Accusé de réception
+                                        </div>
+                                        <button (click)="copyToClipboard(getJsonString(log.acknowledgement), $event)" class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-emerald-400 hover:text-emerald-300 transition-colors text-[9px] font-sans border border-emerald-950/20">
+                                            <span class="material-symbols-outlined text-[10px]">content_copy</span>
+                                            Copier
+                                        </button>
+                                    </div>
+                                    <pre class="text-emerald-400 m-0 bg-emerald-950/10 p-2 rounded border border-emerald-950/20"><code>{{ log.acknowledgement | json }}</code></pre>
+                                </div>
+                            } @else {
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-[14px]">terminal</span>
+                                            Données / Payload
+                                        </span>
+                                        <button (click)="copyToClipboard(getJsonString(log.payload), $event)" class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-slate-400 hover:text-white transition-colors text-[9px] font-sans border border-slate-800">
+                                            <span class="material-symbols-outlined text-[10px]">content_copy</span>
+                                            Copier le JSON
+                                        </button>
+                                    </div>
+                                    <pre class="text-slate-400 m-0 bg-slate-950/40 p-2 rounded border border-slate-800/50"><code>{{ log.payload | json }}</code></pre>
+                                </div>
+                            }
+                        </div>
+                    }
+
                 </div>
             }
         </div>

@@ -64,7 +64,14 @@ export class HubInstallerService {
     }
 
     private getOsKeyword(): string {
-        return navigator.userAgent.toLowerCase().includes('win') ? 'windows-latest' : 'ubuntu-latest';
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
+        if (ua.includes('win')) {
+            return 'windows-latest';
+        } else if (ua.includes('mac') || ua.includes('os x')) {
+            return 'macos-latest';
+        } else {
+            return 'ubuntu-latest';
+        }
     }
 
     async installApp(appId: string) {
@@ -186,10 +193,12 @@ export class HubInstallerService {
 
     async checkHubUpdate(hubAppId: string) {
         try {
+            const platform = this.getOsKeyword();
             const { data, error } = await this.supabase.client
                 .from('app_releases')
                 .select('version, checksum')
                 .eq('app_id', hubAppId)
+                .eq('platform', platform)
                 .order('released_at', { ascending: false })
                 .limit(1)
                 .single();

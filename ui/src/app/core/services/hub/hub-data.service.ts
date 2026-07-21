@@ -261,6 +261,13 @@ export class HubDataService {
     }
 
     private getOsKeyword(): string {
-        return typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('win') ? 'windows-latest' : 'ubuntu-latest';
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
+        if (ua.includes('win')) {
+            return 'windows-latest';
+        } else if (ua.includes('mac') || ua.includes('os x')) {
+            return 'macos-latest';
+        } else {
+            return 'ubuntu-latest';
+        }
     }
 }
