@@ -53,7 +53,9 @@ export class HubSyncService {
             const apiKey = this.state.hubApiKey();
 
             // 1. Fetch from CLOUD
-            const cloudResponse = await fetch(`${cloudApiUrl}/api/external/sync-tenant/?tenant_id=${hubId}`, {
+            const cloudUrl = `${cloudApiUrl}/api/external/sync-tenant/?tenant_id=${hubId}`;
+            this.logger.logInfo(`Récupération des données depuis le cloud (${cloudUrl})...`, id);
+            const cloudResponse = await fetch(cloudUrl, {
                 headers: { 'X-Hub-Api-Key': apiKey }
             });
             if (!cloudResponse.ok) throw new Error(`Erreur Cloud HTTP ${cloudResponse.status}`);
@@ -62,8 +64,9 @@ export class HubSyncService {
             this.logger.logPull("Données reçues du Cloud", deepData, id);
 
             // 2. Push to LOCAL (avec retry car Django peut mettre du temps à bind le port)
+            const localUrl = `http://127.0.0.1:${port}/api/external/sync-in/`;
             this.toast.info(`Injection dans l'application locale (127.0.0.1:${port})...`);
-            this.logger.logInfo(`Tentative d'injection locale sur le port ${port}`, id);
+            this.logger.logInfo(`Tentative d'injection locale sur ${localUrl}...`, id);
             
             let localResponse: Response | null = null;
             let attempts = 0;
@@ -76,11 +79,23 @@ export class HubSyncService {
                         headers: { 'Content-Type': 'application/json', 'X-Hub-Api-Key': apiKey },
                         body: JSON.stringify(deepData)
                     });
-                    if (localResponse.ok) break;
-                } catch (e) {
+                    if (localResponse.ok) {
+                        break;
+                    }
+                    
+                    let errMsg = `Code HTTP ${localResponse.status}`;
+                    try {
+                        const errJson = await localResponse.json();
+                        if (errJson && errJson.error) {
+                            errMsg = errJson.error;
+                        }
+                    } catch (e) {}
+                    
+                    throw new Error(errMsg);
+                } catch (e: any) {
                     attempts++;
                     if (attempts >= maxAttempts) throw e;
-                    this.logger.logInfo(`Port local ${port} non prêt, nouvel essai dans 1.5s... (Tentative ${attempts}/${maxAttempts})`, id);
+                    this.logger.logInfo(`Port local ${port} non prêt ou en erreur (${e.message || e}), nouvel essai dans 1.5s... (Tentative ${attempts}/${maxAttempts})`, id);
                     await new Promise(r => setTimeout(r, 1500)); // Attente progressive
                 }
             }
@@ -122,10 +137,12 @@ export class HubSyncService {
             const apiKey = this.state.hubApiKey();
 
             // 1. Fetch Deltas from LOCAL
-            const deltaResponse = await fetch(`http://127.0.0.1:${port}/api/external/sync-delta/`, {
+            const localUrl = `http://127.0.0.1:${port}/api/external/sync-delta/`;
+            this.logger.logInfo(`Lecture des deltas locaux depuis ${localUrl}...`, id);
+            const deltaResponse = await fetch(localUrl, {
                 headers: { 'X-Hub-Api-Key': apiKey }
             });
-            if (!deltaResponse.ok) throw new Error("Erreur lecture deltas depuis l'app locale.");
+            if (!deltaResponse.ok) throw new Error(`Erreur lecture deltas depuis ${localUrl}. Status: ${deltaResponse.status}`);
             const deltas = await deltaResponse.json();
 
             if (!deltas || deltas.length === 0) {
@@ -136,7 +153,9 @@ export class HubSyncService {
             const pushLogId = this.logger.logPush(`Deltas locaux extraits (${deltas.length} éléments)`, deltas, id);
 
             // 2. Send to CLOUD
-            const cloudPushResponse = await fetch(`${cloudApiUrl}/api/external/push-delta/`, {
+            const cloudUrl = `${cloudApiUrl}/api/external/push-delta/`;
+            this.logger.logInfo(`Envoi des deltas vers le cloud (${cloudUrl})...`, id);
+            const cloudPushResponse = await fetch(cloudUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Hub-Api-Key': apiKey },
                 body: JSON.stringify({ deltas })

@@ -87,3 +87,4 @@ jobs:
         with:
           name: metadata-${{ matrix.platform }}
           path: bin/artifacts/os_info.json
+          retention-days: 1
