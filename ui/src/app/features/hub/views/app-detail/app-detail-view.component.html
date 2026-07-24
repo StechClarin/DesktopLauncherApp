@@ -21,10 +21,24 @@
                     <div class="flex gap-2">
                         @if (hubService.deploymentMode() === 'solo' || hubService.deploymentRole() === 'server') {
                             <button (click)="deepSync(app.id)" [disabled]="hubService.isSyncing()"
-                                    class="h-12 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 transition-all flex items-center gap-2 font-black shadow-lg shadow-blue-600/20 disabled:opacity-50"
+                                    class="relative overflow-hidden h-12 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 transition-all flex items-center justify-center font-black shadow-lg shadow-blue-600/20 disabled:opacity-90 min-w-[200px]"
                                     title="Synchronisation Complète (Pull then Push)">
-                                <span class="material-symbols-outlined text-xl">sync</span>
-                                SYNCHRONISER
+                                
+                                <!-- Progress Bar Background -->
+                                @if (hubService.isSyncing() || syncProgress() > 0) {
+                                    <div class="absolute left-0 top-0 bottom-0 bg-white/20 transition-all duration-300 ease-out"
+                                         [style.width.%]="syncProgress()"></div>
+                                }
+                                
+                                <div class="relative z-10 flex items-center justify-center gap-2">
+                                    @if (hubService.isSyncing()) {
+                                        <span class="material-symbols-outlined text-xl animate-spin">sync</span>
+                                        <span>SYNCHRONISATION ({{syncProgress()}}%)</span>
+                                    } @else {
+                                        <span class="material-symbols-outlined text-xl">sync</span>
+                                        <span>SYNCHRONISER</span>
+                                    }
+                                </div>
                             </button>
                         }
                     </div>

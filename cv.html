@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV - MBOU TSEKE FABIEN EVARISTE</title>
+    <style>
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #e5e7eb;
+            color: #1f2937;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* A4 Page container */
+        .cv-page {
+            width: 210mm;
+            height: 297mm;
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            display: grid;
+            grid-template-columns: 28% 72%;
+            grid-template-rows: 60mm 1fr;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header section */
+        .photo-container {
+            grid-column: 1;
+            grid-row: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            background-color: #e5e7eb;
+        }
+
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1.15);
+            transform-origin: 50% 25%;
+            display: block;
+        }
+
+        .header-banner {
+            grid-column: 2;
+            grid-row: 1;
+            background-color: #354a5f;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 35px;
+            height: 100%;
+        }
+
+        .header-name {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .header-firstname {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            line-height: 1.1;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .header-subtitle {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .header-line {
+            border: 0;
+            height: 1.5px;
+            background-color: rgba(255, 255, 255, 0.4);
+            width: 100%;
+        }
+
+        /* Body layout */
+        .left-col {
+            grid-column: 1;
+            grid-row: 2;
+            border-right: 1.5px solid #000000;
+            padding-top: 15px;
+            padding-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100%;
+        }
+
+        .right-col {
+            grid-column: 2;
+            grid-row: 2;
+            padding: 15px 30px 15px 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+        }
+
+        /* Left Column styling */
+        .left-banner {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 4px 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .left-content {
+            padding: 0 12px;
+        }
+
+        /* Profile items */
+        .profile-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .profile-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .profile-icon {
+            width: 14px;
+            height: 14px;
+            margin-top: 2px;
+            flex-shrink: 0;
+            fill: #000000;
+        }
+
+        .profile-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #000000;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-value {
+            font-size: 0.74rem;
+            font-weight: 500;
+            color: #374151;
+            line-height: 1.3;
+            white-space: pre-line;
+        }
+
+        /* Lists for skills and hobbies */
+        .left-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .left-list li {
+            position: relative;
+            padding-left: 12px;
+            font-size: 0.76rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+            line-height: 1.35;
+        }
+
+        .left-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #000000;
+            font-weight: bold;
+        }
+
+        .left-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Languages styling */
+        .languages-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .languages-list li {
+            font-size: 0.76rem;
+            color: #374151;
+            margin-bottom: 4px;
+            line-height: 1.35;
+        }
+
+        .languages-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .languages-list strong {
+            color: #000000;
+            font-weight: 700;
+        }
+
+        /* Right Column styling */
+        .summary-text {
+            font-size: 0.78rem;
+            line-height: 1.4;
+            color: #374151;
+            font-weight: 500;
+            margin-bottom: 5px;
+            text-align: justify;
+        }
+
+        /* Section headers in right column */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            margin-top: 0px;
+        }
+
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            fill: #000000;
+            flex-shrink: 0;
+        }
+
+        .section-title-banner {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 4px 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            flex-grow: 1;
+        }
+
+        .section-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-left: 28px; /* indent content to align under the banner, past the icon */
+        }
+
+        /* Timeline / Experience / Formation items */
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 95px 1fr;
+            gap: 10px;
+        }
+
+        .timeline-dates {
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: #000000;
+            line-height: 1.3;
+            text-transform: lowercase;
+        }
+
+        .timeline-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timeline-title {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #000000;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+            line-height: 1.2;
+        }
+
+        .timeline-subtitle {
+            font-size: 0.76rem;
+            font-style: italic;
+            color: #4b5563;
+            margin-bottom: 3px;
+            font-weight: 500;
+        }
+
+        .timeline-bullets {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .timeline-bullets li {
+            position: relative;
+            padding-left: 12px;
+            font-size: 0.74rem;
+            color: #4b5563;
+            margin-bottom: 3px;
+            line-height: 1.3;
+            font-weight: 500;
+        }
+
+        .timeline-bullets li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #4b5563;
+        }
+
+        .timeline-bullets li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Print styles */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            body {
+                background-color: #ffffff;
+                padding: 0;
+            }
+
+            .cv-page {
+                box-shadow: none;
+                width: 210mm;
+                height: 297mm;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Floating print button for screen preview */
+        .print-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #354a5f;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 9999;
+        }
+
+        .print-btn:hover {
+            background-color: #2b3d4f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .print-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cv-page">
+        <!-- Header Image & Blue Banner -->
+        <div class="photo-container">
+            <img src="photo.png" alt="MBOU TSEKE FABIEN EVARISTE">
+        </div>
+        
+        <div class="header-banner">
+            <h1 class="header-name">MBOU TSEKE</h1>
+            <h2 class="header-firstname">FABIEN EVARISTE</h2>
+            <div class="header-subtitle">DÉLÉGUÉ MÉDICAL</div>
+            <hr class="header-line">
+        </div>
+
+        <!-- Left Column -->
+        <div class="left-col">
+            <!-- Profil -->
+            <div class="left-group">
+                <div class="left-banner">PROFIL</div>
+                <div class="left-content">
+                    <!-- Adresse -->
+                    <div class="profile-item">
+                        <svg class="profile-icon" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                        <div class="profile-details">
+                            <span class="profile-label">Adresse</span>
+                            <span class="profile-value">KM4, Pointe-Noire, Congo</span>
+                        </div>
+                    </div>
+                    <!-- E-mail -->
+                    <div class="profile-item">
+                        <svg class="profile-icon" viewBox="0 0 24 24">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                        </svg>
+                        <div class="profile-details">
+                            <span class="profile-label">E-mail</span>
+                            <span class="profile-value">Fabientseke@gmail.com</span>
+                        </div>
+                    </div>
+                    <!-- Téléphone -->
+                    <div class="profile-item">
+                        <svg class="profile-icon" viewBox="0 0 24 24">
+                            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                        </svg>
+                        <div class="profile-details">
+                            <span class="profile-label">Téléphone</span>
+                            <span class="profile-value">(+242) 05 552 60 33&#10;(+242) 06 633 33 39</span>
+                        </div>
+                    </div>
+                    <!-- Date de Naissance -->
+                    <div class="profile-item">
+                        <svg class="profile-icon" viewBox="0 0 24 24">
+                            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+                        </svg>
+                        <div class="profile-details">
+                            <span class="profile-label">Date de naissance</span>
+                            <span class="profile-value">29 Janvier 1993 (Komono)</span>
+                        </div>
+                    </div>
+                    <!-- Situation -->
+                    <div class="profile-item">
+                        <svg class="profile-icon" viewBox="0 0 24 24">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 8 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.83 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                        <div class="profile-details">
+                            <span class="profile-label">Situation</span>
+                            <span class="profile-value">Union libre, 2 enfants</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compétences -->
+            <div class="left-group">
+                <div class="left-banner">COMPÉTENCES</div>
+                <div class="left-content">
+                    <ul class="left-list">
+                        <li>Communication médicale & scientifique</li>
+                        <li>Prospection & Démarchage de prescripteurs</li>
+                        <li>Négociation pharmaceutique</li>
+                        <li>Gestion de portefeuille produits</li>
+                        <li>Esprit d'équipe & Résistance au stress</li>
+                        <li>Autonomie et disponibilité</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Langues -->
+            <div class="left-group">
+                <div class="left-banner">LANGUES</div>
+                <div class="left-content">
+                    <ul class="languages-list">
+                        <li><strong>Français :</strong> Courant</li>
+                        <li><strong>Kituba :</strong> Langue maternelle</li>
+                        <li><strong>Lingala :</strong> Langue maternelle</li>
+                        <li><strong>Italien :</strong> Notions / Intermédiaire</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Loisirs -->
+            <div class="left-group">
+                <div class="left-banner">LOISIRS</div>
+                <div class="left-content">
+                    <ul class="left-list">
+                        <li>Prière & Spiritualité</li>
+                        <li>Lecture scientifique et littéraire</li>
+                        <li>Activités sportives</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-col">
+            <!-- Professional Summary -->
+            <p class="summary-text">
+                Professionnel de la santé dynamique, rigoureux et passionné, titulaire d'un Diplôme d'État de Carrière de Santé et certifié en Délégation Médicale. Solide expérience pratique en laboratoire pharmaceutique, doté d'une excellente aisance relationnelle pour la présentation scientifique des médicaments, le développement de portefeuille prescripteurs et le suivi des retours du marché.
+            </p>
+
+            <!-- Expériences Professionnelles -->
+            <div class="right-section-group">
+                <div class="section-header">
+                    <svg class="section-icon" viewBox="0 0 24 24">
+                        <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
+                    </svg>
+                    <div class="section-title-banner">EXPÉRIENCES PROFESSIONNELLES</div>
+                </div>
+                <div class="section-content">
+                    <div class="timeline-item">
+                        <div class="timeline-dates">déc. 2025 –<br>févr. 2026</div>
+                        <div class="timeline-body">
+                            <div class="timeline-title">STAGIAIRE EN DÉLÉGATION MÉDICALE</div>
+                            <div class="timeline-subtitle">Laboratoire STRIDES — Pointe-Noire</div>
+                            <ul class="timeline-bullets">
+                                <li>Présentation et promotion active auprès des prescripteurs des gammes de produits : BETAZIDIM 1g, CLAVICIN 1g, SETRONAX, SOLCER, CELLTRIAXONE, CLARITRON.</li>
+                                <li>Délivrance de l'information médicale relative à la posologie, aux indications thérapeutiques et à la tolérance.</li>
+                                <li>Organisation des visites médicales et prospection ciblée du secteur.</li>
+                                <li>Analyse du marché et suivi régulier des retours des professionnels de santé.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formations & Diplômes -->
+            <div class="right-section-group">
+                <div class="section-header">
+                    <svg class="section-icon" viewBox="0 0 24 24">
+                        <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
+                    </svg>
+                    <div class="section-title-banner">FORMATIONS & DIPLÔMES</div>
+                </div>
+                <div class="section-content">
+                    <!-- Formation 1 -->
+                    <div class="timeline-item">
+                        <div class="timeline-dates">2025 – 2026</div>
+                        <div class="timeline-body">
+                            <div class="timeline-title">FORMATION EN DÉLÉGATION MÉDICALE</div>
+                            <div class="timeline-subtitle">Agence OA VISION SANTÉ — Pointe-Noire</div>
+                        </div>
+                    </div>
+                    <!-- Formation 2 -->
+                    <div class="timeline-item">
+                        <div class="timeline-dates">2014 – 2016</div>
+                        <div class="timeline-body">
+                            <div class="timeline-title">DIPLÔME D'ÉTAT DE CARRIÈRE DE SANTÉ</div>
+                            <div class="timeline-subtitle">École Jean Joseph LOUKABOU — Pointe-Noire</div>
+                        </div>
+                    </div>
+                    <!-- Formation 3 -->
+                    <div class="timeline-item">
+                        <div class="timeline-dates">2011 – 2014</div>
+                        <div class="timeline-body">
+                            <div class="timeline-title">LICENCE EN LETTRES (OPTION PHILOSOPHIE)</div>
+                            <div class="timeline-subtitle">Université Marien NGOUABI — Brazzaville</div>
+                        </div>
+                    </div>
+                    <!-- Formation 4 -->
+                    <div class="timeline-item">
+                        <div class="timeline-dates">2010 – 2011</div>
+                        <div class="timeline-body">
+                            <div class="timeline-title">BACCALAURÉAT SÉRIE A4</div>
+                            <div class="timeline-subtitle">Lycée Pointe-Noire 2 — Pointe-Noire</div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- Formations Complémentaires -->
+            <div class="right-section-group">
+                <div class="section-header">
+                    <svg class="section-icon" viewBox="0 0 24 24">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                    <div class="section-title-banner">FORMATIONS COMPLÉMENTAIRES</div>
+                </div>
+                <div class="section-content">
+                    <div class="timeline-item">
+                        <div class="timeline-dates">juin – août 2013</div>
+                        <div class="timeline-body">
+                            <div class="timeline-title">FORMATIONS CERTIFIANTES DU HCR</div>
+                            <div class="timeline-subtitle">Haut Commissariat des Nations Unies pour les Réfugiés</div>
+                            <ul class="timeline-bullets">
+                                <li>Protection internationale des réfugiés</li>
+                                <li>Gestion axée sur les résultats (GAR)</li>
+                                <li>Sécurité : prévention incendie, évacuation et secourisme</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bouton de téléchargement PDF (masqué à l'impression) -->
+    <button class="print-btn no-print" onclick="window.print()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
+        </svg>
+        Télécharger en PDF
+    </button>
+
+</body>
+</html>

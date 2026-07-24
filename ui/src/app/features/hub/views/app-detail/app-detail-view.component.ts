@@ -34,7 +34,8 @@ export class AppDetailViewComponent {
     comment: ''
   });
 
-
+  // Sync Progress State
+  syncProgress = signal<number>(0);
 
   constructor() {
     // Re-fetch data whenever the selected app changes
@@ -42,6 +43,36 @@ export class AppDetailViewComponent {
       const app = this.app();
       if (app) {
         this.loadSocialData(app.id);
+      }
+    });
+
+    // Progress bar simulation for sync button
+    let intervalId: any = null;
+    effect(() => {
+      const isSyncing = this.hubService.isSyncing();
+      if (isSyncing) {
+        this.syncProgress.set(0);
+        intervalId = setInterval(() => {
+          this.syncProgress.update(p => {
+            if (p < 30) return p + 10;
+            if (p < 75) return p + 5;
+            if (p < 95) return p + 1;
+            return p;
+          });
+        }, 600);
+      } else {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+        if (this.syncProgress() > 0) {
+          this.syncProgress.set(100);
+          setTimeout(() => {
+            if (!this.hubService.isSyncing()) {
+              this.syncProgress.set(0);
+            }
+          }, 1000);
+        }
       }
     });
   }

@@ -217,8 +217,22 @@ export class HubSyncService {
                 fetch(`${localUrl}/api/external/sync-assets/manifest/?tenant_id=${hubId}`, { headers: { 'X-Hub-Api-Key': apiKey } })
             ]);
 
-            if (!cloudRes.ok || !localRes.ok) {
-                throw new Error("Impossible de récupérer les manifestes de fichiers.");
+            if (!cloudRes.ok) {
+                let msg = `Erreur Cloud (HTTP ${cloudRes.status})`;
+                try {
+                    const err = await cloudRes.json();
+                    if (err && err.error) msg += `: ${err.error}`;
+                } catch(e) {}
+                throw new Error(msg);
+            }
+
+            if (!localRes.ok) {
+                let msg = `Erreur Local (HTTP ${localRes.status})`;
+                try {
+                    const err = await localRes.json();
+                    if (err && err.error) msg += `: ${err.error}`;
+                } catch(e) {}
+                throw new Error(msg);
             }
 
             const cloudData = await cloudRes.json();

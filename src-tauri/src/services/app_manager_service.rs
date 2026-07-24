@@ -117,6 +117,20 @@ pub async fn execute_app<R: Runtime>(
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped());
 
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        unsafe {
+            cmd = cmd.pre_exec(|| {
+                extern "C" {
+                    fn setpgid(pid: i32, pgid: i32) -> i32;
+                }
+                let _ = setpgid(0, 0);
+                Ok(())
+            });
+        }
+    }
+
     let mut child = cmd.spawn()
         .map_err(|e| format!("Échec du lancement ({}): {}", exec_cmd, e))?;
 
@@ -195,8 +209,7 @@ pub async fn execute_app<R: Runtime>(
     let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
     
     if let Some(old_app) = lock.remove(&app_id) {
-        let mut old_child = old_app.child;
-        let _ = old_child.kill();
+        kill_process_tree(old_app.child);
     }
     
     lock.insert(app_id.clone(), ActiveApp { 
@@ -333,8 +346,8 @@ pub async fn uninstall_app<R: Runtime>(
     // 1. Kill the process if running
     {
         let mut lock = process_manager.processes.lock().map_err(|_| "Impossible de verrouiller le gestionnaire de processus")?;
-        if let Some(mut app) = lock.remove(&app_id) {
-            let _ = app.child.kill();
+        if let Some(app) = lock.remove(&app_id) {
+            kill_process_tree(app.child);
         }
     }
 
@@ -364,8 +377,8 @@ pub async fn kill_app<R: Runtime>(
     app_id: String,
 ) -> Result<(), String> {
     let mut lock = process_manager.processes.lock().map_err(|_| "Failed to lock process manager")?;
-    if let Some(mut app) = lock.remove(&app_id) {
-        let _ = app.child.kill();
+    if let Some(app) = lock.remove(&app_id) {
+        kill_process_tree(app.child);
         
         let _ = app_handle.emit("hub-app-status-changed", serde_json::json!({
             "app_id": app_id,
@@ -390,3 +403,21 @@ pub async fn get_active_apps(
     }
     Ok(active)
 }
+
+fn kill_process_tree(child: std::process::Child) {
+    #[cfg(unix)]
+    {
+        let pid = child.id() as i32;
+        unsafe {
+            extern "C" {
+                fn kill(pid: i32, sig: i32) -> i32;
+            }
+            let _ = kill(-pid, 9);
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = child.kill();
+    }
+}
+
