@@ -15,12 +15,26 @@ export class HubDataService {
 
     async init() {
         console.log("[HUB_DATA] Initializing data service...");
+        const isOffline = this.state.isOffline() || (typeof navigator !== 'undefined' && !navigator.onLine);
+        if (isOffline) {
+            console.log("[HUB_DATA] Offline mode detected, loading offline data directly.");
+            await this.loadOfflineData();
+            return;
+        }
+
         this.sub.unsubscribe();
         this.sub = this.supabase.currentUser$.subscribe(async user => {
             console.log("[HUB_DATA] User state changed:", user?.email);
             if (user) {
+                localStorage.setItem('hub-last-user-id', user.id);
+                localStorage.setItem('hub-last-user-email', user.email || '');
                 try {
                     this.clearData(true);
+                    const isCurrentlyOffline = this.state.isOffline() || (typeof navigator !== 'undefined' && !navigator.onLine);
+                    if (isCurrentlyOffline) {
+                        await this.loadOfflineData();
+                        return;
+                    }
                     const { data: tenant, error } = await this.supabase.getTenantByEmail(user.email || '');
                     if (error) throw error;
                     
@@ -56,27 +70,102 @@ export class HubDataService {
     }
 
     async getCacheKey(): Promise<string> {
-        const user = await this.supabase.client.auth.getUser();
-        const userId = user.data.user?.id || 'anonymous';
-        return `hub-app-cache-${userId}`;
+        const lastUserId = localStorage.getItem('hub-last-user-id');
+        if (lastUserId) {
+            return `hub-app-cache-${lastUserId}`;
+        }
+        try {
+            const session = await this.supabase.client.auth.getSession();
+            const userId = session.data.session?.user?.id;
+            if (userId) {
+                localStorage.setItem('hub-last-user-id', userId);
+                return `hub-app-cache-${userId}`;
+            }
+        } catch (e) {}
+        return 'hub-app-cache-anonymous';
     }
 
     async loadOfflineData() {
         const key = await this.getCacheKey();
-        const cache = localStorage.getItem(key);
+        let cache = localStorage.getItem(key);
+        
+        // Si le cache spécifique de l'utilisateur n'est pas trouvé (ex: pas d'internet et session expirée),
+        // on cherche n'importe quel cache utilisateur existant pour assurer un lancement local sans internet.
+        if (!cache) {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('hub-app-cache-') && k !== 'hub-app-cache-anonymous') {
+                    keys.push(k);
+                }
+            }
+            if (keys.length > 0) {
+                cache = localStorage.getItem(keys[0]);
+                console.log(`[HUB_DATA] Chargement du cache hors-ligne alternatif : ${keys[0]}`);
+            } else {
+                cache = localStorage.getItem('hub-app-cache-anonymous');
+            }
+        }
+
         if (cache) {
             try {
                 const data = JSON.parse(cache);
-                this.state.installedApps.set(data.installed || []);
-                this.state.availableApps.set(data.available || []);
+                this.state.hubId.set(data.hubId || 'ETH-NANOS-B1FAAC');
+                this.state.tenantId.set(data.tenantId || null);
+                this.state.tenantName.set(data.tenantName || 'Mon Établissement (Hors-ligne)');
+                
+                const cachedInstalled = data.installed || [];
+                const cachedAvailable = data.available || [];
+
+                // Reconstruire dynamiquement les listes installées et disponibles en testant le disque
+                const allAppsMap = new Map<string, any>();
+                for (const app of cachedAvailable) {
+                    allAppsMap.set(app.id, app);
+                }
+                for (const app of cachedInstalled) {
+                    allAppsMap.set(app.id, app);
+                }
+                
+                const allApps = Array.from(allAppsMap.values());
+                const enrichedInstalled: any[] = [];
+                const enrichedAvailable: any[] = [];
+
+                for (const a of allApps) {
+                    let isPhysicallyInstalled = false;
+                    let localVersion: string | null = null;
+                    try {
+                        isPhysicallyInstalled = await invoke<boolean>('is_app_installed', { appId: a.id });
+                        if (isPhysicallyInstalled) {
+                            const manifest = await invoke<any>('get_app_manifest', { appId: a.id });
+                            localVersion = manifest?.version || null;
+                        }
+                    } catch (e) { }
+
+                    if (isPhysicallyInstalled) {
+                        enrichedInstalled.push({ ...a, status: 'installed', localVersion });
+                    } else {
+                        let status = a.status || 'available';
+                        if (status === 'installed' || status === 'owned' || status === 'update_available') {
+                            status = 'owned';
+                        }
+                        enrichedAvailable.push({ ...a, status, localVersion: null });
+                    }
+                }
+
+                this.state.installedApps.set(enrichedInstalled);
+                this.state.availableApps.set(enrichedAvailable);
                 this.state.unlockedModuleIds.set(data.modules || []);
                 this.state.bundles.set(data.bundles || []);
                 this.state.activePromotions.set(data.promotions || []);
                 return;
             } catch (e) {
-                console.error("Failed to load hub cache:", e);
+                console.error("Failed to parse hub cache:", e);
             }
         }
+        
+        this.state.hubId.set('ETH-NANOS-B1FAAC'); // Freud default fallback
+        this.state.tenantId.set(null);
+        this.state.tenantName.set('Mon Établissement (Hors-ligne)');
         this.state.installedApps.set([]);
         this.state.availableApps.set([]);
         this.state.unlockedModuleIds.set([]);
@@ -85,6 +174,9 @@ export class HubDataService {
     async saveCache() {
         const key = await this.getCacheKey();
         const data = {
+            hubId: this.state.hubId(),
+            tenantId: this.state.tenantId(),
+            tenantName: this.state.tenantName(),
             installed: this.state.installedApps(),
             available: this.state.availableApps(),
             modules: this.state.unlockedModuleIds(),

@@ -190,9 +190,11 @@ export class HubNavigationService {
         this.terminal.open(); // ✅ Ouvre le terminal pour les logs Django/Rust
         
         try {
-            const user = (await this.supabase.client.auth.getSession()).data.session?.user;
-            const hubId = this.state.hubId();
-            if (!user || !hubId) {
+            const isOffline = this.state.isOffline();
+            const user = isOffline ? { email: 'offline@local' } : (await this.supabase.client.auth.getSession()).data.session?.user;
+            const hubId = this.state.hubId() || 'ETH-NANOS-B1FAAC';
+            
+            if (!hubId || (!isOffline && !user)) {
                 this.toast.error("Session invalide.");
                 this.state.isLaunchingApp.set(null);
                 return;

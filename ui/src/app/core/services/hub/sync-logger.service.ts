@@ -71,6 +71,10 @@ export class SyncLoggerService {
         this.logs.update(logs => logs.map(log => log.id === id ? { ...log, acknowledgement } : log));
     }
 
+    deleteLog(id: string) {
+        this.logs.update(logs => logs.filter(log => log.id !== id));
+    }
+
     clearLogs() {
         this.logs.set([]);
     }

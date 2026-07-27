@@ -186,6 +186,8 @@ export class HubInstallerService {
                 { id: appId, name: app.name, version: version, date: new Date().toISOString(), status: 'completed' },
                 ...history
             ]);
+            // Sauvegarder immédiatement les états mis à jour dans le cache hors-ligne
+            this.data.saveCache().catch(e => console.error("Erreur sauvegarde cache post-install:", e));
         }
         this.state.downloadingAppId.set(null);
         this.state.installProgress.set(0);

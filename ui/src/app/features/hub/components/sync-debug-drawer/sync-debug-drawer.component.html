@@ -63,6 +63,13 @@
                     </div>
                 </div>
 
+                <!-- Delete Button -->
+                <button (click)="deleteLog(log.id, $event)" 
+                        class="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-red-400 transition-colors flex items-center justify-center shrink-0"
+                        title="Supprimer ce log">
+                    <span class="material-symbols-outlined text-base">delete</span>
+                </button>
+
                 <!-- Expand Icon -->
                 <span class="material-symbols-outlined text-slate-500 text-sm shrink-0 transition-transform duration-200"
                       [class.rotate-180]="isExpanded(log.id)">

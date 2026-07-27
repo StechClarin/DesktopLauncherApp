@@ -146,6 +146,20 @@ export class HubService {
     isAppInstalling(id: string) { return this.state.isAppInstalling(id)(); }
     isAppRunning(id: string) { return this.state.isAppRunning(id)(); }
 
+    getBannerUrl(app: any): string {
+        if (!app) return 'assets/apps/banners/default.jpg';
+        const isOffline = this.state.isOffline() || (typeof navigator !== 'undefined' && !navigator.onLine);
+        
+        let id = app.id || 'default';
+        if (id === 'schoolmanage') id = 'school-manager';
+        
+        const localFallback = `assets/apps/banners/${id}.jpg`;
+        if (isOffline) {
+            return localFallback;
+        }
+        return app.banner_url || app.banner || localFallback;
+    }
+
     async syncDownloadTasks() {
         return this.installer.syncDownloadTasks();
     }

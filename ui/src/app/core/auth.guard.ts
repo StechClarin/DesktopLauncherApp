@@ -8,6 +8,11 @@ export const authGuard: CanActivateFn = (route, state) => {
   const supabase = inject(SupabaseService);
   const router = inject(Router);
 
+  const isOffline = localStorage.getItem('hub-offline-mode') === 'true' || (typeof navigator !== 'undefined' && !navigator.onLine);
+  if (isOffline) {
+    return true;
+  }
+
   return supabase.currentUser$.pipe(
     filter((user): user is User | null => user !== undefined),
     take(1),

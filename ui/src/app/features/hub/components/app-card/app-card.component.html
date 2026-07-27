@@ -5,7 +5,7 @@
         <!-- Top: Image Area -->
         <div class="h-32 w-full relative overflow-hidden bg-slate-800 shrink-0">
             <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-                [style.backgroundImage]="'url(' + (app().banner || 'https://via.placeholder.com/400x200') + ')'">
+                [style.backgroundImage]="'url(' + hubService.getBannerUrl(app()) + ')'">
             </div>
             <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80">
             </div>
@@ -92,7 +92,7 @@
         
         <div class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
             <div class="absolute inset-0 bg-cover bg-center"
-                [style.backgroundImage]="'url(' + (app().banner || '') + ')'"></div>
+                [style.backgroundImage]="'url(' + hubService.getBannerUrl(app()) + ')'"></div>
             <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center text-blue-400 text-2xl"
                 [innerHTML]="getSafeSvg(app().icon)"></div>
         </div>
@@ -146,7 +146,7 @@
     <div (click)="hubService.selectedApp.set(app())"
         class="group relative aspect-[16/10] rounded-xl overflow-hidden bg-slate-900 border border-white/5 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer">
         <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-            [style.backgroundImage]="'url(' + (app().banner || '') + ')'"></div>
+            [style.backgroundImage]="'url(' + hubService.getBannerUrl(app()) + ')'"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
         
         @if (app().discount) {

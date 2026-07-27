@@ -54,6 +54,15 @@ export class SyncDebugDrawerComponent {
     return this.expandedReceived.has(id);
   }
 
+  deleteLog(id: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.logger.deleteLog(id);
+    this.expandedLogs.delete(id);
+    this.expandedSent.delete(id);
+    this.expandedReceived.delete(id);
+    this.toast.success('Log supprimé.');
+  }
+
   clearLogs() {
     this.logger.clearLogs();
     this.expandedLogs.clear();

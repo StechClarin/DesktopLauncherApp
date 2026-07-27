@@ -8,7 +8,7 @@ import { map } from 'rxjs/operators';
 })
 export class SupabaseService {
   private supabase: SupabaseClient;
-  private _currentUser = new BehaviorSubject<User | null | undefined>(undefined);
+  private _currentUser: BehaviorSubject<User | null | undefined>;
 
   constructor() {
     // Use environment variables with fallbacks
@@ -17,6 +17,22 @@ export class SupabaseService {
     const supabaseUrl = metaEnv.VITE_SUPABASE_URL || 'https://tskaatmquckvuvamymcx.supabase.co';
     const supabaseKey = metaEnv.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7EySw7dL-ZndQLvZ0MNoeQ_Ee36OzxT';
     
+    // Tente de récupérer de manière synchrone l'utilisateur du cache localStorage avant d'initialiser Supabase
+    let initialUser: User | null = null;
+    try {
+      const savedAuth = window.localStorage.getItem('ethernanos-launcher-auth');
+      if (savedAuth) {
+        const parsed = JSON.parse(savedAuth);
+        if (parsed && parsed.user) {
+          initialUser = parsed.user;
+          console.log("[SUPABASE] Restauration synchrone de la session utilisateur hors-ligne:", initialUser?.email);
+        }
+      }
+    } catch (e) {
+      console.warn("[SUPABASE] Erreur lors de la lecture synchrone de la session:", e);
+    }
+    this._currentUser = new BehaviorSubject<User | null | undefined>(initialUser || null);
+
     this.supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
         storage: {
@@ -33,13 +49,20 @@ export class SupabaseService {
       }
     });
     
-    // Initial check
-    this.supabase.auth.getUser().then(({ data: { user } }) => {
-      this._currentUser.next(user);
-    });
+    // La vérification en ligne n'est lancée que si nous avons du réseau
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      this.supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          this._currentUser.next(user);
+        }
+      }).catch(err => {
+        console.warn("[SUPABASE] Impossible de rafraîchir la session via getUser:", err);
+      });
+    }
 
-    // Listen to changes
+    // Écoute des changements d'état d'authentification
     this.supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[SUPABASE] Changement de statut d'authentification :", event);
       this._currentUser.next(session?.user ?? null);
     });
   }
