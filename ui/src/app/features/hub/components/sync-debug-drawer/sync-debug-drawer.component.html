@@ -1,56 +1,61 @@
-<div class="fixed inset-y-0 right-0 w-[500px] bg-[#020617] border-l border-slate-800 shadow-2xl transform transition-transform duration-300 z-[100] flex flex-col font-mono text-sm"
+<div class="fixed inset-y-0 right-0 w-[500px] bg-[#020617] border-l border-slate-800/80 shadow-2xl transform transition-transform duration-300 z-[100] flex flex-col font-mono text-sm overflow-hidden"
      [class.translate-x-0]="logger.isOpen()"
      [class.translate-x-full]="!logger.isOpen()">
   
   <!-- Header -->
-  <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-[#0f172a]">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800/80 bg-[#0f172a] shrink-0">
     <div class="flex items-center gap-2">
       <span class="material-symbols-outlined text-blue-400 text-lg">bug_report</span>
       <h2 class="text-slate-200 font-semibold uppercase tracking-wider text-xs">Sync Console</h2>
     </div>
-    <div class="flex items-center gap-2">
-      <button (click)="clearLogs()" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Effacer les logs">
-        <span class="material-symbols-outlined text-sm">delete_outline</span>
+    <div class="flex items-center gap-1">
+      <button (click)="clearLogs()" 
+              class="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center" 
+              title="Effacer les logs">
+        <span class="material-symbols-outlined text-base">delete_outline</span>
       </button>
-      <button (click)="logger.closeDrawer()" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors">
-        <span class="material-symbols-outlined text-sm">close</span>
+      <button (click)="logger.closeDrawer()" 
+              class="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center">
+        <span class="material-symbols-outlined text-base">close</span>
       </button>
     </div>
   </div>
 
-  <!-- Log List -->
-  <div class="flex-1 overflow-y-auto p-4 custom-scrollbar flex flex-col gap-2">
+  <!-- Log List Container (Unifié avec scroll fluide) -->
+  <div class="flex-1 min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col gap-2 overscroll-contain">
+    
     @if (logger.logs().length === 0) {
-        <div class="flex flex-col items-center justify-center h-full text-slate-600 opacity-50">
+        <div class="flex flex-col items-center justify-center h-full text-slate-600 opacity-60">
             <span class="material-symbols-outlined text-4xl mb-2">code</span>
-            <span class="text-xs uppercase tracking-widest">En attente d'événements...</span>
+            <span class="text-xs uppercase tracking-widest font-semibold">En attente d'événements...</span>
         </div>
     }
 
     @for (log of logger.logs(); track log.id) {
-        <div class="rounded border border-slate-800/50 bg-[#0f172a]/50 overflow-hidden">
+        <div class="rounded-lg border border-slate-800/80 bg-[#0f172a]/60 overflow-hidden transition-all duration-200">
+            
             <!-- Log Header Row -->
-            <div class="flex items-start gap-3 p-2 hover:bg-[#1e293b]/50 cursor-pointer transition-colors"
+            <div class="flex items-center gap-3 p-2.5 hover:bg-[#1e293b]/60 cursor-pointer select-none transition-colors"
                  (click)="toggleLog(log.id)">
                 
                 <!-- Type Badge -->
-                <div class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider shrink-0 mt-0.5 w-16 text-center"
+                <div class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider shrink-0 w-16 text-center uppercase"
                      [ngClass]="{
-                        'bg-blue-500/20 text-blue-400 border border-blue-500/30': log.type === 'PULL',
-                        'bg-purple-500/20 text-purple-400 border border-purple-500/30': log.type === 'PUSH',
-                        'bg-red-500/20 text-red-400 border border-red-500/30': log.type === 'ERROR',
-                        'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': log.type === 'SUCCESS',
-                        'bg-slate-500/20 text-slate-400 border border-slate-500/30': log.type === 'INFO'
+                        'bg-blue-500/15 text-blue-400 border border-blue-500/30': log.type === 'PULL',
+                        'bg-purple-500/15 text-purple-400 border border-purple-500/30': log.type === 'PUSH',
+                        'bg-red-500/15 text-red-400 border border-red-500/30': log.type === 'ERROR',
+                        'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30': log.type === 'SUCCESS',
+                        'bg-slate-500/15 text-slate-400 border border-slate-500/30': log.type === 'INFO'
                      }">
                     {{ log.type }}
                 </div>
 
                 <!-- Message & Metadata -->
-                <div class="flex-1 min-w-0 flex flex-col">
-                    <span class="text-slate-300 break-words" [class.text-red-300]="log.type === 'ERROR'">
+                <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <span class="text-slate-300 text-xs truncate" [class.text-red-300]="log.type === 'ERROR'" [title]="log.message">
                         {{ log.message }}
                     </span>
-                    <div class="flex items-center gap-2 mt-1 text-[10px] text-slate-500">
+                    <div class="flex items-center gap-2 text-[10px] text-slate-500">
                         <span>{{ log.timestamp | date:'HH:mm:ss.SSS' }}</span>
                         @if (log.appId) {
                             <span class="text-slate-400">| App: {{ log.appId }}</span>
@@ -58,8 +63,8 @@
                     </div>
                 </div>
 
-                <!-- Expand Icon (all logs are dropdowns) -->
-                <span class="material-symbols-outlined text-slate-500 text-sm mt-0.5 transition-transform duration-200"
+                <!-- Expand Icon -->
+                <span class="material-symbols-outlined text-slate-500 text-sm shrink-0 transition-transform duration-200"
                       [class.rotate-180]="isExpanded(log.id)">
                     expand_more
                 </span>
@@ -67,38 +72,41 @@
 
             <!-- Expanded Details -->
             @if (isExpanded(log.id)) {
-                <div class="p-3 bg-[#020617] border-t border-slate-800 overflow-auto max-h-96 custom-scrollbar text-xs flex flex-col gap-3">
+                <div class="p-3 bg-[#020617] border-t border-slate-800/80 text-xs flex flex-col gap-3">
                     
-                    <!-- If it's an Error, show the full error details and copy button -->
+                    <!-- Détails de l'Erreur -->
                     @if (log.type === 'ERROR') {
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-1.5">
                             <div class="flex items-center justify-between">
-                                <div class="text-red-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-[14px]">error</span>
+                                <div class="text-red-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-sm">error</span>
                                     Détails de l'erreur
                                 </div>
-                                <button (click)="copyToClipboard(log.message, $event)" class="flex items-center gap-1 px-2 py-1 rounded bg-[#1e293b] hover:bg-[#334155] text-red-400 hover:text-red-300 transition-colors text-[10px] font-sans border border-red-900/30" title="Copier le message d'erreur">
+                                <button (click)="copyToClipboard(log.message, $event)" 
+                                        class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-red-400 hover:text-red-300 transition-colors text-[10px] border border-red-900/40">
                                     <span class="material-symbols-outlined text-[12px]">content_copy</span>
-                                    Copier l'erreur
+                                    Copier
                                 </button>
                             </div>
-                            <pre class="text-red-300 m-0 bg-red-950/20 p-2.5 rounded border border-red-900/30 break-words whitespace-pre-wrap select-text"><code>{{ log.message }}</code></pre>
+                            <pre class="text-red-300 m-0 bg-red-950/20 p-2.5 rounded border border-red-900/30 break-words whitespace-pre-wrap select-text max-h-48 overflow-y-auto custom-scrollbar"><code>{{ log.message }}</code></pre>
                         </div>
                     }
 
-                    <!-- Structured report / payload -->
-                    <div class="flex flex-col gap-3" [class.border-t]="log.type === 'ERROR'" [class.border-slate-800]="log.type === 'ERROR'" [class.pt-3]="log.type === 'ERROR'">
-                        @if (log.acknowledgement) {
-                            <!-- Collapsible Sent Data Dropdown -->
-                            <div class="border border-slate-800/80 rounded bg-[#0b0f19] overflow-hidden">
-                                <div class="flex items-center justify-between p-2 cursor-pointer hover:bg-slate-800/30 select-none"
+                    <!-- Section Données (Payload / Acknowledgement / Report) -->
+                    <div class="flex flex-col gap-2.5" [class.border-t]="log.type === 'ERROR'" [class.border-slate-800]="log.type === 'ERROR'" [class.pt-2.5]="log.type === 'ERROR'">
+                        
+                        <!-- 1. Données envoyées -->
+                        @if (log.payload) {
+                            <div class="border border-slate-800/80 rounded-md bg-[#0b0f19] overflow-hidden">
+                                <div class="flex items-center justify-between p-2 cursor-pointer hover:bg-slate-800/40 select-none"
                                      (click)="toggleSent(log.id)">
                                     <div class="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                                        <span class="material-symbols-outlined text-[14px]">upload</span>
+                                        <span class="material-symbols-outlined text-xs">upload</span>
                                         Données envoyées
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button (click)="copyToClipboard(getJsonString(log.payload), $event)" class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-slate-400 hover:text-white transition-colors text-[9px] font-sans border border-slate-800">
+                                        <button (click)="copyToClipboard(getJsonString(log.payload), $event)" 
+                                                class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-slate-400 hover:text-white transition-colors text-[9px] border border-slate-700/50">
                                             <span class="material-symbols-outlined text-[10px]">content_copy</span>
                                             Copier
                                         </button>
@@ -109,22 +117,25 @@
                                     </div>
                                 </div>
                                 @if (isSentExpanded(log.id)) {
-                                    <div class="p-2 border-t border-slate-800 bg-[#020617]">
-                                        <pre class="text-slate-400 m-0 bg-slate-950/40 p-2 rounded border border-slate-800/50"><code>{{ log.payload | json }}</code></pre>
+                                    <div class="p-2 border-t border-slate-800/80 bg-[#020617]">
+                                        <pre class="text-slate-300 m-0 bg-slate-950/60 p-2.5 rounded border border-slate-800/50 max-h-60 overflow-y-auto custom-scrollbar"><code>{{ log.payload | json }}</code></pre>
                                     </div>
                                 }
                             </div>
+                        }
 
-                            <!-- Collapsible Received Data Dropdown -->
-                            <div class="border border-slate-800/80 rounded bg-[#0b0f19] overflow-hidden">
-                                <div class="flex items-center justify-between p-2 cursor-pointer hover:bg-slate-800/30 select-none"
+                        <!-- 2. Données reçues -->
+                        @if (log.acknowledgement) {
+                            <div class="border border-slate-800/80 rounded-md bg-[#0b0f19] overflow-hidden">
+                                <div class="flex items-center justify-between p-2 cursor-pointer hover:bg-slate-800/40 select-none"
                                      (click)="toggleReceived(log.id)">
                                     <div class="flex items-center gap-1.5 text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
-                                        <span class="material-symbols-outlined text-[14px]">download_done</span>
-                                        Données reçues (Accusé de réception)
+                                        <span class="material-symbols-outlined text-xs">download_done</span>
+                                        Données reçues (Accusé)
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button (click)="copyToClipboard(getJsonString(log.acknowledgement), $event)" class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-emerald-400 hover:text-emerald-300 transition-colors text-[9px] font-sans border border-[#065f46]/30">
+                                        <button (click)="copyToClipboard(getJsonString(log.acknowledgement), $event)" 
+                                                class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-emerald-400 hover:text-emerald-300 transition-colors text-[9px] border border-emerald-900/40">
                                             <span class="material-symbols-outlined text-[10px]">content_copy</span>
                                             Copier
                                         </button>
@@ -135,28 +146,31 @@
                                     </div>
                                 </div>
                                 @if (isReceivedExpanded(log.id)) {
-                                    <div class="p-2 border-t border-slate-800 bg-[#020617]">
-                                        <pre class="text-emerald-400 m-0 bg-emerald-950/10 p-2 rounded border border-emerald-950/20"><code>{{ log.acknowledgement | json }}</code></pre>
+                                    <div class="p-2 border-t border-slate-800/80 bg-[#020617]">
+                                        <pre class="text-emerald-300 m-0 bg-emerald-950/20 p-2.5 rounded border border-emerald-900/30 max-h-60 overflow-y-auto custom-scrollbar"><code>{{ log.acknowledgement | json }}</code></pre>
                                     </div>
                                 }
                             </div>
-                        } @else {
-                            <div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-[14px]">analytics</span>
+                        }
+
+                        <!-- 3. Rapport de repli -->
+                        @if (!log.payload && !log.acknowledgement) {
+                            <div class="flex flex-col gap-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-xs">analytics</span>
                                         Rapport d'activité
                                     </span>
-                                    <button (click)="copyToClipboard(getJsonString(getLogReport(log)), $event)" class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-slate-400 hover:text-white transition-colors text-[9px] font-sans border border-slate-800">
+                                    <button (click)="copyToClipboard(getJsonString(getLogReport(log)), $event)" 
+                                            class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-slate-400 hover:text-white transition-colors text-[9px] border border-slate-700/50">
                                         <span class="material-symbols-outlined text-[10px]">content_copy</span>
                                         Copier le rapport
                                     </button>
                                 </div>
-                                <pre class="text-slate-400 m-0 bg-slate-950/40 p-2 rounded border border-slate-800/50"><code>{{ getLogReport(log) | json }}</code></pre>
+                                <pre class="text-slate-400 m-0 bg-slate-950/60 p-2.5 rounded border border-slate-800/50 max-h-60 overflow-y-auto custom-scrollbar"><code>{{ getLogReport(log) | json }}</code></pre>
                             </div>
                         }
                     </div>
-
 
                 </div>
             }

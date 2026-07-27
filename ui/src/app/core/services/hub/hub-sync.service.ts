@@ -176,9 +176,9 @@ export class HubSyncService {
                 headers: { 'Content-Type': 'application/json', 'X-Hub-Api-Key': apiKey },
                 body: JSON.stringify({ ids: deltas.map((d: any) => d.id) })
             });
-
+            
             this.toast.success(`Push réussi (${deltas.length} modifs).`);
-            this.logger.logSuccess(`Push réussi vers le Cloud (${deltas.length} éléments).`, cloudPushResult, id);
+            this.logger.logSuccess(`Push réussi vers le Cloud (${deltas.length} éléments).`, id, cloudPushResult);
             
             // Lancement de la synchronisation des fichiers
             await this.syncAssets(id, 'push');
