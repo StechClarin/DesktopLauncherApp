@@ -37,34 +37,17 @@
         }
 
         /* Header section */
-        .photo-container {
-            grid-column: 1;
-            grid-row: 1;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-            background-color: #e5e7eb;
-        }
-
-        .photo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scale(1.15);
-            transform-origin: 50% 25%;
-            display: block;
-        }
-
         .header-banner {
-            grid-column: 2;
+            grid-column: 1 / span 2;
             grid-row: 1;
             background-color: #354a5f;
             color: #ffffff;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 0 35px;
+            align-items: center;
+            text-align: center;
+            padding: 0 45px;
             height: 100%;
         }
 
@@ -98,7 +81,7 @@
             border: 0;
             height: 1.5px;
             background-color: rgba(255, 255, 255, 0.4);
-            width: 100%;
+            width: 150px;
         }
 
         /* Body layout */
@@ -401,11 +384,7 @@
 <body>
 
     <div class="cv-page">
-        <!-- Header Image & Blue Banner -->
-        <div class="photo-container">
-            <img src="photo.png" alt="MBOU TSEKE FABIEN EVARISTE">
-        </div>
-        
+        <!-- Header Banner (Full Width) -->
         <div class="header-banner">
             <h1 class="header-name">MBOU TSEKE</h1>
             <h2 class="header-firstname">FABIEN EVARISTE</h2>
