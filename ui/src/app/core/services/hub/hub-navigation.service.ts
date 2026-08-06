@@ -187,7 +187,9 @@ export class HubNavigationService {
         this.terminal.setActiveApp(app.id);
         this.terminal.clear(app.id);
         this.terminal.resetReady();
-        this.terminal.open(); // ✅ Ouvre le terminal pour les logs Django/Rust
+        if (!this.state.isProduction()) {
+            this.terminal.open(); // ✅ Ouvre le terminal pour les logs Django/Rust
+        }
         
         try {
             const isOffline = this.state.isOffline();
