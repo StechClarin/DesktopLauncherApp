@@ -1,3 +1,5 @@
 <router-outlet></router-outlet>
 <app-toast></app-toast>
-<app-terminal></app-terminal>
+@if (!hubService.isProduction()) {
+    <app-terminal></app-terminal>
+}

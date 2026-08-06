@@ -145,6 +145,7 @@ export class HubService {
     isAppOwned(id: string) { return this.state.isAppOwned(id)(); }
     isAppInstalling(id: string) { return this.state.isAppInstalling(id)(); }
     isAppRunning(id: string) { return this.state.isAppRunning(id)(); }
+    isProduction = this.state.isProduction;
 
     getBannerUrl(app: any): string {
         if (!app) return 'assets/apps/banners/default.jpg';

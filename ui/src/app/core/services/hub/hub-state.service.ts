@@ -13,6 +13,7 @@ export class HubStateService {
     currentHubVersion = signal<string>('1.0.0'); 
     latestHubVersion = signal<string | null>(null);
     isOffline = signal<boolean>(localStorage.getItem('hub-offline-mode') === 'true');
+    isProduction = signal<boolean>((import.meta as any).env?.VITE_PRODUCTION === 'true');
     
     // API & Security
     hubApiKey = signal<string>((import.meta as any).env?.VITE_HUB_API_KEY || 'ethernanos-hub-secret-2026');

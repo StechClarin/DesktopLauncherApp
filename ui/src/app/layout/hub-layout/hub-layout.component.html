@@ -92,5 +92,7 @@
     }
 
     <!-- 4. SYNC DEBUG DRAWER -->
-    <app-sync-debug-drawer></app-sync-debug-drawer>
+    @if (!hubService.isProduction()) {
+        <app-sync-debug-drawer></app-sync-debug-drawer>
+    }
 </div>

@@ -2,8 +2,13 @@ name: "publish"
 
 on:
   push:
+    branches:
+      - etherna_prod
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - etherna_prod
   workflow_dispatch:
 
 jobs:
@@ -56,13 +61,14 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           # For public vars from .env, they should be added here too if not checked in
           VITE_HUB_VERSION: "1.0.0"
+          VITE_PRODUCTION: "true"
 
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: "EtherNanos Hub v__VERSION__"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/v') && 'v__VERSION__' || '' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/v') && 'EtherNanos Hub v__VERSION__' || '' }}
           releaseBody: "Automated release from GitHub Actions"
           releaseDraft: true
           prerelease: false
@@ -78,13 +84,28 @@ jobs:
           if [[ "$PLATFORM" == *"windows"* ]]; then OS_NAME="win";
           elif [[ "$PLATFORM" == *"macos"* ]]; then OS_NAME="mac";
           elif [[ "$PLATFORM" == *"ubuntu"* ]]; then OS_NAME="linux"; fi
-          
+
           # Create a temporary json file for this platform's artifacts
           echo "{\"os\": \"$OS_NAME\", \"platform\": \"$PLATFORM\"}" > bin/artifacts/os_info.json
-          
+
       - name: upload metadata artifact
         uses: actions/upload-artifact@v4
         with:
           name: metadata-${{ matrix.platform }}
           path: bin/artifacts/os_info.json
           retention-days: 1
+
+  sync-to-prod:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Push tag commit to etherna_prod
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin HEAD:refs/heads/etherna_prod --force
