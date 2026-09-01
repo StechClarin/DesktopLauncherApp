@@ -417,6 +417,9 @@ fn kill_process_tree(child: std::process::Child) {
     }
     #[cfg(not(unix))]
     {
+        // Child::kill() requiert `&mut self` ; on shadow la valeur en mutable
+        // uniquement sur Windows pour ne pas déclencher `unused_mut` sur Unix.
+        let mut child = child;
         let _ = child.kill();
     }
 }
