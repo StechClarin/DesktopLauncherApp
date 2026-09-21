@@ -105,6 +105,14 @@ export class HubService {
     navigateToModuleApp(mod: any) { this.navigation.navigateToModuleApp(mod); }
 
     // Installation
+    // Point d'entrée unique : ouvre le wizard de choix du mode d'installation
+    // (Solo / Structure) avant de lancer le téléchargement. Chaque mode a un
+    // impact réel (SQLite locale vs PostgreSQL partagée, rôle serveur/client).
+    openInstallWizard(app: any) {
+        if (!app) return;
+        const target = this.state.allApps().find(a => a.id === app.id) || app;
+        this.state.showInstallationWizard.set(target);
+    }
     installApp(id: string) { return this.installer.installApp(id); }
     uninstallApp(id: string) { return this.installer.uninstallApp(id); }
     pauseDownload(id: string) { return this.installer.pauseDownload(id); }

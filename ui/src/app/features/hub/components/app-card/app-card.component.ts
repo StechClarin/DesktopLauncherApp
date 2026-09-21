@@ -29,6 +29,8 @@ export class AppCardComponent {
 
   installApp(event: Event, app: any) {
     event.stopPropagation();
-    this.hubService.installApp(app.id);
+    // Ouvre le wizard de choix du mode d'installation (Solo / Structure)
+    // au lieu d'un téléchargement direct : chaque mode a son impact.
+    this.hubService.openInstallWizard(app);
   }
 }

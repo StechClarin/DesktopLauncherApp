@@ -53,6 +53,9 @@ export class HubConfigService {
     async saveDbConfig(appId: string, config: DbConfig) {
         try {
             await invoke('save_db_config', { appId, config });
+            // Impact : le pipeline d'installation (initialize_database, run_app_setup)
+            // utilisera exactement cette configuration (mode solo/structure, rôle, IP...).
+            this.state.dbConfig.set(config);
             this.toast.success('Configuration DB sauvegardée !');
         } catch (e) {
             this.toast.error('Échec de la sauvegarde.');

@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HubService } from '../../../../core/services/hub.service';
@@ -43,6 +43,35 @@ export class InstallationWizardComponent {
   serverIp = signal<string>('');
   isTestingConnection = signal<boolean>(false);
   connectionStatus = signal<'success' | 'error' | null>(null);
+
+  constructor() {
+    // Pré-remplit le wizard avec la configuration déjà sauvegardée sur disque
+    // (cas d'une mise à jour) pour conserver le mode choisi et ses impacts.
+    effect(async () => {
+      const app = this.app();
+      if (app) {
+        await this.loadSavedConfig(app.id);
+      }
+    });
+  }
+
+  private async loadSavedConfig(appId: string) {
+    if (!(window as any).__TAURI_INTERNALS__) return;
+    try {
+      const saved = await this.hubService.config.loadDbConfig(appId);
+      if (saved) {
+        this.usageMode.set((saved.mode as 'solo' | 'structure') || 'solo');
+        this.role.set((saved.role as 'server' | 'client') || 'server');
+        this.dbConfig.host = saved.host || '127.0.0.1';
+        this.dbConfig.port = saved.port || 5432;
+        this.dbConfig.user = saved.user || 'postgres';
+        this.dbConfig.pass = saved.pass || '';
+        this.serverIp.set(saved.server_ip || '');
+      }
+    } catch (e) {
+      console.warn('Impossible de charger la configuration sauvegardée', e);
+    }
+  }
 
   isStepDisabled(step: number): boolean {
     return this.usageMode() === 'solo' && (step === 2 || step === 3);

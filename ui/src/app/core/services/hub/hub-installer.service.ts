@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HubStateService } from './hub-state.service';
 import { HubDataService } from './hub-data.service';
 import { HubNavigationService } from './hub-navigation.service';
+import { HubConfigService } from './hub-config.service';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../toast.service';
 import { invoke } from '@tauri-apps/api/core';
@@ -14,6 +15,7 @@ export class HubInstallerService {
     private state = inject(HubStateService);
     private data = inject(HubDataService);
     private navigation = inject(HubNavigationService);
+    private config = inject(HubConfigService);
     private supabase = inject(SupabaseService);
     private toast = inject(ToastService);
 
@@ -114,15 +116,19 @@ export class HubInstallerService {
             this.toast.info(`Étape 1/3 : Téléchargement de ${appId}...`);
             await invoke('download_app', { appId, url: release.download_url, checksum: release.checksum });
             
-            // Point Industrial v21.0: On garantit la création de db.json même si config est null
-            const config = this.state.dbConfig() || {
-                host: this.state.dbHost(),
-                port: this.state.dbPort(),
-                user: this.state.dbUser(),
-                pass: this.state.dbPass(),
-                mode: this.state.deploymentMode(),
-                role: this.state.deploymentRole()
-            };
+            // Point Industrial v21.0: On garantit la création de db.json même si config est null.
+            // La config choisie dans le wizard est sauvegardée par app ; on la recharge depuis
+            // le disque au cas où le state n'aurait pas encore été mis à jour.
+            const config = this.state.dbConfig()
+                || (await this.config.loadDbConfig(appId).catch(() => null))
+                || {
+                    host: this.state.dbHost(),
+                    port: this.state.dbPort(),
+                    user: this.state.dbUser(),
+                    pass: this.state.dbPass(),
+                    mode: this.state.deploymentMode(),
+                    role: this.state.deploymentRole()
+                };
 
             this.state.installProgress.set(101);
             this.toast.info(`Étape 2/3 : Création de la base SQL...`);
