@@ -134,4 +134,25 @@ export class SupabaseService {
       .from('app_reviews')
       .insert([review]);
   }
+
+  async unlockTenantLicense(tenantId: string, appId: string, moduleIds: string[], expiresAt: string | null) {
+    const licensesToInsert = (moduleIds && moduleIds.length > 0)
+      ? moduleIds.map(modId => ({
+          tenant_id: tenantId,
+          app_id: appId,
+          module_id: modId,
+          expires_at: expiresAt,
+          is_active: true
+        }))
+      : [{
+          tenant_id: tenantId,
+          app_id: appId,
+          expires_at: expiresAt,
+          is_active: true
+        }];
+
+    return await this.supabase
+      .from('tenant_licenses')
+      .upsert(licensesToInsert);
+  }
 }

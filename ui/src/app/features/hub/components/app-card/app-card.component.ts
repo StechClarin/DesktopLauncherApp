@@ -2,6 +2,7 @@ import { Component, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { getSafeSvgUtil } from '../../../../shared/utils/svg-helper';
 
 @Component({
   selector: 'app-app-card',
@@ -18,8 +19,7 @@ export class AppCardComponent {
   mode = input<'grid' | 'list' | 'compact'>('grid');
 
   getSafeSvg(svgString?: string): SafeHtml {
-    if (!svgString) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(svgString);
+    return getSafeSvgUtil(this.sanitizer, svgString);
   }
 
   launchApp(event: Event, app: any) {

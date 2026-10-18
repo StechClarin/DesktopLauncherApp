@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HubService } from '../../../../core/services/hub.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { getSafeSvgUtil } from '../../../../shared/utils/svg-helper';
 import { ModuleCardComponent } from '../../components/module-card/module-card.component';
 
 @Component({
@@ -33,6 +34,13 @@ export class AppDetailViewComponent {
     rating: 5,
     comment: ''
   });
+
+  // Unlock License Modal State
+  showUnlockModal = signal(false);
+  unlockAppTarget = signal<any>(null);
+  unlockExpirationDate = signal<string>('');
+  isPermanentLicense = signal<boolean>(false);
+  isSubmittingUnlock = signal<boolean>(false);
 
   // Sync Progress State
   syncProgress = signal<number>(0);
@@ -160,13 +168,81 @@ export class AppDetailViewComponent {
     }
   }
 
+  getDefaultExpirationDate(): string {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    d.setDate(d.getDate() + 14); // 1 an et 2 semaines par défaut
+    return d.toISOString().split('T')[0];
+  }
+
+  openUnlockModal(app?: any) {
+    const target = app || this.app();
+    if (!target) return;
+    this.unlockAppTarget.set(target);
+    this.unlockExpirationDate.set(this.getDefaultExpirationDate());
+    this.isPermanentLicense.set(false);
+    this.showUnlockModal.set(true);
+  }
+
+  closeUnlockModal() {
+    this.showUnlockModal.set(false);
+    this.unlockAppTarget.set(null);
+  }
+
+  setPresetDuration(type: '1y2w' | '6m' | '2y' | 'permanent') {
+    const d = new Date();
+    if (type === '1y2w') {
+      d.setFullYear(d.getFullYear() + 1);
+      d.setDate(d.getDate() + 14);
+      this.unlockExpirationDate.set(d.toISOString().split('T')[0]);
+      this.isPermanentLicense.set(false);
+    } else if (type === '6m') {
+      d.setMonth(d.getMonth() + 6);
+      this.unlockExpirationDate.set(d.toISOString().split('T')[0]);
+      this.isPermanentLicense.set(false);
+    } else if (type === '2y') {
+      d.setFullYear(d.getFullYear() + 2);
+      this.unlockExpirationDate.set(d.toISOString().split('T')[0]);
+      this.isPermanentLicense.set(false);
+    } else if (type === 'permanent') {
+      this.isPermanentLicense.set(true);
+    }
+  }
+
+  async confirmUnlock() {
+    const targetApp = this.unlockAppTarget();
+    if (!targetApp) return;
+
+    this.isSubmittingUnlock.set(true);
+    try {
+      const expiresAtIso = this.isPermanentLicense()
+        ? null
+        : new Date(this.unlockExpirationDate() + 'T23:59:59Z').toISOString();
+
+      await this.hubService.unlockAppForTenant(targetApp, expiresAtIso);
+      this.closeUnlockModal();
+    } catch (e) {
+      console.error("Échec de la réservation de la licence", e);
+      alert("Erreur lors de l'activation de la licence.");
+    } finally {
+      this.isSubmittingUnlock.set(false);
+    }
+  }
+
   close() {
     this.hubService.selectedApp.set(null);
   }
 
+  openAppSettings() {
+    this.hubService.setActiveTab('settings');
+  }
+
   getSafeSvg(svgString?: string): SafeHtml {
-    if (!svgString) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(svgString);
+    return getSafeSvgUtil(this.sanitizer, svgString);
+  }
+
+  getLicenseInfo(app: any) {
+    return this.hubService.getAppLicenseInfo(app);
   }
 
   launchApp(app: any) {

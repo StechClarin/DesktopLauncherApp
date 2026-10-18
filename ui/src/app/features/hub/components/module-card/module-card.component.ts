@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { getSafeSvgUtil } from '../../../../shared/utils/svg-helper';
 
 @Component({
   selector: 'app-module-card',
@@ -62,6 +63,6 @@ export class ModuleCardComponent {
   private sanitizer = inject(DomSanitizer);
 
   getSafeSvg(svgString: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(svgString);
+    return getSafeSvgUtil(this.sanitizer, svgString);
   }
 }

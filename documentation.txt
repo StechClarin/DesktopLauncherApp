@@ -1,156 +1,182 @@
 ================================================================================
-🌍 ETHER NANOS HUB - DOCUMENTATION TECHNIQUE COMPLÈTE
+🌍 ETHER NANOS HUB - DOCUMENTATION TECHNIQUE & GUIDE DE MAINTENANCE DES LIAISONS
 ================================================================================
-Version du Document : 1.0 (Mars 2026)
-Objet : Architecture et Fonctionnalités du Launcher Opérationnel 2.0
-Développeur : Antigravity AI (Google Deepmind)
-================================================================================
-
-1. PRÉSENTATION GÉNÉRALE
-------------------------
-Le Hub EtherNanos est une plateforme de bureau "Cloud-to-Local" construite avec 
-Tauri (Rust) et Angular (TypeScript). Il sert de passerelle entre le cloud 
-Supabase et les applications locales installées sur la machine de l'utilisateur.
-
-Sa mission est de transformer une installation locale complexe en une expérience 
-"App Store" simplifiée, gérant l'installation, la configuration de base de 
-données, la synchronisation des données et les mises à jour de sécurité.
-
-2. ARCHITECTURE TECHNIQUE
--------------------------
-- Backend (Rust/Tauri) : Gestion du système de fichiers, exécution des binaires, 
-  requêtes HTTP sécurisées (reqwest), hachage SHA-256 (sha2), décompression (tar, 
-  flate2) et configuration PostgreSQL (sqlx).
-- Frontend (Angular) : Interface utilisateur riche, gestion d'état réactive 
-  (Signals), communication IPC asynchrone avec le backend Rust via 'invoke' 
-  et 'listen'.
-- Base de Données : PostgreSQL local partagé, avec isolation par base/utilisateur 
-  pour chaque application installée.
-
-3. FONCTIONNALITÉS CLÉS DU HUB
-------------------------------
-
-A. Système de Lancement Multi-App (Manifest-Driven)
-   Chaque application est gérée via un fichier "ethernanos.json" (Manifeste).
-   - Découverte Dynamique : Le Hub lit le manifeste pour connaître le nom, 
-     la commande d'exécution et le PORT spécifique de l'app.
-   - Ports Dynamiques : Contrairement aux versions précédentes, le port 8000 
-     n'est plus forcé. Le Hub détecte le port défini par l'application pour 
-     éviter les conflits ("Address already in use").
-
-B. Synchronisation Intelligente (Health Polling)
-   Le Hub ne synchronise pas les données au hasard.
-   - Séquencement : Lancement App -> Attente que le serveur local soit PRÊT 
-     (Polling HTTP 200) -> Déclenchement de la synchronisation (Sync Pull/Push).
-   - Fiabilité : Cette approche garantit qu'aucune synchronisation n'échoue 
-     à cause d'une application encore en cours de démarrage.
-
-C. Sécurité et Intégrité (SHA-256 Checksum)
-   C'est la colonne vertébrale de la version 2.0.
-   - Validation Systématique : Chaque binaire (Hub ou App) téléchargé depuis le 
-     cloud possède une empreinte numérique (Checksum).
-   - Vérification Rust : Le backend Rust recalcule le hash du fichier téléchargé 
-     et le compare à celui de la base de données. Si les deux ne correspondent pas, 
-     le fichier est supprimé et l'installation est bloquée.
-
-D. Auto-Mise à Jour (Self-Update)
-   Le Hub est capable de se tenir à jour lui-même.
-   - Détection : Monitoring en temps réel des releases disponibles sur Supabase.
-   - Notification : Badge visuel pulsant dans l'en-tête et les paramètres.
-   - Installation : Processus de téléchargement sécurisé avec barre de 
-     progression et préparation du redémarrage.
-
-E. Store et Installation Automatisée
-   - Téléchargement Background : Les installations ne bloquent pas l'UI.
-   - Init DB Automatique : Lors de l'installation, le Hub crée automatiquement 
-     la base de données locale nécessaire et l'utilisateur PostgreSQL associé.
-
-4. INTERFACE UTILISATEUR (UX/UI)
---------------------------------
-- Design "Glassmorphism" : Effets de transparence, flou d'arrière-plan et bordures 
-  lumineuses pour un look premium.
-- Sidebar de Paramètres : Organisation claire par sections :
-    - [Base de Données] : Gestion de la connexion PostgreSQL locale.
-    - [Mise à jour] : Centre de contrôle des versions et installation.
-    - [À propos] : Identité visuelle et crédits système.
-- Feedback Réel : Utilisation de Toasts (messages éphémères) et de barres de 
-  progression pour chaque action longue.
-
-5. SPÉCIFICATIONS DES FICHIERS MANIFESTES (ethernanos.json)
-----------------------------------------------------------
-Format requis pour qu'une application soit reconnue par le Hub :
-{
-  "name": "Nom de l'App",
-  "version": "1.0.0",
-  "port": 8001,
-  "exec_command": "npm run start" (ou chemin vers binaire)
-}
-
-6. MAINTENANCE ET ÉVOLUTIONS FUTURES
--------------------------------------
-- Logs : Le plugin 'tauri-plugin-log' capture les erreurs critiques.
-- Redémarrage : Le Hub est conçu pour être "Always-On", minimisant les besoins 
-  de redémarrage manuel grâce à son système de détection à chaud.
-
-================================================================================
-FIN DU DOCUMENT
+Version du Document : 2.0 (Septembre 2026)
+Objet : Architecture globale, Cartographie des Liaisons et Guide de Migration/Maintenance
+Systèmes concernés : AppStore (Cloud), EtherNanos Hub (Desktop), App Django (Core Métier)
+Développeur : Senior Architect (Google DeepMind Antigravity AI)
 ================================================================================
 
+1. ARCHITECTURE ET TRI-PARTITION DU SYSTÈME
+-------------------------------------------
+Le système EtherNanos repose sur un découplage industriel à trois niveaux :
+
+A. AppStore (Serveur de Distribution Cloud & Supabase)
+   - Rôle : Catalogue centralisé des versions, hébergement des métadonnées de release et des archives binaires/web.
+   - Composants : Supabase (Database/Auth) + VPS Nginx (Serveur de fichiers statiques/releases).
+
+B. EtherNanos Hub (Passerelle Bureau Desktop Launcher 2.0)
+   - Rôle : Orchestrateur local natif construit avec Tauri (Rust) et Angular (TypeScript).
+   - Fonctions : Gestion de l'état local, provisioning automatique de PostgreSQL local, contrôle cryptographique SHA-256 des téléchargements, détection des ports dynamiques, et Health Polling.
+
+C. App Django (Core Business - project_init_django_Angular / Eteyelo)
+   - Rôle : Application métier chirurgicale (Gestion scolaire, Inscriptions, Encaissements, Bulletins).
+   - Architecture Backend : BaseService -> RouterController -> GraphQLController.
+   - Fonctionnement : 100% autonome hors-ligne (Offline-First), synchronisation bidirectionnelle Cloud-to-Local dès l'établissement d'une connexion réseau.
 
 
-1. http://127.0.0.1:4200/options: la liste des des cycles est vide dans  le select
+================================================================================
+2. CARTOGRAPHIE DÉTAILLÉE DES LIAISONS & CONTRATS INTER-SYSTÈMES
+================================================================================
 
-2. Matiere:
-*la barre de recherche des matiere ne fonctionne pas,
-*l'accordion des filtre est vide (si les filtre avances nesont pas necessaire pour cette page, masque ce bouton)
-* le bouton importer ne se comporte pas normalement, 
-* e bouton exporté telecharge directement le excel sans me laissé choisir le format (il ya pourtant un composant qui gere ca)
+--------------------------------------------------------------------------------
+[LIAISON 1] AppStore <---> EtherNanos Hub (Cloud vers Desktop)
+--------------------------------------------------------------------------------
+- Objectif : Découverte des modules, vérification des mises à jour et téléchargement des paquets.
+- Canaux de communication :
+  1. API REST / GraphQL Supabase :
+     - Endpoint URL : `https://tskaatmquckvuvamymcx.supabase.co`
+     - Clé Publique Anon : `sb_publishable_7EySw7dL-ZndQLvZ0MNoeQ_Ee36OzxT`
+     - Tables consultées : `releases`, `apps`, `messages`.
+  2. Serveur de Fichiers (Releases VPS) :
+     - URL de distribution : `https://updates.ethernanos.space/releases/`
+     - Fichiers cibles : `metadata.json` (Contient la version et le Hash SHA-256) et `<app_id>-v<version>.tar.gz`.
+- Sécurité & Contrôle d'Intégrité :
+  - Le module Rust (`sha2`) calcule le Hash SHA-256 du fichier téléchargé. Si le Hash ne correspond pas à la valeur de `metadata.json`, l'archive est supprimée immédiatement.
+
+--------------------------------------------------------------------------------
+[LIAISON 2] EtherNanos Hub <---> App Django (Desktop vers Backend Local)
+--------------------------------------------------------------------------------
+- Objectif : Ordonnancement, provisioning de la base de données et lancement du serveur métier.
+- Fichier Contrat (Manifeste) : `ethernanos.json` à la racine de l'application Django :
+  {
+    "id": "930e2a6f-7dfb-4541-b607-7b520053b9b4",
+    "name": "School Manager",
+    "version": "1.0.0",
+    "port": 8000,
+    "exec_command": "./hub_start.sh"
+  }
+- Protocole d'Initialisation & Base de Données :
+  1. Connection String Locale : `postgresql://<user>:<pass>@localhost:5432/<db_name>`
+  2. Commande d'Initialisation : Exécution de `python manage.py ether_setup` (ou `./snake`).
+  3. Signaux Console Hub : La console Django émet des signaux lus par Rust :
+     - `[HUB_SIGNAL:MIGRATING]` : Migrations en cours.
+     - `[HUB_SIGNAL:SUCCESS]` : Base de données prête et synchronisée.
+- Séquencement & Health Check :
+  - Le Hub exécute `./hub_start.sh` -> Effectue un Polling HTTP GET sur `http://localhost:<PORT>/api/health/` -> Attend le code `200 OK` avant d'ouvrir la fenêtre de l'application.
+
+--------------------------------------------------------------------------------
+[LIAISON 3] App Django <---> AppStore / Backend Central (Local vers Cloud)
+--------------------------------------------------------------------------------
+- Objectif : Synchronisation des données métier et remontée des messages d'achat/contact.
+- Double Serrure de Sécurité (API Key Bridge) :
+  - Clé partagée : `HUB_API_KEY=ethernanos-hub-secret-2026`
+- URL de l'API Cloud Centrale :
+  - Endpoint REST / GQL : `https://ethernanos.space/schoolmanage/test/api/`
+- Envoi des Messages d'Achat (Formulaire Landing Eteyelo) :
+  - Client Supabase JS intégré dans `Eteyelo.ethernanos.space/src/lib/supabaseClient.ts`.
+  - Insertion directe dans la table Supabase `messages` (`name`, `email`, `subject`, `content`, `is_read`).
+  - Consultation Administrateur : Visible instantanément sur `https://ethernanos.space/admin/messages`.
 
 
-3. Clase:
-*la barre de recherche des classe ne fonctionne pas, et l'acoordion des filtres a des element pas correct
-* le bouton importer ne se comporte pas normalement, 
-* e bouton exporté telecharge directement le excel sans me laissé choisir le format (il ya pourtant un composant qui gere ca)
+================================================================================
+3. GUIDE DE MAINTENANCE ET DE MIGRATION DE SERVEUR (PROCÉDURES PAS À PAS)
+================================================================================
+
+Si vous devez effectuer une maintenance ou MIGRER L'UN DES SERVEURS (VPS, Supabase, ou Domaine API), suivez rigoureusement ces procédures pour préserver le fonctionnement des liaisons :
+
+--------------------------------------------------------------------------------
+SCÉNARIO A : MIGRATION DU SERVEUR DE DISTRIBUTION DES RELEASES (VPS / NGINX)
+--------------------------------------------------------------------------------
+Cas d'usage : Vous changez d'adresse IP VPS ou de nom de domaine de mise à jour.
+
+1. Déplacer les fichiers sur le nouveau serveur :
+   - Copiez l'intégralité du dossier `/releases/` vers le nouveau serveur Web.
+2. Reconfigurer Nginx sur le nouveau serveur :
+   - Modifier `/etc/nginx/sites-available/updates.ethernanos.space` :
+     server {
+         listen 443 ssl http2;
+         server_name updates.ethernanos.space; # ou votre nouveau sous-domaine
+         root /var/www/ethernanos-releases;
+         index index.html metadata.json;
+         ...
+     }
+3. Mettre à jour les variables du projet :
+   - Dans `.env` du Hub / Portfolio :
+     `VITE_RELEASE_BASE_URL=https://<nouveau-domaine>/releases/`
+4. Recompiler les exécutables Hub :
+   - Exécuter `./scripts/hub-package.sh <nouvelle_version>` pour diffuser l'adresse du nouveau serveur aux clients.
+
+--------------------------------------------------------------------------------
+SCÉNARIO B : MIGRATION DE LA BASE DE DONNÉES CLOUD (SUPABASE)
+--------------------------------------------------------------------------------
+Cas d'usage : Vous changez de projet Supabase ou d'organisation.
+
+1. Exporter/Importer la structure des tables `messages` et `tenant_licenses` :
+   -- Table des messages de contact portfolio
+   CREATE TABLE IF NOT EXISTS messages (
+       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+       name TEXT NOT NULL,
+       email TEXT NOT NULL,
+       subject TEXT,
+       content TEXT NOT NULL,
+       is_read BOOLEAN DEFAULT FALSE,
+       created_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Table des licences d'applications/modules par tenant
+   CREATE TABLE IF NOT EXISTS tenant_licenses (
+       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+       tenant_id TEXT NOT NULL,
+       app_id TEXT,
+       module_id TEXT,
+       expires_at TIMESTAMPTZ,
+       is_active BOOLEAN DEFAULT TRUE,
+       created_at TIMESTAMPTZ DEFAULT NOW(),
+       updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   ALTER TABLE tenant_licenses ADD COLUMN IF NOT EXISTS app_id TEXT;
+   ALTER TABLE tenant_licenses ADD COLUMN IF NOT EXISTS module_id TEXT;
+   ALTER TABLE tenant_licenses ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+   ALTER TABLE tenant_licenses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+2. Mettre à jour les variables d'environnement (.env) dans TOUS les projets :
+   - Fichiers concernés :
+     - `DesktopLauncherApp/port_folio/.env`
+     - `project_init_django_Angular/Eteyelo.ethernanos.space/.env`
+   - Clés à mettre à jour :
+     `VITE_SUPABASE_URL=https://<votre-nouveau-ref>.supabase.co`
+     `VITE_SUPABASE_ANON_KEY=<votre_nouvelle_cle_anon_publiee>`
+3. Mettre à jour la constante de fallback dans le code :
+   - Modifier `Eteyelo.ethernanos.space/src/lib/supabaseClient.ts` :
+     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://<votre-nouveau-ref>.supabase.co';
+     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '<votre_nouvelle_cle_anon>';
+
+--------------------------------------------------------------------------------
+SCÉNARIO C : MIGRATION DU BACKEND CENTRAL DJANGO (API SCHOOL MANAGE)
+--------------------------------------------------------------------------------
+Cas d'usage : Déplacement du serveur principal Django vers un nouvel hôte/IP.
+
+1. Mettre à jour la configuration Django (`config/settings.py`) :
+   - `ALLOWED_HOSTS = ['localhost', '127.0.0.1', '<nouvelle_ip_vps>', '<nouveau_domaine>']`
+   - `CORS_ALLOWED_ORIGINS = ['https://<nouveau_domaine>', 'http://localhost:4200']`
+2. Mettre à jour la variable d'API sur le Hub et le Portfolio :
+   - Dans `port_folio/.env` et `DesktopLauncherApp/.env` :
+     `VITE_SCHOOL_MANAGE_API_URL=https://<nouveau_domaine>/schoolmanage/api/`
+3. Vérifier la clé secrète de provisioning (Double Serrure) :
+   - Conserver la correspondance exacte : `HUB_API_KEY` (Django) == `VITE_HUB_API_KEY` (Front/Hub).
 
 
-4.Périodes Académiques:
-* import et export ne fonctionne pas
+================================================================================
+4. CHECK-LIST DE VÉRIFICATION APRÈS MAINTENANCE (DEFINITION OF DONE)
+================================================================================
+Après toute intervention sur les liaisons :
+[ ] 1. Le Hub parvient à lire `metadata.json` sans erreur SSL ou HTTP 404.
+[ ] 2. La vérification SHA-256 dans Rust se termine avec succès lors d'une installation.
+[ ] 3. La commande `python manage.py ether_setup` retourne `[HUB_SIGNAL:SUCCESS]`.
+[ ] 4. Un message envoyé depuis le formulaire d'achat Eteyelo apparaît immédiatement dans `ethernanos.space/admin/messages`.
+[ ] 5. La commande `./snake check` sur le backend Django valide 0 erreur.
 
-5.Gestion des Salles
-*le hamberger des boutons d'action est en double
-
-6. Gestion des Inscriptions
-*comme la page "Élèves", ajoute les export
-* la bare de recher d'eleve ne fonctionne pas (ca doit etre le genre by name or matricule)
-* il faudrait enrichir les filtres avances dans l'accordion
-* dans le hamberger des actions, les boutons ne fonctionne pas.
-- quand on clique sur renvoyé, un formulaire de renvoie doit etre rempli, motif, description etc ...
-- quand on clique sur transefert un formulaire de transfert doit etre rempli: trasfer vers une autre ecole(remplir nom de l'ecole, ville adreese, puis delivrer une attestation de transfert),  ou vers une classe superieur (si un eleve est transferer vers une classe superieur, ces frais de scolarité change car il devient eleve d'une autre classe)
--on doit ajouter un bouton d'arret, au cas ou l'eleve decide d'arreter les cours (interruption de contrat)
-
-
-7. Types d'Évaluation
-dans cette page le hamberger de boutons d'action est absent
-
-
-8. Gestion du Personnel
-*la barre de recher ne fonctionne pas
-*les filtres avance ne fonctionne pas
-
-9.Types de Contrat
-*la barre de recher ne fonctionne pas
-
-
-10. Journal des Encaissements
-*la barre de recher ne fonctionne pas correctement
-
-11.État de Recouvrement
-*status	"error"
-message	"L'identifiant de la classe est requis.", 
-si l'identifaiant de la classe est manquant, je croyait avoir dit de faire le recouvrement global par classe dans la periode defini
-
-
-12.Utilisateurs
-*les filtres par staut (actif ou inactif) ne sont pas correct
-* filtre par role non operationnel, on ne peut selectionné de role car la liste est vide
-
+================================================================================
+FIN DE LA DOCUMENTATION TECHNIQUE DE MAINTENANCE
+================================================================================

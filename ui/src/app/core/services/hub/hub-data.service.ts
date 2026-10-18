@@ -352,6 +352,95 @@ export class HubDataService {
         });
     }
 
+    getAppLicenseInfo(app: any): { expiresAt: Date | null, label: string, isExpired: boolean, status: 'active' | 'expired' | 'lifetime' | 'none' } {
+        if (!app) return { expiresAt: null, label: 'Aucune licence', isExpired: false, status: 'none' };
+        
+        const licenses = this.state.rawLicenses();
+        const moduleIds = new Set((app.modules || []).map((m: any) => m.id));
+        
+        const appLicenses = (licenses || []).filter((l: any) => 
+            l.app_id === app.id || (l.module_id && moduleIds.has(l.module_id))
+        );
+
+        if (appLicenses.length === 0) {
+            if (this.isAppLicensed(app)) {
+                return { expiresAt: null, label: 'Licence Permanente', isExpired: false, status: 'lifetime' };
+            }
+            return { expiresAt: null, label: 'Aucune licence', isExpired: false, status: 'none' };
+        }
+
+        let hasLifetime = false;
+        let latestExpiration: Date | null = null;
+        const now = new Date();
+
+        for (const lic of appLicenses) {
+            if (lic.is_active === false) continue;
+            if (!lic.expires_at) {
+                hasLifetime = true;
+            } else {
+                const exp = new Date(lic.expires_at);
+                if (!latestExpiration || exp > latestExpiration) {
+                    latestExpiration = exp;
+                }
+            }
+        }
+
+        if (hasLifetime && !latestExpiration) {
+            return { expiresAt: null, label: 'Licence Permanente', isExpired: false, status: 'lifetime' };
+        }
+
+        if (latestExpiration) {
+            const isExpired = latestExpiration < now;
+            const formatted = latestExpiration.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+            return {
+                expiresAt: latestExpiration,
+                label: isExpired ? `Expirée le ${formatted}` : `Jusqu'au ${formatted}`,
+                isExpired,
+                status: isExpired ? 'expired' : 'active'
+            };
+        }
+
+        return { expiresAt: null, label: 'Licence Permanente', isExpired: false, status: 'lifetime' };
+    }
+
+    async unlockAppForTenant(app: any, expiresAtIso: string | null): Promise<void> {
+        const tenantId = this.state.tenantId() || this.state.hubId();
+        if (!tenantId || !app) return;
+
+        const moduleIds = (app.modules || []).map((m: any) => m.id);
+
+        try {
+            await this.supabase.unlockTenantLicense(tenantId, app.id, moduleIds, expiresAtIso);
+        } catch (e) {
+            console.warn("[HUB_DATA] Impossible de sauvegarder la licence sur Supabase (hors-ligne), sauvegarde en cache local.", e);
+        }
+
+        const newLicenses = moduleIds.length > 0
+            ? moduleIds.map((mId: string) => ({
+                tenant_id: tenantId,
+                app_id: app.id,
+                module_id: mId,
+                expires_at: expiresAtIso,
+                is_active: true
+            }))
+            : [{
+                tenant_id: tenantId,
+                app_id: app.id,
+                expires_at: expiresAtIso,
+                is_active: true
+            }];
+
+        this.state.rawLicenses.update(existing => [...existing, ...newLicenses]);
+        const updatedUnlocked = new Set([...this.state.unlockedModuleIds(), ...moduleIds]);
+        this.state.unlockedModuleIds.set(Array.from(updatedUnlocked));
+        await this.saveCache();
+        console.log(`[HUB_DATA] App '${app.name}' débloquée pour le tenant '${tenantId}' jusqu'au ${expiresAtIso || 'Permanent'}`);
+    }
+
     private getOsKeyword(): string {
         const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
         if (ua.includes('win')) {

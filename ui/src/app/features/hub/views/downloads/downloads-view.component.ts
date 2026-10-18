@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { getSafeSvgUtil } from '../../../../shared/utils/svg-helper';
 
 @Component({
   selector: 'app-downloads-view',
@@ -15,8 +16,7 @@ export class DownloadsViewComponent {
   private sanitizer = inject(DomSanitizer);
 
   getSafeSvg(svgString?: string): SafeHtml {
-    if (!svgString) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(svgString);
+    return getSafeSvgUtil(this.sanitizer, svgString);
   }
 
   launchAppFromHistory(appId: string, fallbackName: string) {

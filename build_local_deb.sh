@@ -16,6 +16,13 @@ if [ "$(uname)" != "Linux" ]; then
     exit 1
 fi
 
+if [ "$EUID" -eq 0 ]; then
+    echo "❌ Erreur : Ne lancez pas ce script avec 'sudo'."
+    echo "👉 Lancez simplement : ./build_local_deb.sh"
+    echo "   (Le script demandera sudo automatiquement si des dépendances système sont manquantes)."
+    exit 1
+fi
+
 # 2. Vérification / Installation des dépendances système nécessaires
 echo "📦 1. Vérification des dépendances système..."
 MISSING_DEPS=()
@@ -62,8 +69,8 @@ npm install
 cd ..
 
 # 5. Compilation Tauri (frontend + backend Rust)
-echo "🚀 4. Lancement de la compilation avec Tauri..."
-npm run build
+echo "🚀 4. Lancement de la compilation avec Tauri (.deb)..."
+npx tauri build --bundles deb
 
 # 6. Localisation et déplacement du fichier .deb généré
 DEB_DIR="src-tauri/target/release/bundle/deb"

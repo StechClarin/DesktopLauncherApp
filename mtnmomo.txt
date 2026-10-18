@@ -1,0 +1,220 @@
+
+bc-autoriser
+Essayez-le
+Cette opération sert à demander le consentement du titulaire du compte pour les portées demandées.
+post  https://sandbox.momodeveloper.mtn.com/remittance/v1_0/bc-authorize 
+
+bcauthorizeRéponse:
+{
+    "type": "object",
+    "properties": {
+        "auth_req_id": {
+            "type": "string",
+            "description": "Authentication request ID as an UUID."
+        },
+        "interval": {
+            "type": "number",
+            "description": "Indicates how long time the client should wait between retries towards the endpoint /oauth2/token."
+        },
+        "expires_in": {
+            "type": "number",
+            "description": "Shows when the authentication request ID expires, in seconds."
+        }
+    }
+}
+
+defaut:
+{
+    "auth_req_id": "string",
+    "interval": 0,
+    "expires_in": 0
+}
+
+
+
+
+
+CashTransfer
+Essayez-le
+
+L’opération de transfert en espèces est utilisée pour transférer un montant du compte du propriétaire vers un compte bénéficiaire. L'état de la transaction peut être validé en utilisant GET /cashtransfer/{referenceId}
+post  https://sandbox.momodeveloper.mtn.com/remittance/v2_0/cashtransfer 
+cashtransfer:
+{
+    "type": "object",
+    "properties": {
+        "amount": {
+            "type": "string",
+            "description": "Amount that will be debited from the payer account."
+        },
+        "currency": {
+            "type": "string",
+            "description": "ISO4217 Currency"
+        },
+        "payee": {
+            "$ref": "#/components/schemas/Party"
+        },
+        "externalId": {
+            "type": "string",
+            "description": "External id is used as a reference to the transaction. External id is used for reconciliation. The external id will be included in transaction history report. <br>External id is not required to be unique."
+        },
+        "orginatingCountry": {
+            "type": "string",
+            "description": "Country where the request came from"
+        },
+        "originalAmount": {
+            "type": "string",
+            "description": "Amount that was sent before any foreign exchange"
+        },
+        "originalCurrency": {
+            "type": "string",
+            "description": "ISO4217 Currency of the originalAmoun"
+        },
+        "payerMessage": {
+            "type": "string",
+            "description": "Message that will be written in the payer transaction history message field."
+        },
+        "payeeNote": {
+            "type": "string",
+            "description": "Message that will be written in the payee transaction history note field."
+        },
+        "payerIdentificationType": {
+            "enum": [
+                "PASS",
+                "CPFA",
+                "SRSSA",
+                "NRIN",
+                "OTHR",
+                "DRLC",
+                "SOCS",
+                "AREG",
+                "IDCD",
+                "EMID"
+            ],
+            "type": "string",
+            "description": "Identification type of the payer"
+        },
+        "payerIdentificationNumber": {
+            "type": "string",
+            "description": "Identification number of the payer"
+        },
+        "payerIdentity": {
+            "type": "string",
+            "description": "Identification of the payer"
+        },
+        "payerFirstName": {
+            "type": "string",
+            "description": "FirstName"
+        },
+        "payerSurName": {
+            "type": "string",
+            "description": "Surname"
+        },
+        "payerLanguageCode": {
+            "type": "string",
+            "description": "LanguageCode"
+        },
+        "payerEmail": {
+            "type": "string",
+            "description": "Email"
+        },
+        "payerMsisdn": {
+            "type": "string",
+            "description": "Msisdn"
+        },
+        "payerGender": {
+            "type": "string",
+            "description": "GenderCode according to ISO 20022"
+        }
+    }
+}
+
+defaut:
+{
+    "amount": "string",
+    "currency": "string",
+    "payee": {
+        "partyId": "string",
+        "partyIdType": "MSISDN/EMAIL/PARTY_CODE"
+    },
+    "externalId": "string",
+    "orginatingCountry": "string",
+    "originalAmount": "string",
+    "originalCurrency": "string",
+    "payerMessage": "string",
+    "payeeNote": "string",
+    "payerIdentificationType": "PersonIdentificationType1Code",
+    "payerIdentificationNumber": "string",
+    "payerIdentity": "string",
+    "payerFirstName": "string",
+    "payerSurName": "string",
+    "payerLanguageCode": "string",
+    "payerEmail": "string (Email)",
+    "payerMsisdn": "string (Msisdn)",
+    "payerGender": "string"
+}
+
+ErrorRaison:
+{
+    "type": "object",
+    "properties": {
+        "code": {
+            "enum": [
+                "PAYEE_NOT_FOUND",
+                "PAYER_NOT_FOUND",
+                "NOT_ALLOWED",
+                "NOT_ALLOWED_TARGET_ENVIRONMENT",
+                "INVALID_CALLBACK_URL_HOST",
+                "INVALID_CURRENCY",
+                "SERVICE_UNAVAILABLE",
+                "INTERNAL_PROCESSING_ERROR",
+                "NOT_ENOUGH_FUNDS",
+                "PAYER_LIMIT_REACHED",
+                "PAYEE_NOT_ALLOWED_TO_RECEIVE",
+                "PAYMENT_NOT_APPROVED",
+                "RESOURCE_NOT_FOUND",
+                "APPROVAL_REJECTED",
+                "EXPIRED",
+                "TRANSACTION_CANCELED.",
+                "RESOURCE_ALREADY_EXIST",
+                "TRANSACTION_NOT_COMPLETED",
+                "TRANSACTION_NOT_FOUND",
+                "INFORMATIONAL_SCOPE_INSTRUCTION",
+                "MISSING_SCOPE_INSTRUCTION",
+                "MORE_THAN_ONE_FINANCIAL_SCOPE_NOT_SUPPORTED",
+                "UNSUPPORTED_SCOPE_COMBINATION",
+                "CONSENT_MISMATCH",
+                "UNSUPPORTED_SCOPE",
+                "NOT_FOUND"
+            ],
+            "type": "string"
+        },
+        "message": {
+            "type": "string"
+        }
+    }
+}
+
+Partie
+
+Party identifie un titulaire de compte sur la plate-forme de portefeuille. Party se compose de deux paramètres, le type et le partyId. Chaque type a sa propre validation du partiId
+MSISDN - Numéro de téléphone mobile validé selon ITU-T E.164. Validé avec IsMSIDN
+EMAIL - Validé pour être un format de courriel valide. Validé avec IsEmail
+PARTY_CODE - UUID du parti. Validé avec IsUuid
+{
+    "type": "object",
+    "properties": {
+        "partyIdType": {
+            "enum": [
+                "MSISDN",
+                "EMAIL",
+                "PARTY_CODE"
+            ],
+            "type": "string"
+        },
+        "partyId": {
+            "type": "string"
+        }
+    },
+    "description": "Party identifies a account holder in the wallet platform. Party consists of two parameters, type and partyId. Each type have its own validation of the partyId<br> MSISDN - Mobile Number validated according to ITU-T E.164. Validated with IsMSISDN<br> EMAIL - Validated to be a valid e-mail format. Validated with IsEmail<br> PARTY_CODE - UUID of the party. Validated with IsUuid"
+}

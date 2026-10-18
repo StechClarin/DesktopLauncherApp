@@ -2,6 +2,7 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HubService } from '../../../../core/services/hub.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { getSafeSvgUtil } from '../../../../shared/utils/svg-helper';
 import { HomeHeroComponent } from './components/home-hero/home-hero.component';
 import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
 import { AppCardComponent } from '../../components/app-card/app-card.component';
@@ -103,8 +104,7 @@ export class HomeViewComponent {
   });
 
   getSafeSvg(svgString?: string): SafeHtml {
-    if (!svgString) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(svgString);
+    return getSafeSvgUtil(this.sanitizer, svgString);
   }
 
   openAppDetails(app: any) {
